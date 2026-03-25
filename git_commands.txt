@@ -1,1 +1,12 @@
-Git commands
+Git commands:
+
+git init
+git add .
+git add .gitignore && git commit -m "Add .gitignore for Python project"
+git commit -m "Update communicators"
+git push origin main
+pip install git+https://github.com/AnalysisLabs/communicators.git
+pip install --upgrade --force-reinstall git+https://github.com/AnalysisLabs/communicators.git
+git tag v0.1.0
+git push --tags
+pip install git+https://github.com/AnalysisLabs/communicators.git@v0.1.0
