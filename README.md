@@ -63,4 +63,4 @@ current library I am aware offers to make servers easy and capable, while making
 server is possible in principle, I decided to build the communicators library. It manages 
 both persistently terning a normal class into a server and reducign the minimal complexity 
 down to merely specifying positive and negative hosts and ports and using predefined input 
-and output functions to manage I/O/
+and output functions to manage I/O.
