@@ -1,0 +1,71 @@
+flowchart TD
+    classDef negative fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef positive fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef middleware fill:#fff3e0,stroke:#e65100,stroke-width:2px
+
+    subgraph NegativeCommunicator ["NegativeCommunicator"]
+        direction TB
+        N_new["__new__(config)"]
+        N_connect["_connect()"]
+        N_getws["get_ws()"]
+        N_pdown["process_down_queue()"]
+        N_send["send(payload)"]
+        N_listen["listen_for_responses()"]
+        N_pup["process_up_queue()"]
+        N_fromN["from_N(payload)"]
+        N_toN["to_N(payload)"]
+        N_close["close()"]
+
+        %% Direct calls
+        N_getws --> N_connect
+        N_pdown --> N_send
+        N_send --> N_getws
+        N_listen --> N_getws
+
+        %% Queue appends treated as explicit calls to processors
+        N_toN -->|".append() to down_queue"| N_pdown
+        N_listen -->|".append() to up_queue"| N_pup
+        N_pup --> N_fromN
+        N_fromN -.-> N_send
+    end
+
+    subgraph PositiveCommunicator ["PositiveCommunicator"]
+        direction TB
+        P_new["__new__(config)"]
+        P_init["__init__(middleware)"]
+        P_response["response(payload)"]
+        P_pdown["process_down_queue()"]
+        P_signal["signal_receipt(payload)"]
+        P_wait["wait_for_echo(token)"]
+        P_pup["process_up_queue()"]
+        P_accept["accept(request)"]
+        P_toP["to_P(payload)"]
+        P_fromP["from_P(payload)"]
+
+        %% Direct calls
+        P_pdown --> P_wait
+        P_pdown --> P_response
+        P_pup --> P_fromP
+        P_pup --> P_wait
+        P_accept --> P_response
+
+        %% Queue appends treated as explicit calls to processors
+        P_response -->|".append() to down_queue"| P_pdown
+        P_toP -->|".append() to down_queue"| P_pdown
+        P_accept -->|".append() to up_queue"| P_pup
+        P_signal --> P_response
+        P_fromP --> P_response
+    end
+
+    Middleware["Middleware\n(external)"]:::middleware
+
+    %% Cross-class & middleware flows
+    N_pup -.->|"from_N callback"| Middleware
+    P_pup -.->|"from_P callback"| Middleware
+    Middleware -.->|"to_N"| N_toN
+    Middleware -.->|"to_P"| P_toP
+    N_fromN -.->|"echo back"| Middleware
+    P_fromP -.->|"echo back"| Middleware
+
+    class NegativeCommunicator negative
+    class PositiveCommunicator positive
