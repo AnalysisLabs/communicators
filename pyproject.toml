@@ -4,11 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "communicators"
-<<<<<<< HEAD
 version = "0.1.5"
-=======
-version = "0.1.4"
->>>>>>> 580bb8eb9182e378295a14906f4eff7b96e83d39
 license = { file = "LICENSE" }
 description = "A library for websocket-based communication using asyncio."
 authors = [
