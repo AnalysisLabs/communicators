@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "communicators"
-version = "0.1.5"
+version = "0.1.6"
 license = { file = "LICENSE" }
 description = "A library for websocket-based communication using asyncio."
 authors = [
@@ -43,4 +43,4 @@ classifiers = [
 Homepage = "https://github.com/AnalysisLabs/communicators"
 
 [tool.setuptools.packages.find]
-where = ["communicators"]
+packages = ["communicators"]
