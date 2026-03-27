@@ -11,25 +11,28 @@ def manifest(message):
     print(f'{utc_ts} {process_path} {message}')
 
 class Manifest:
-    def print(self, message):
-        self._log(None, message)
-
-    def debug(self, message):
+    def debug(self, *args):
+        message = ' '.join(str(arg) for arg in args)
         self._log('DEBUG', message)
 
-    def info(self, message):
+    def info(self, *args):
+        message = ' '.join(str(arg) for arg in args)
         self._log('INFO', message)
 
-    def warning(self, message):
+    def warning(self, *args):
+        message = ' '.join(str(arg) for arg in args)
         self._log('WARNING', message)
 
-    def error(self, message):
+    def error(self, *args):
+        message = ' '.join(str(arg) for arg in args)
         self._log('ERROR', message)
 
-    def critical(self, message):
+    def critical(self, *args):
+        message = ' '.join(str(arg) for arg in args)
         self._log('CRITICAL', message)
 
-    def printer(self, message):
+    def printer(self, *args):
+        message = ' '.join(str(arg) for arg in args)
         self._log('PRINTER', message)
 
     def _log(self, level, message):
