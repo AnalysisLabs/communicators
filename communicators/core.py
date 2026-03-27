@@ -1,4 +1,4 @@
-import asyncio, websockets, json, secrets, os, signal, shutil, subprocess, time
+import asyncio, websockets, json, secrets, os, signal, shutil, subprocess, time, threading
 from aiohttp import web
 from collections import deque
 
@@ -26,6 +26,13 @@ def inject_echo_payload(func):
         return func(self, *args, **kwargs)
     return wrapper
 
+class LoopManager:
+    def __init__(self):
+        self.loop = asyncio.new_event_loop()
+        self.thread = threading.Thread(target=self.loop.run_forever, daemon=True)
+        self.thread.start()
+        asyncio.set_event_loop(self.loop)
+
 @singleton
 class NegativeCom:
     _instance = None
@@ -34,6 +41,7 @@ class NegativeCom:
         self.config = config or {}
         self.echo_payload = None
         self.negative = self
+        self.loop_mgr = LoopManager()
 
     def __new__(cls, config):
         if cls._instance is None:
@@ -135,11 +143,11 @@ class NegativeCom:
             if payload.get('echo') == 'delay':
                 pass
             else:
-                asyncio.create_task(self.ws.send(json.dumps(echo_payload)))
+                self.loop_mgr.loop.create_task(self.ws.send(json.dumps(echo_payload)))
 
     def to_N(self, payload):
         self.down_queue.append(payload)
-        asyncio.create_task(self.negative.process_down_queue())
+        self.loop_mgr.loop.create_task(self.negative.process_down_queue())
 
     async def close(self):
         if self.ws:
@@ -154,6 +162,7 @@ class PositiveCom:
         self.config = config or {}
         self.echo_payload = None
         self.positive = self
+        self.loop_mgr = LoopManager()
 
     def __new__(cls, config):
         if cls._instance is None:
@@ -277,7 +286,7 @@ class PositiveCom:
 
     def to_P(self, payload):
         self.down_queue.append(payload)
-        asyncio.create_task(self.positive.process_down_queue())
+        self.loop_mgr.loop.create_task(self.positive.process_down_queue())
 
     def from_P(self, payload):
         token = payload.get('communicator_token')
@@ -286,4 +295,4 @@ class PositiveCom:
             if payload.get('echo') == 'delay':
                 pass
             else:
-                asyncio.create_task(self.ws.send(json.dumps(echo_payload)))
+                self.loop_mgr.loop.create_task(self.ws.send(json.dumps(echo_payload)))
