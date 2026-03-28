@@ -1,6 +1,12 @@
 import inspect
 from datetime import datetime, timezone
 
+def truncate(limit: int, message) -> str:
+    msg = str(message)
+    if len(msg) > 2 * limit:
+        return msg[:limit] + '...' + msg[-limit:]
+    return msg
+
 def manifest(message):
     frame = inspect.currentframe().f_back
     filename = frame.f_code.co_filename.rsplit('/', 1)[-1]

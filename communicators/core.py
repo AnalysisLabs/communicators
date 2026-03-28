@@ -1,6 +1,7 @@
 import asyncio, websockets, json, secrets, os, signal, shutil, subprocess, time, threading
 from aiohttp import web
 from collections import deque
+from .state import manifest, truncate
 
 """
 negative == initiates websocket
@@ -137,6 +138,7 @@ class NegativeCom:
             await self.ws.send(json.dumps(echo_payload))
 
     def from_N(self, payload):
+        manifest.info(truncate(500, payload))
         token = payload.get('communicator_token')
         if token and self.ws:
             echo_payload = {'received': token}
@@ -146,6 +148,7 @@ class NegativeCom:
                 self.loop_mgr.loop.create_task(self.ws.send(json.dumps(echo_payload)))
 
     def to_N(self, payload):
+        manifest.info(truncate(500, payload))
         self.down_queue.append(payload)
         self.loop_mgr.loop.create_task(self.negative.process_down_queue())
 
@@ -285,10 +288,12 @@ class PositiveCom:
             await self.ws.send(json.dumps(echo_payload))
 
     def to_P(self, payload):
+        manifest.info(truncate(500, payload))
         self.down_queue.append(payload)
         self.loop_mgr.loop.create_task(self.positive.process_down_queue())
 
     def from_P(self, payload):
+        manifest.info(truncate(500, payload))
         token = payload.get('communicator_token')
         if token and self.ws:
             echo_payload = {'received': token}
