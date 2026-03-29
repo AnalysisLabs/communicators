@@ -77,7 +77,7 @@ class NegativeCom:
             if self.down_queue[0]:
                 if 'communicator_token' not in self.down_queue[0]:
                     self.down_queue[0]['communicator_token'] = f'{secrets.randbelow(10**29):029d}'
-                await self.send(self.down_queue[0])
+                self.send(self.down_queue[0])
                 self.wait_for_echo(token)
                 self.down_queue.popleft()
                 self._busy_down = False
@@ -127,7 +127,7 @@ class NegativeCom:
         token = payload.get('communicator_token') if payload else None
         if token and self.ws:
             echo_payload = {'received': token}
-            await self.ws.send(json.dumps(echo_payload))
+            self.ws.send(json.dumps(echo_payload))
 
     def from_N(self, payload):
         manifest.info(truncate(500, payload))
