@@ -1,5 +1,5 @@
-import asyncio, websockets, json, secrets, os, signal, shutil, subprocess, time, threading
-from aiohttp import web
+import json, secrets, os, signal, shutil, subprocess, time, threading
+import websockets.sync.client as ws_client
 from collections import deque
 from .state import manifest, truncate
 
@@ -27,12 +27,6 @@ def inject_echo_payload(func):
         return func(self, *args, **kwargs)
     return wrapper
 
-class LoopManager:
-    def __init__(self):
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self.loop.run_forever, daemon=True)
-        self.thread.start()
-        asyncio.set_event_loop(self.loop)
 
 @singleton
 class NegativeCom:
@@ -54,29 +48,29 @@ class NegativeCom:
             cls._instance._busy_up = False
         return cls._instance
 
-    async def _connect(self):
-        if self.ws and not getattr(self.ws, 'closed', True):
-            return
+    def _connect(self):
+        if self.ws and not getattr(self.ws, 'closed', True): return
         addr = self.config.get('negative_address', {})
         ws_path = f"ws://{addr.get('host')}:{addr.get('port')}/ws"
         try:
-            self.ws = await websockets.connect(ws_path)
+            self.ws = ws_client.connect(ws_path)
         except Exception as e:
             print(f'Connection error: {e}')
 
-    async def get_ws(self):
-        await self._connect()
+    def get_ws(self):
+        self._connect()
         return self.ws
 
-    async def wait_for_echo(self, token):
+    def wait_for_echo(self, token):
         while True:
-            await asyncio.sleep(0.1)
+            time.sleep(0.1)
             for msg in list(self.up_queue):
                 if msg.get('received') == token:
                     self.up_queue.remove(msg)
                     return
 
-    async def process_down_queue(self):
+    def process_down_queue(self):
+        manifest.info("This was triggered.")
         if self._busy_down: return
         for item in list(self.down_queue):
             self._busy_down = True
@@ -84,54 +78,52 @@ class NegativeCom:
                 if 'communicator_token' not in self.down_queue[0]:
                     self.down_queue[0]['communicator_token'] = f'{secrets.randbelow(10**29):029d}'
                 await self.send(self.down_queue[0])
-
-                try:
-                    await asyncio.wait_for(self.wait_for_echo(token), timeout=10.0)
-                    self.down_queue.popleft()
-                except asyncio.TimeoutError:
-                    # Log or handle failure
-                    pass
+                self.wait_for_echo(token)
+                self.down_queue.popleft()
                 self._busy_down = False
 
-    async def send(self, payload):
-        ws = await self.get_ws()
+    def send(self, payload):
+        ws = self.get_ws()
         if ws:
-            await ws.send(json.dumps(payload))
+            ws.send(json.dumps(payload))
 
-    # This conceptually recieves stuff from positiveCommunicator though in reality this is not configured yet.
-    async def listen_for_responses(self):
-        ws = await self.get_ws()
-        if ws:
-            async for message in ws:
-                data = json.loads(message)
-                self.up_queue.append(data)  # incoming
-                await self.negative.process_up_queue()
+    def listen_for_responses(self):
+        def _listener():
+            ws = self.get_ws()
+            while ws and not getattr(ws, 'closed', True):
+                try:
+                    message = ws.recv()
+                    if message:
+                        data = json.loads(message)
+                        self.up_queue.append(data)
+                        self.process_up_queue()
+                    else:
+                        break
+                except Exception as e:
+                    print(f'Listen error: {e}')
+                    break
+        threading.Thread(target=_listener, daemon=True).start()
 
-    async def process_up_queue(self):
+    def process_up_queue(self):
         if self._busy_up: return
         for item in list(self.up_queue):
             self._busy_up = True
             if self.up_queue[0]:
                 self.negative.from_N(self.up_queue[0])
-                # Await echo receipt with timeout
-                try:
-                    await asyncio.wait_for(self.wait_for_echo(token), timeout=10.0)
-                    self.up_queue.popleft()
-                except asyncio.TimeoutError:
-                    # Log or handle failure
-                    pass
+                self.wait_for_echo(token)
+                self.up_queue.popleft()
         self._busy_up = False
 
-    async def wait_for_echo(self, token):
+    def wait_for_echo(self, token):
         while True:
-            await asyncio.sleep(0.1)
+            time.sleep(0.1)
             for msg in list(self.up_queue):
                 if msg.get('received') == token:
                     self.up_queue.remove(msg)
                     return
 
     @inject_echo_payload
-    async def echo(self, payload=None):
+    def echo(self, payload=None):
         token = payload.get('communicator_token') if payload else None
         if token and self.ws:
             echo_payload = {'received': token}
@@ -150,11 +142,11 @@ class NegativeCom:
     def to_N(self, payload):
         manifest.info(truncate(500, payload))
         self.down_queue.append(payload)
-        self.loop_mgr.loop.create_task(self.negative.process_down_queue())
+        self.process_down_queue()
 
-    async def close(self):
+    def close(self):
         if self.ws:
-            await self.ws.close()
+            self.ws.close()
             self.ws = None
 
 @singleton
@@ -216,7 +208,7 @@ class PositiveCom:
                 continue
             time.sleep(0.1)
 
-    async def process_down_queue(self):
+    def process_down_queue(self):
         if self._busy_down: return
         for item in list(self.down_queue):
             self._busy_down = True
@@ -226,71 +218,57 @@ class PositiveCom:
                 if token and token in self.ws_token_dict:
                     ws_id = self.ws_token_dict[token]
                     if ws_id in self.connections:
-                        await self.connections[ws_id].send_str(json.dumps(payload))
-                        # Await echo_payload receipt with timeout
-                        try:
-                            await asyncio.wait_for(self.wait_for_echo(token), timeout=10.0)
-                            self.down_queue.popleft()
-                        except asyncio.TimeoutError:
-                            # Log or handle failure
-                            pass
+                        self.connections[ws_id].send_str(json.dumps(payload))
+                        self.wait_for_echo(token)
+                        self.down_queue.popleft()
         self._busy_down = False
 
-    async def wait_for_echo(self, token):
+    def wait_for_echo(self, token):
         while True:
-            await asyncio.sleep(0.1)
+            time.sleep(0.1)
             for msg in list(self.up_queue):
                 if msg.get('received') == token:
                     self.up_queue.remove(msg)
                     return
 
-    async def process_up_queue(self):
+    def process_up_queue(self):
         if self._busy_up: return
         for item in list(self.up_queue):
             self._busy_up = True
             if self.up_queue[0]:
                 self.positive.from_P(self.up_queue[0])
-                # Await echo_payload receipt with timeout
-                try:
-                    await asyncio.wait_for(self.wait_for_echo(token), timeout=10.0)
-                    self.up_queue.popleft()
-                except asyncio.TimeoutError:
-                    # Log or handle failure
-                    pass
+                self.wait_for_echo(token)
+                self.up_queue.popleft()
         self._busy_up = False
 
-    async def listen_for_responses(self):
-        ws = await self.get_ws()
-        if ws:
-            async for message in ws:
-                await self.accept(message, ws)
-
-    # This conceptually recieves stuff from NegativeCom though in reality this is not configured yet.
-    async def accept(self, request, ws):
-        await ws.prepare(request)
-        ws_id = id(ws)
-        self.connections[ws_id] = ws
-        self.ws = ws
-        msg = await ws.receive()
-        if msg.type == aiohttp.WSMsgType.TEXT:
-            data = json.loads(msg.data)
-            token = data.get('communicator_token')
-            if token:
-                self.ws_token_dict[token] = ws_id
-                self.up_queue.append(data)
-                await self.positive.process_up_queue()
+    def listen_for_responses(self):
+        def _listener():
+            ws = self.get_ws()
+            while ws and not getattr(ws, 'closed', True):
+                try:
+                    message = ws.recv()
+                    if message:
+                        data = json.loads(message)
+                        self.up_queue.append(data)
+                        self.process_up_queue()
+                    else:
+                        break
+                except Exception as e:
+                    print(f'Listen error: {e}')
+                    break
+        threading.Thread(target=_listener, daemon=True).start()
 
     @inject_echo_payload
-    async def echo(self, payload=None):
+    def echo(self, payload=None):
         token = payload.get('communicator_token') if payload else None
         if token and self.ws:
             echo_payload = {'received': token}
-            await self.ws.send(json.dumps(echo_payload))
+            self.ws.send(json.dumps(echo_payload))
 
     def to_P(self, payload):
         manifest.info(truncate(500, payload))
         self.down_queue.append(payload)
-        self.loop_mgr.loop.create_task(self.positive.process_down_queue())
+        self.process_down_queue()
 
     def from_P(self, payload):
         manifest.info(truncate(500, payload))
@@ -300,4 +278,4 @@ class PositiveCom:
             if payload.get('echo') == 'delay':
                 pass
             else:
-                self.loop_mgr.loop.create_task(self.ws.send(json.dumps(echo_payload)))
+                self.ws.send(json.dumps(echo_payload))

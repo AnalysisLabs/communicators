@@ -1,8 +1,8 @@
 # decorators.py
 
-import os, asyncio, signal, shutil, subprocess, time, threading
+import os, signal, shutil, subprocess, time, threading
+from websockets.sync.server import serve
 from .core import NegativeCom, PositiveCom
-from aiohttp import web
 
 def singleton(cls):
     instances = {}
@@ -26,12 +26,11 @@ def server(cls):
             self.to_P = self.positive.to_P
 
         def run_server(self):
-            app = web.Application()
-            app.router.add_get('/proxy/ws', self.positive.accept)
             positive_addr = self.config.get('positive_address', {})
             host = positive_addr.get('host')
             port = int(positive_addr.get('port'))
-            web.run_app(app, host=host, port=port)
+            with serve(self.positive.listen_for_responses, host, port) as server:
+                server.serve_forever()
     return Wrapped
 
 # This tank is vestigial for now but may have value later.
@@ -63,10 +62,9 @@ def PositiveCommunicator(cls):
             self.to_P = self.positive.to_P
 
         def run_server(self):
-            app = web.Application()
-            app.router.add_get('/proxy/ws', self.positive.accept)
             positive_addr = self.config.get('positive_address', {})
             host = positive_addr.get('host')
             port = int(positive_addr.get('port'))
-            web.run_app(app, host=host, port=port)
+            with serve(self.positive.listen_for_responses, host, port) as server:
+                server.serve_forever()
     return Wrapped
