@@ -3,5 +3,6 @@ __pycache__/
 communicators-venv/
 *.log
 decorators1.py
+core1.py
 github_key.txt
 git_commands.txt

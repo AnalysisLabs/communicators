@@ -6,7 +6,7 @@ Test current system. It should work if started in the right order. use located p
 V1
 websocket connections between servers that are as simple to set up as stating positive and negative host and port
 Automatic serverification of @server class
-unlimited positive connections, bu tonly one negative connection.
+unlimited positive connections, but only one negative connection.
 
 V2
 add ping (if scilent)/reconnect to communicator websockets.
