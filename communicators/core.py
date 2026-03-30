@@ -1,7 +1,7 @@
 import json, secrets, os, signal, shutil, subprocess, time, threading
 import websockets.sync.client as ws_client
 from collections import deque
-from .state import manifest, truncate
+from .state import manifest, truncate, freight
 
 """
 negative == initiates websocket
