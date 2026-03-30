@@ -46,7 +46,7 @@ class NegativeCom:
             cls._instance.down_queue = deque()  # outgoing messages from middleware to another server
             cls._instance._busy_down = False
             cls._instance._busy_up = False
-            cls._instance.._connected_once = False
+            cls._instance._connected_once = False
         return cls._instance
 
     def _connect(self):
