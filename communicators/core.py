@@ -167,7 +167,6 @@ class PositiveCom:
             PositiveCom._preemptive_port_cleanup(cls._instance.port)
             cls._instance.ws = None
             cls._instance.connections = {}
-            cls._instance.token_to_ws_id = {}
             cls._instance.ws_token_dict = {}
             cls._instance.ws_id = id(cls._instance)
             cls._instance.up_queue = deque()  # incoming messages from another server to middleware
@@ -218,6 +217,7 @@ class PositiveCom:
                     ws_id = self.ws_token_dict[token]
                     if ws_id in self.connections:
                         self.connections[ws_id].send_str(json.dumps(payload))
+                        token = self.up_queue[0].get('communicator_token')
                         self.wait_for_echo(token)
                         self.down_queue.popleft()
         self._busy_down = False
