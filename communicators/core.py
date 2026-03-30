@@ -54,9 +54,10 @@ class NegativeCom:
         ws_path = f"ws://{addr.get('host')}:{addr.get('port')}/ws"
         try:
             self.ws = ws_client.connect(ws_path)
+            manifest.info(f'WS connected to {ws_path}')
             self.listen_for_responses(self.ws)
         except Exception as e:
-            print(f'Connection error: {e}')
+            manifest.error(f'Connection error: {e}')
 
     def get_ws(self):
         self._connect()
@@ -87,27 +88,33 @@ class NegativeCom:
     def send(self, payload):
         ws = self.get_ws()
         if ws:
+            manifest.info(f'Sending payload: {truncate(500, payload)}, WS closed: {getattr(ws, "closed", True)}')
             ws.send(json.dumps(payload))
 
     def listen_for_responses(self, websocket):
         def _listener():
             ws = self.get_ws()
+            manifest.info('Listener thread started')
             while ws and not getattr(ws, 'closed', True):
+                manifest.info('WS recv loop iteration')
                 try:
                     message = ws.recv()
                     if message:
+                        manifest.info(f'Message received: {truncate(500, message)}')
                         data = json.loads(message)
                         self.up_queue.append(data)
+                        manifest.info('Message appended to up_queue')
                         self.process_up_queue()
                     else:
                         break
                 except Exception as e:
-                    print(f'Listen error: {e}')
+                    manifest.error(f'Listen error: {e}')
                     break
         threading.Thread(target=_listener, daemon=True).start()
 
     def process_up_queue(self):
         if self._busy_up: return
+        manifest.info('Processing up_queue')
         for item in list(self.up_queue):
             self._busy_up = True
             if self.up_queue[0]:
@@ -115,6 +122,7 @@ class NegativeCom:
                 token = self.up_queue[0].get('communicator_token')
                 self.wait_for_echo(token)
                 self.up_queue.popleft()
+        manifest.info('up_queue processed')
         self._busy_up = False
 
     def wait_for_echo(self, token):
@@ -249,17 +257,21 @@ class PositiveCom:
     def listen_for_responses(self, websocket):
         self.connections[id(websocket)] = websocket
         def _listener():
+            manifest.info('Listener thread started')
             while not getattr(websocket, 'closed', True):
+                manifest.info('WS recv loop iteration')
                 try:
                     message = websocket.recv()
+                    manifest.info(f'Message received: {truncate(500, message)}')
                     if message:
                         data = json.loads(message)
                         token = data.get('communicator_token')
                         if token: self.ws_token_dict[token] = id(websocket)
                         self.up_queue.append(data)
+                        manifest.info('Message appended to up_queue')
                         self.process_up_queue()
                 except Exception as e:
-                    print(f'Listen error: {e}')
+                    manifest.error(f'Listen error: {e}')
                     break
         threading.Thread(target=_listener, daemon=True).start()
 
