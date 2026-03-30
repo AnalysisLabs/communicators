@@ -1,3 +1,4 @@
 from .decorators import server, tank, NegativeCommunicator, PositiveCommunicator, singleton
-from .core import NegativeCom, PositiveCom
-from .state import manifest, truncate
+from .state import manifest, truncate, freight
+
+__all__ = ['server', 'tank', 'NegativeCommunicator', 'PositiveCommunicator', 'singleton', 'manifest', 'truncate', 'freight']
