@@ -77,6 +77,7 @@ class NegativeCom:
                 if 'communicator_token' not in self.down_queue[0]:
                     self.down_queue[0]['communicator_token'] = f'{secrets.randbelow(10**29):029d}'
                 self.send(self.down_queue[0])
+                token = self.down_queue[0].get('communicator_token')
                 self.wait_for_echo(token)
                 self.down_queue.popleft()
                 self._busy_down = False
@@ -109,6 +110,7 @@ class NegativeCom:
             self._busy_up = True
             if self.up_queue[0]:
                 self.negative.from_N(self.up_queue[0])
+                token = self.up_queue[0].get('communicator_token')
                 self.wait_for_echo(token)
                 self.up_queue.popleft()
         self._busy_up = False
@@ -217,7 +219,7 @@ class PositiveCom:
                     ws_id = self.ws_token_dict[token]
                     if ws_id in self.connections:
                         self.connections[ws_id].send_str(json.dumps(payload))
-                        token = self.up_queue[0].get('communicator_token')
+                        token = self.down_queue[0].get('communicator_token')
                         self.wait_for_echo(token)
                         self.down_queue.popleft()
         self._busy_down = False
@@ -236,6 +238,7 @@ class PositiveCom:
             self._busy_up = True
             if self.up_queue[0]:
                 self.positive.from_P(self.up_queue[0])
+                token = self.up_queue[0].get('communicator_token')
                 self.wait_for_echo(token)
                 self.up_queue.popleft()
         self._busy_up = False
