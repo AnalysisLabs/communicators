@@ -36,7 +36,6 @@ class NegativeCom:
         self.config = config or {}
         self.echo_payload = None
         self.negative = self
-        self.loop_mgr = LoopManager()
 
     def __new__(cls, config):
         if cls._instance is None:
@@ -137,7 +136,7 @@ class NegativeCom:
             if payload.get('echo') == 'delay':
                 pass
             else:
-                self.loop_mgr.loop.create_task(self.ws.send(json.dumps(echo_payload)))
+                self.ws.send(json.dumps(echo_payload))
 
     def to_N(self, payload):
         manifest.info(truncate(500, payload))
@@ -157,7 +156,6 @@ class PositiveCom:
         self.config = config or {}
         self.echo_payload = None
         self.positive = self
-        self.loop_mgr = LoopManager()
 
     def __new__(cls, config):
         if cls._instance is None:
