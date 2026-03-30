@@ -30,6 +30,7 @@ def inject_echo_payload(func):
 
 @singleton
 class NegativeCom:
+    # Clarification: Only NegativeCom has permission to initiate websocket connections.
     _instance = None
 
     def __init__(self, config=None):
@@ -154,6 +155,7 @@ class NegativeCom:
 @singleton
 class PositiveCom:
     _instance = None
+    # Clarification: PositiveCom only has permission to receive and maintain websocket connections.
 
     def __init__(self, config=None):
         self.config = config or {}
@@ -245,7 +247,7 @@ class PositiveCom:
 
     def listen_for_responses(self, websocket):
         def _listener():
-            ws = self.get_ws()
+            ws = list(self.connections.values())[0] if self.connections else None
             while ws and not getattr(ws, 'closed', True):
                 try:
                     message = ws.recv()
