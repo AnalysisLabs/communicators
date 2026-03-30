@@ -54,6 +54,7 @@ class NegativeCom:
         ws_path = f"ws://{addr.get('host')}:{addr.get('port')}/ws"
         try:
             self.ws = ws_client.connect(ws_path)
+            self.listen_for_responses(self.ws)
         except Exception as e:
             print(f'Connection error: {e}')
 
@@ -246,17 +247,17 @@ class PositiveCom:
         self._busy_up = False
 
     def listen_for_responses(self, websocket):
+        self.connections[id(websocket)] = websocket
         def _listener():
-            ws = list(self.connections.values())[0] if self.connections else None
-            while ws and not getattr(ws, 'closed', True):
+            while not getattr(websocket, 'closed', True):
                 try:
-                    message = ws.recv()
+                    message = websocket.recv()
                     if message:
                         data = json.loads(message)
+                        token = data.get('communicator_token')
+                        if token: self.ws_token_dict[token] = id(websocket)
                         self.up_queue.append(data)
                         self.process_up_queue()
-                    else:
-                        break
                 except Exception as e:
                     print(f'Listen error: {e}')
                     break
@@ -278,9 +279,11 @@ class PositiveCom:
     def from_P(self, payload):
         manifest.info(truncate(500, payload))
         token = payload.get('communicator_token')
-        if token and self.ws:
+        ws_id = self.ws_token_dict.get(token)
+        ws = self.connections.get(ws_id)
+        if token and ws:
             echo_payload = {'received': token}
             if payload.get('echo') == 'delay':
                 pass
             else:
-                self.ws.send(json.dumps(echo_payload))
+                ws.send(json.dumps(echo_payload))
