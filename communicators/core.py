@@ -87,7 +87,7 @@ class NegativeCom:
         if ws:
             ws.send(json.dumps(payload))
 
-    def listen_for_responses(self):
+    def listen_for_responses(self, websocket):
         def _listener():
             ws = self.get_ws()
             while ws and not getattr(ws, 'closed', True):
@@ -243,7 +243,7 @@ class PositiveCom:
                 self.up_queue.popleft()
         self._busy_up = False
 
-    def listen_for_responses(self):
+    def listen_for_responses(self, websocket):
         def _listener():
             ws = self.get_ws()
             while ws and not getattr(ws, 'closed', True):
