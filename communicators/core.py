@@ -140,7 +140,7 @@ class NegativeCom:
 
     def to_N(self, payload):
         manifest.info(truncate(500, payload))
-        payload = freight(paylaod)
+        payload = freight(payload)
         self.down_queue.append(payload)
         self.process_down_queue()
 
@@ -266,7 +266,7 @@ class PositiveCom:
 
     def to_P(self, payload):
         manifest.info(truncate(500, payload))
-        payload = freight(paylaod)
+        payload = freight(payload)
         self.down_queue.append(payload)
         self.process_down_queue()
 
