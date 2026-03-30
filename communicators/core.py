@@ -46,18 +46,24 @@ class NegativeCom:
             cls._instance.down_queue = deque()  # outgoing messages from middleware to another server
             cls._instance._busy_down = False
             cls._instance._busy_up = False
+            cls._instance.._connected_once = False
         return cls._instance
 
     def _connect(self):
         if self.ws and not getattr(self.ws, 'closed', True): return
-        addr = self.config.get('negative_address', {})
-        ws_path = f"ws://{addr.get('host')}:{addr.get('port')}/ws"
-        try:
-            self.ws = ws_client.connect(ws_path)
-            manifest.info(f'WS connected to {ws_path}')
-            self.listen_for_responses(self.ws)
-        except Exception as e:
-            manifest.error(f'Connection error: {e}')
+        if self._connected_once and (self.ws is None or getattr(self.ws, 'closed', True)):
+            manifest.error('WS connection dropped unexpectedly')
+            return
+        elif not self._connected_once:
+            addr = self.config.get('negative_address', {})
+            ws_path = f"ws://{addr.get('host')}:{addr.get('port')}/ws"
+            try:
+                self.ws = ws_client.connect(ws_path)
+                manifest.info(f'WS connected to {ws_path}')
+                self.listen_for_responses(self.ws)
+                self._connected_once = True
+            except Exception as e:
+                manifest.error(f'Connection error: {e}')
 
     def get_ws(self):
         self._connect()
