@@ -44,9 +44,11 @@ class Manifest:
     def _log(self, level, message):
         frame = inspect.currentframe().f_back.f_back
         filename = frame.f_code.co_filename.rsplit('/', 1)[-1]
-        funcs = [f.function for f in reversed(inspect.stack()[2:]) if f.function not in ['<module>', '__init__', '<lambda>']]
-        func_name = '.'.join(funcs)
         # func_name = frame.f_code.co_name
+        func_name = frame.f_code.co_qualname
+        if class_name and func_name.startswith(class_name + '.'):
+            func_name = func_name[len(class_name) + 1:]
+        func_name = func_name.replace('.<locals>', '.')
         class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
         process_path = f'[{filename}.{class_name}.{func_name}]' if class_name else f'[{filename}.{func_name}]'
         utc_ts = datetime.now(timezone.utc).isoformat()
