@@ -63,9 +63,9 @@ class NegativeCom:
             try:
                 self.ws = ws_client.connect(ws_path)
                 manifest.info(f'WS connected to {ws_path}')
-                manifest.info(f'1st Send ok; WS closed? {getattr(ws, "closed", False)}, exc={getattr(ws, "close_exc", "None")}')
+                manifest.info(f'1st Send ok; WS closed? {getattr(self.ws, "closed", False)}, exc={getattr(self.ws, "close_exc", "None")}')
                 self.listen_for_responses(self.ws)
-                manifest.info(f'2nd Send ok; WS closed? {getattr(ws, "closed", False)}, exc={getattr(ws, "close_exc", "None")}')
+                manifest.info(f'2nd Send ok; WS closed? {getattr(self.ws, "closed", False)}, exc={getattr(self.ws, "close_exc", "None")}')
                 self._connected_once = True
             except Exception as e:
                 manifest.error(f'Connection error: {e}')
@@ -100,8 +100,8 @@ class NegativeCom:
     def send(self, payload):
         ws = self.get_ws()
         if ws:
-            manifest.info(f'Sending payload: {truncate(500, payload)}, WS closed: {getattr(ws, "closed", True)}')
-            if getattr(ws, 'closed', True):
+            manifest.info(f'Sending payload: {truncate(500, payload)}, WS closed: {getattr(self.ws, "closed", True)}')
+            if getattr(self.ws, 'closed', True):
                 manifest.error('Attempting to send on closed WS')
                 return
             ws.send(json.dumps(payload))
@@ -110,7 +110,7 @@ class NegativeCom:
         def _listener():
             ws = self.get_ws()
             manifest.info('Listener thread started')
-            while ws and not getattr(ws, 'closed', True):
+            while ws and not getattr(self.ws, 'closed', True):
                 manifest.info('WS recv loop iteration')
                 try:
                     message = ws.recv()
@@ -124,7 +124,7 @@ class NegativeCom:
                         break
                 except Exception as e:
                     manifest.error(f'Listen error: {e}')
-                    if getattr(ws, 'closed', True):
+                    if getattr(self.ws, 'closed', True):
                         manifest.error('WS closed unexpectedly in NegativeCom listener')
                     break
         threading.Thread(target=_listener, daemon=True).start()
