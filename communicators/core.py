@@ -1,7 +1,9 @@
-import json, secrets, os, signal, shutil, subprocess, time, threading
+import json, secrets, os, tracemalloc, signal, shutil, subprocess, time, threading
 import websockets.sync.client as ws_client
 from collections import deque
 from .state import manifest, truncate, freight
+
+tracemalloc.start(7)
 
 """
 negative == initiates websocket
@@ -37,6 +39,7 @@ class NegativeCom:
         self.config = config or {}
         self.echo_payload = None
         self.negative = self
+        self.lock = threading.Lock()
 
     def __new__(cls, config):
         if cls._instance is None:
@@ -78,18 +81,19 @@ class NegativeCom:
                     return
 
     def process_down_queue(self):
-        manifest.info("This was triggered.")
-        if self._busy_down: return
-        for item in list(self.down_queue):
-            self._busy_down = True
-            if self.down_queue[0]:
-                if 'communicator_token' not in self.down_queue[0]:
-                    self.down_queue[0]['communicator_token'] = f'{secrets.randbelow(10**29):029d}'
-                self.send(self.down_queue[0])
-                token = self.down_queue[0].get('communicator_token')
-                self.wait_for_echo(token)
-                self.down_queue.popleft()
-                self._busy_down = False
+        with self.lock:
+            manifest.info("This was triggered.")
+            if self._busy_down: return
+            for item in list(self.down_queue):
+                self._busy_down = True
+                if self.down_queue[0]:
+                    if 'communicator_token' not in self.down_queue[0]:
+                        self.down_queue[0]['communicator_token'] = f'{secrets.randbelow(10**29):029d}'
+                    self.send(self.down_queue[0])
+                    token = self.down_queue[0].get('communicator_token')
+                    self.wait_for_echo(token)
+                    self.down_queue.popleft()
+                    self._busy_down = False
 
     def send(self, payload):
         ws = self.get_ws()
@@ -152,6 +156,7 @@ class NegativeCom:
         if token and self.ws:
             echo_payload = {'received': token}
             if payload.get('echo') == 'delay':
+                time.sleep(0.1)
                 pass
             else:
                 self.ws.send(json.dumps(echo_payload))
