@@ -63,7 +63,9 @@ class NegativeCom:
             try:
                 self.ws = ws_client.connect(ws_path)
                 manifest.info(f'WS connected to {ws_path}')
+                manifest.info(f'1st Send ok; WS closed? {getattr(ws, "closed", False)}, exc={getattr(ws, "close_exc", "None")}')
                 self.listen_for_responses(self.ws)
+                manifest.info(f'2nd Send ok; WS closed? {getattr(ws, "closed", False)}, exc={getattr(ws, "close_exc", "None")}')
                 self._connected_once = True
             except Exception as e:
                 manifest.error(f'Connection error: {e}')
@@ -124,7 +126,6 @@ class NegativeCom:
                     manifest.error(f'Listen error: {e}')
                     if getattr(ws, 'closed', True):
                         manifest.error('WS closed unexpectedly in NegativeCom listener')
-                    break
                     break
         threading.Thread(target=_listener, daemon=True).start()
 
