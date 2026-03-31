@@ -110,7 +110,6 @@ class NegativeCom:
     def listen_for_responses(self, websocket):
         def _listener():
             ws = self.get_ws()
-            manifest.info('Listener thread started')
             while ws and not getattr(self.ws, 'closed', True):
                 manifest.info('WS recv loop iteration')
                 try:
@@ -130,6 +129,7 @@ class NegativeCom:
                     break
         if self._listener_thread and self._listener_thread.is_alive():
             return
+        manifest.info('Listener thread started')
         self._listener_thread = threading.Thread(target=_listener, daemon=True)
         self._listener_thread.start()
 
@@ -280,7 +280,6 @@ class PositiveCom:
     def listen_for_responses(self, websocket):
         self.connections[id(websocket)] = websocket
         def _listener():
-            manifest.info('Listener thread started')
             while not getattr(websocket, 'closed', True):
                 manifest.info('WS recv loop iteration')
                 try:
@@ -300,6 +299,7 @@ class PositiveCom:
                     break
         if self._listener_thread and self._listener_thread.is_alive():
             return
+        manifest.info('Listener thread started')
         self._listener_thread = threading.Thread(target=_listener, daemon=True)
         self._listener_thread.start()
 
