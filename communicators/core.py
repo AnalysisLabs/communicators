@@ -51,6 +51,7 @@ class NegativeCom:
             cls._instance._busy_up = False
             cls._instance._connected_once = False
             cls._instance._listener_thread = None
+            cls._instance._listener_started = False
         return cls._instance
 
     def _connect(self):
@@ -127,9 +128,10 @@ class NegativeCom:
                     if getattr(self.ws, 'closed', True):
                         manifest.error('WS closed unexpectedly in NegativeCom listener')
                     break
-        if self._listener_thread and self._listener_thread.is_alive():
+        if self._listener_thread and self._listener_started:
             return
         manifest.info('Listener thread started')
+        self._listener_started = True
         self._listener_thread = threading.Thread(target=_listener, daemon=True)
         self._listener_thread.start()
 
@@ -209,6 +211,7 @@ class PositiveCom:
             cls._instance._busy_down = False
             cls._instance._busy_up = False
             cls._instance._listener_thread = None
+            cls._instance._listener_started = False
         return cls._instance
 
 
@@ -297,9 +300,10 @@ class PositiveCom:
                     if getattr(websocket, 'closed', True):
                         manifest.error('WS closed in PositiveCom listener')
                     break
-        if self._listener_thread and self._listener_thread.is_alive():
+        if self._listener_thread and self._listener_started:
             return
         manifest.info('Listener thread started')
+        self._listener_started = True
         self._listener_thread = threading.Thread(target=_listener, daemon=True)
         self._listener_thread.start()
 
