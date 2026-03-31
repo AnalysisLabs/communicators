@@ -45,6 +45,7 @@ class Manifest:
         frame = inspect.currentframe().f_back.f_back
         filename = frame.f_code.co_filename.rsplit('/', 1)[-1]
         # func_name = frame.f_code.co_name
+        class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
         func_name = frame.f_code.co_qualname
         if class_name and func_name.startswith(class_name + '.'):
             func_name = func_name[len(class_name) + 1:]
