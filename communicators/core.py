@@ -55,8 +55,8 @@ class NegativeCom:
         return cls._instance
 
     def _connect(self):
-        if self.ws and not getattr(self.ws, 'closed', True): return
-        if self._connected_once and (self.ws is None or getattr(self.ws, 'closed', True)):
+        if self.ws and not getattr(self.ws.closed, True): return
+        if self._connected_once and (self.ws is None or getattr(self.ws.closed, True)):
             manifest.error('WS connection dropped unexpectedly')
             return
         elif not self._connected_once:
@@ -65,9 +65,9 @@ class NegativeCom:
             try:
                 self.ws = ws_client.connect(ws_path)
                 manifest.info(f'WS connected to {ws_path}')
-                manifest.info(f'1st Send ok; WS closed? {getattr(self.ws, 'closed', "Default")}, exc={getattr(self.ws, "close_exc", "None")}')
+                manifest.info(f'1st Send ok; WS closed? {getattr(self.ws.closed, "Default")}, exc={getattr(self.ws, "close_exc", "None")}')
                 self.listen_for_responses(self.ws)
-                manifest.info(f'2nd Send ok; WS closed? {getattr(self.ws, 'closed', "Default")}, exc={getattr(self.ws, "close_exc", "None")}')
+                manifest.info(f'2nd Send ok; WS closed? {getattr(self.ws.closed, "Default")}, exc={getattr(self.ws, "close_exc", "None")}')
                 self._connected_once = True
             except Exception as e:
                 manifest.error(f'Connection error: {e}')
@@ -102,8 +102,8 @@ class NegativeCom:
     def send(self, payload):
         ws = self.get_ws()
         if ws:
-            manifest.info(f'Sending payload: {truncate(500, payload)}, WS closed: {getattr(self.ws, 'closed', "Default")}')
-            if getattr(self.ws, 'closed', True):
+            manifest.info(f'Sending payload: {truncate(500, payload)}, WS closed: {getattr(self.ws.closed, "Default")}')
+            if getattr(sself.ws.closed, True):
                 manifest.error('Attempting to send on closed WS')
                 return
             ws.send(json.dumps(payload))
@@ -111,7 +111,7 @@ class NegativeCom:
     def listen_for_responses(self, websocket):
         def _listener():
             ws = self.get_ws()
-            while ws and not getattr(self.ws, 'closed', True):
+            while ws and not getattr(self.ws.closed, True):
                 manifest.info('WS recv loop iteration')
                 try:
                     message = ws.recv()
@@ -125,7 +125,7 @@ class NegativeCom:
                         break
                 except Exception as e:
                     manifest.error(f'Listen error: {e}')
-                    if getattr(self.ws, 'closed', True):
+                    if getattr(self.ws.closed, True):
                         manifest.error('WS closed unexpectedly in NegativeCom listener')
                     break
         if self._listener_thread and self._listener_started:
@@ -283,7 +283,7 @@ class PositiveCom:
     def listen_for_responses(self, websocket):
         self.connections[id(websocket)] = websocket
         def _listener():
-            while not getattr(websocket, 'closed', True):
+            while not getattr(websocket.closed, True):
                 manifest.info('WS recv loop iteration')
                 try:
                     message = websocket.recv()
@@ -297,7 +297,7 @@ class PositiveCom:
                         self.process_up_queue()
                 except Exception as e:
                     manifest.error(f'Listen error: {e}')
-                    if getattr(websocket, 'closed', True):
+                    if getattr(websocket.closed, True):
                         manifest.error('WS closed in PositiveCom listener')
                     break
         if self._listener_thread and self._listener_started:
