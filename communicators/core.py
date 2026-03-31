@@ -99,6 +99,9 @@ class NegativeCom:
         ws = self.get_ws()
         if ws:
             manifest.info(f'Sending payload: {truncate(500, payload)}, WS closed: {getattr(ws, "closed", True)}')
+            if getattr(ws, 'closed', True):
+                manifest.error('Attempting to send on closed WS')
+                return
             ws.send(json.dumps(payload))
 
     def listen_for_responses(self, websocket):
@@ -119,6 +122,9 @@ class NegativeCom:
                         break
                 except Exception as e:
                     manifest.error(f'Listen error: {e}')
+                    if getattr(ws, 'closed', True):
+                        manifest.error('WS closed unexpectedly in NegativeCom listener')
+                    break
                     break
         threading.Thread(target=_listener, daemon=True).start()
 
@@ -283,6 +289,8 @@ class PositiveCom:
                         self.process_up_queue()
                 except Exception as e:
                     manifest.error(f'Listen error: {e}')
+                    if getattr(websocket, 'closed', True):
+                        manifest.error('WS closed in PositiveCom listener')
                     break
         threading.Thread(target=_listener, daemon=True).start()
 
