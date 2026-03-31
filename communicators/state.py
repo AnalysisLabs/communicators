@@ -48,7 +48,7 @@ class Manifest:
         class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
         func_name = frame.f_code.co_qualname
         if class_name and func_name.startswith(class_name + '.'):
-            func_name = func_name[len(class_name) + 1:]
+            func_name = func_name[len(class_name) + 1:].replace('.<locals>', '.')
         func_name = func_name.replace('.<locals>', '.')
         class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
         process_path = f'[{filename}.{class_name}.{func_name}]' if class_name else f'[{filename}.{func_name}]'
