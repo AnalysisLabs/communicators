@@ -50,6 +50,7 @@ class NegativeCom:
             cls._instance._busy_down = False
             cls._instance._busy_up = False
             cls._instance._connected_once = False
+            cls._instance._listener_thread = None
         return cls._instance
 
     def _connect(self):
@@ -127,7 +128,10 @@ class NegativeCom:
                     if getattr(self.ws, 'closed', True):
                         manifest.error('WS closed unexpectedly in NegativeCom listener')
                     break
-        threading.Thread(target=_listener, daemon=True).start()
+        if self._listener_thread and self._listener_thread.is_alive():
+            return
+        self._listener_thread = threading.Thread(target=_listener, daemon=True)
+        self._listener_thread.start()
 
     def process_up_queue(self):
         if self._busy_up: return
@@ -204,6 +208,7 @@ class PositiveCom:
             cls._instance.down_queue = deque()  # outgoing messages from middleware to another server
             cls._instance._busy_down = False
             cls._instance._busy_up = False
+            cls._instance._listener_thread = None
         return cls._instance
 
 
@@ -293,7 +298,10 @@ class PositiveCom:
                     if getattr(websocket, 'closed', True):
                         manifest.error('WS closed in PositiveCom listener')
                     break
-        threading.Thread(target=_listener, daemon=True).start()
+        if self._listener_thread and self._listener_thread.is_alive():
+            return
+        self._listener_thread = threading.Thread(target=_listener, daemon=True)
+        self._listener_thread.start()
 
     @inject_echo_payload
     def echo(self, payload=None):
