@@ -301,7 +301,7 @@ class PositiveCom:
     def listen_for_responses(self, websocket):
         self.connections[id(websocket)] = websocket
         def _listener():
-            while not ({get_ws_closed_status(websocket)} == 'True'):
+            while not (get_ws_closed_status(websocket) == 'True'):
                 manifest.info('WS recv loop iteration')
                 try:
                     message = websocket.recv()
