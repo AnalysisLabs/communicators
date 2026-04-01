@@ -77,8 +77,9 @@ class NegativeCom:
                     ws_path,
                     ping_interval=None,
                     ping_timeout=None,
-                    close_timeout+None,
-                    max_size=None)
+                    close_timeout=None,
+                    max_size=None,
+                    )
                 manifest.info(f'WS connected to {ws_path}')
                 manifest.info(f'1st Send ok; WS close? {get_ws_closed_status(self.ws)}, exc={getattr(self.ws, "close_exc", "None")}')
                 self.listen_for_responses(self.ws)
