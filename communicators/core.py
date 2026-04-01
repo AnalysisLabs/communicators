@@ -30,6 +30,7 @@ def inject_echo_payload(func):
     return wrapper
 
 def get_ws_closed_status(ws):
+    manifest.info("Checking ws status...")
     if ws is None:
         return 'Default'
     try:
