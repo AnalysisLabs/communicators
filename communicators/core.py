@@ -75,9 +75,9 @@ class NegativeCom:
             try:
                 self.ws = ws_client.connect(ws_path)
                 manifest.info(f'WS connected to {ws_path}')
-                manifest.info(f'1st Send ok; WS close? get_ws_closed_status(self.ws), exc={getattr(self.ws, "close_exc", "None")}')
+                manifest.info(f'1st Send ok; WS close? {get_ws_closed_status(self.ws)}, exc={getattr(self.ws, "close_exc", "None")}')
                 self.listen_for_responses(self.ws)
-                manifest.info(f'2nd Send ok; WS close? get_ws_closed_status(self.ws), exc={getattr(self.ws, "close_exc", "None")}')
+                manifest.info(f'2nd Send ok; WS close? {get_ws_closed_status(self.ws)}, exc={getattr(self.ws, "close_exc", "None")}')
                 self._connected_once = True
             except Exception as e:
                 manifest.error(f'Connection error: {e}')
@@ -112,7 +112,7 @@ class NegativeCom:
     def send(self, payload):
         ws = self.get_ws()
         if ws:
-            manifest.info(f'Sending payload: {truncate(500, payload)}, WS close: get_ws_closed_status(self.ws)')
+            manifest.info(f'Sending payload: {truncate(500, payload)}, WS close: {get_ws_closed_status(self.ws)}')
             if (get_ws_closed_status(self.ws) == 'True'):
                 manifest.error('Attempting to send on close WS')
                 return
@@ -293,7 +293,7 @@ class PositiveCom:
     def listen_for_responses(self, websocket):
         self.connections[id(websocket)] = websocket
         def _listener():
-            while not (get_ws_closed_status(websocket) == 'True'):
+            while not ({get_ws_closed_status(websocket)} == 'True'):
                 manifest.info('WS recv loop iteration')
                 try:
                     message = websocket.recv()
@@ -307,7 +307,7 @@ class PositiveCom:
                         self.process_up_queue()
                 except Exception as e:
                     manifest.error(f'Listen error: {e}')
-                    if (get_ws_closed_status(websocket) == 'True'):
+                    if ({get_ws_closed_status(websocket)} == 'True'):
                         manifest.error('WS close in PositiveCom listener')
                     break
         if self._listener_thread and self._listener_started:
