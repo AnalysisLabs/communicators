@@ -35,7 +35,8 @@ def get_ws_closed_status(ws):
         return 'Default'
     try:
         return 'True' if ws.closed else 'False'
-    except Exception:
+    except Exception as e:
+        manifest.error(f'Exception checking ws.closed: {e}')
         return 'Default'
 
 @singleton
