@@ -73,7 +73,12 @@ class NegativeCom:
             addr = self.config.get('negative_address', {})
             ws_path = f"ws://{addr.get('host')}:{addr.get('port')}/ws"
             try:
-                self.ws = ws_client.connect(ws_path)
+                self.ws = ws_client.connect(
+                    ws_path,
+                    ping_interval=None,
+                    ping_timeout=None,
+                    close_timeout+None,
+                    max_size=None)
                 manifest.info(f'WS connected to {ws_path}')
                 manifest.info(f'1st Send ok; WS close? {get_ws_closed_status(self.ws)}, exc={getattr(self.ws, "close_exc", "None")}')
                 self.listen_for_responses(self.ws)
@@ -118,6 +123,7 @@ class NegativeCom:
                 return
             ws.send(json.dumps(payload))
 
+    # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
     def listen_for_responses(self, websocket):
         def _listener():
             ws = self.get_ws()
@@ -290,6 +296,7 @@ class PositiveCom:
                 self.up_queue.popleft()
         self._busy_up = False
 
+    # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
     def listen_for_responses(self, websocket):
         self.connections[id(websocket)] = websocket
         def _listener():
