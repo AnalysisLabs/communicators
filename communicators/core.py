@@ -129,7 +129,7 @@ class NegativeCom:
         def _listener():
             ws = self.get_ws()
             while ws and not (get_ws_closed_status(self.ws) == 'True'):
-                manifest.info('WS recv loop iteration')
+                # manifest.info('WS recv loop iteration')
                 try:
                     message = ws.recv()
                     if message:
@@ -139,18 +139,19 @@ class NegativeCom:
                         manifest.info('Message appended to up_queue')
                         self.process_up_queue()
                     else:
-                        break
+                        continue
                 except Exception as e:
                     manifest.error(f'Listen error: {e}')
                     if (get_ws_closed_status(self.ws) == 'True'):
                         manifest.error('WS close unexpectedly in NegativeCom listener')
                     break
         if self._listener_thread and self._listener_started:
-            return
-        manifest.info('Listener thread started')
-        self._listener_started = True
-        self._listener_thread = threading.Thread(target=_listener, daemon=True)
-        self._listener_thread.start()
+            pass
+        else:
+            manifest.info('Listener thread started')
+            self._listener_started = True
+            self._listener_thread = threading.Thread(target=_listener, daemon=True)
+            self._listener_thread.start()
 
     def process_up_queue(self):
         if self._busy_up: return
@@ -319,11 +320,12 @@ class PositiveCom:
                         manifest.error('WS close in PositiveCom listener')
                     break
         if self._listener_thread and self._listener_started:
-            return
-        manifest.info('Listener thread started')
-        self._listener_started = True
-        self._listener_thread = threading.Thread(target=_listener, daemon=True)
-        self._listener_thread.start()
+            pass
+        else:
+            manifest.info('Listener thread started')
+            self._listener_started = True
+            self._listener_thread = threading.Thread(target=_listener, daemon=True)
+            self._listener_thread.start()
 
     @inject_echo_payload
     def echo(self, payload=None):
