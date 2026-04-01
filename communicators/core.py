@@ -29,6 +29,7 @@ def inject_echo_payload(func):
         return func(self, *args, **kwargs)
     return wrapper
 
+"""
 def get_ws_closed_status(ws):
     manifest.info("Checking ws status...")
     if ws is None:
@@ -38,6 +39,18 @@ def get_ws_closed_status(ws):
     except Exception as e:
         manifest.info("ws as string: ", str(ws), " This is after the ws object.")
         manifest.error(f'Exception checking ws.closed so we can see what is going on: {e}')
+        return 'Default'
+"""
+
+def get_ws_closed_status(ws):
+    manifest.info("Checking ws status...")
+    if ws is None:
+        return 'Default'
+    try:
+        return 'True' if ws.state.name == 'CLOSED' else 'False'
+    except Exception as e:
+        manifest.info(f"ws as string: {str(ws)} This is after the ws object.")
+        manifest.error(f'Exception checking ws.state so we can see what is going on: {e}')
         return 'Default'
 
 @singleton
