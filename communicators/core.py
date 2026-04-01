@@ -133,12 +133,12 @@ class NegativeCom:
                         manifest.info('Message appended to up_queue')
                         self.process_up_queue()
                     else:
-                        continue
+                        break
                 except Exception as e:
                     manifest.error(f'Listen error: {e}')
                     if ({get_ws_closed_status(self.ws)} == 'True'):
                         manifest.error('WS close unexpectedly in NegativeCom listener')
-                    continue
+                    break
         if self._listener_thread and self._listener_started:
             return
         manifest.info('Listener thread started')
@@ -310,7 +310,7 @@ class PositiveCom:
                     manifest.error(f'Listen error: {e}')
                     if ({get_ws_closed_status(websocket)} == 'True'):
                         manifest.error('WS close in PositiveCom listener')
-                    continue
+                    break
         if self._listener_thread and self._listener_started:
             return
         manifest.info('Listener thread started')
