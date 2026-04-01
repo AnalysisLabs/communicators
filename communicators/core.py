@@ -124,6 +124,7 @@ class NegativeCom:
             while ws and not ({get_ws_closed_status(self.ws)} == 'True'):
                 manifest.info('WS recv loop iteration')
                 try:
+                    # if ws.state.name == 'CLOSED': continue
                     message = ws.recv()
                     if message:
                         manifest.info(f'Message received: {truncate(500, message)}')
@@ -132,12 +133,12 @@ class NegativeCom:
                         manifest.info('Message appended to up_queue')
                         self.process_up_queue()
                     else:
-                        break
+                        continue
                 except Exception as e:
                     manifest.error(f'Listen error: {e}')
                     if ({get_ws_closed_status(self.ws)} == 'True'):
                         manifest.error('WS close unexpectedly in NegativeCom listener')
-                    break
+                    continue
         if self._listener_thread and self._listener_started:
             return
         manifest.info('Listener thread started')
@@ -309,7 +310,7 @@ class PositiveCom:
                     manifest.error(f'Listen error: {e}')
                     if ({get_ws_closed_status(websocket)} == 'True'):
                         manifest.error('WS close in PositiveCom listener')
-                    break
+                    continue
         if self._listener_thread and self._listener_started:
             return
         manifest.info('Listener thread started')
