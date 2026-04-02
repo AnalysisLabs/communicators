@@ -4,5 +4,6 @@ communicators-venv/
 *.log
 decorators1.py
 core1.py
+core2.py
 github_key.txt
 git_commands.txt

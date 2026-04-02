@@ -29,17 +29,6 @@ def inject_echo_payload(func):
         return func(self, *args, **kwargs)
     return wrapper
 
-def get_ws_closed_status(ws):
-    manifest.info("Checking ws status...")
-    if ws is None:
-        return 'Default'
-    try:
-        manifest.info(f"ws as string: {str(ws)} This is after the ws object.")
-        return 'True' if ws.state.name == 'CLOSED' else 'False'
-    except Exception as e:
-        manifest.error(f'Exception checking ws.state so we can see what is going on: {e}')
-        return 'Default'
-
 @singleton
 class NegativeCom:
     # Clarification: Only NegativeCom has permission to initiate websocket connections.
@@ -59,46 +48,7 @@ class NegativeCom:
             cls._instance.down_queue = deque()  # outgoing messages from middleware to another server
             cls._instance._busy_down = False
             cls._instance._busy_up = False
-            cls._instance._connected_once = False
-            cls._instance._listener_thread = None
-            cls._instance._listener_started = False
         return cls._instance
-
-    def _connect(self):
-        if self.ws and not (get_ws_closed_status(self.ws) == 'True'): return
-        if self._connected_once and (self.ws is None or (get_ws_closed_status(self.ws) == 'True')):
-            manifest.error('WS connection dropped unexpectedly')
-            return
-        elif not self._connected_once:
-            addr = self.config.get('negative_address', {})
-            ws_path = f"ws://{addr.get('host')}:{addr.get('port')}/ws"
-            try:
-                self.ws = ws_client.connect(
-                    ws_path,
-                    ping_interval=None,
-                    ping_timeout=None,
-                    close_timeout=None,
-                    max_size=None,
-                    )
-                manifest.info(f'WS connected to {ws_path}')
-                manifest.info(f'1st Send ok; WS close? {get_ws_closed_status(self.ws)}, exc={getattr(self.ws, "close_exc", "None")}')
-                self.listen_for_responses(self.ws)
-                manifest.info(f'2nd Send ok; WS close? {get_ws_closed_status(self.ws)}, exc={getattr(self.ws, "close_exc", "None")}')
-                self._connected_once = True
-            except Exception as e:
-                manifest.error(f'Connection error: {e}')
-
-    def get_ws(self):
-        self._connect()
-        return self.ws
-
-    def wait_for_echo(self, token):
-        while True:
-            time.sleep(0.1)
-            for msg in list(self.up_queue):
-                if msg.get('received') == token:
-                    self.up_queue.remove(msg)
-                    return
 
     def process_down_queue(self):
         with self.lock:
@@ -116,42 +66,15 @@ class NegativeCom:
                     self._busy_down = False
 
     def send(self, payload):
-        ws = self.get_ws()
-        if ws:
-            manifest.info(f'Sending payload: {truncate(500, payload)}, WS close: {get_ws_closed_status(self.ws)}')
-            if (get_ws_closed_status(self.ws) == 'True'):
-                manifest.error('Attempting to send on close WS')
-                return
-            ws.send(json.dumps(payload))
+        pass
 
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
     def listen_for_responses(self, websocket):
-        def _listener():
-            ws = self.get_ws()
-            while ws and not (get_ws_closed_status(self.ws) == 'True'):
-                # manifest.info('WS recv loop iteration')
-                try:
-                    message = ws.recv()
-                    if message:
-                        manifest.info(f'Message received: {truncate(500, message)}')
-                        data = json.loads(message)
-                        self.up_queue.append(data)
-                        manifest.info('Message appended to up_queue')
-                        self.process_up_queue()
-                    else:
-                        continue
-                except Exception as e:
-                    manifest.error(f'Listen error: {e}')
-                    if (get_ws_closed_status(self.ws) == 'True'):
-                        manifest.error('WS close unexpectedly in NegativeCom listener')
-                    break
-        if self._listener_thread and self._listener_started:
-            pass
-        else:
-            manifest.info('Listener thread started')
-            self._listener_started = True
-            self._listener_thread = threading.Thread(target=_listener, daemon=True)
-            self._listener_thread.start()
+        manifest.info(f'Message received: {truncate(500, message)}')
+        data = json.loads(message)
+        self.up_queue.append(data)
+        manifest.info('Message appended to up_queue')
+        self.process_up_queue()
 
     def process_up_queue(self):
         if self._busy_up: return
@@ -228,8 +151,6 @@ class PositiveCom:
             cls._instance.down_queue = deque()  # outgoing messages from middleware to another server
             cls._instance._busy_down = False
             cls._instance._busy_up = False
-            cls._instance._listener_thread = None
-            cls._instance._listener_started = False
         return cls._instance
 
 
@@ -299,33 +220,17 @@ class PositiveCom:
         self._busy_up = False
 
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
-    def listen_for_responses(self, websocket):
-        self.connections[id(websocket)] = websocket
-        def _listener():
-            while not (get_ws_closed_status(websocket) == 'True'):
-                manifest.info('WS recv loop iteration')
-                try:
-                    message = websocket.recv()
-                    manifest.info(f'Message received: {truncate(500, message)}')
-                    if message:
-                        data = json.loads(message)
-                        token = data.get('communicator_token')
-                        if token: self.ws_token_dict[token] = id(websocket)
-                        self.up_queue.append(data)
-                        manifest.info('Message appended to up_queue')
-                        self.process_up_queue()
-                except Exception as e:
-                    manifest.error(f'Listen error: {e}')
-                    if ({get_ws_closed_status(websocket)} == 'True'):
-                        manifest.error('WS close in PositiveCom listener')
-                    break
-        if self._listener_thread and self._listener_started:
-            pass
-        else:
-            manifest.info('Listener thread started')
-            self._listener_started = True
-            self._listener_thread = threading.Thread(target=_listener, daemon=True)
-            self._listener_thread.start()
+    def listen_for_responses(self, websocket, message):
+        if message:
+            data = json.loads(message)
+            token = data.get('communicator_token')
+            if token: self.ws_token_dict[token] = id(websocket)
+            self.up_queue.append(data)
+            manifest.info('Message appended to up_queue')
+            self.process_up_queue()
+
+    def send(ws, payload):
+        pass
 
     @inject_echo_payload
     def echo(self, payload=None):
@@ -350,4 +255,4 @@ class PositiveCom:
             if payload.get('echo') == 'delay':
                 pass
             else:
-                ws.send(json.dumps(echo_payload))
+                send(ws, json.dumps(echo_payload))
