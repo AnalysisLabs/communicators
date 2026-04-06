@@ -1,6 +1,16 @@
 import inspect, json, secrets
 from datetime import datetime, timezone
 
+def singleton(cls):
+    instances = {}
+    original_new = cls.__new__
+    def __new__(cls, *args, **kwargs):
+        if cls not in instances:
+            instances[cls] = original_new(cls, *args, **kwargs)
+        return instances[cls]
+    cls.__new__ = staticmethod(__new__)
+    return cls
+
 def truncate(limit: int, message) -> str:
     msg = str(message)
     if len(msg) > 2 * limit:
@@ -17,29 +27,29 @@ def manifest(message):
     print(f'{utc_ts} {process_path} {message}')
 
 class Manifest:
-    def debug(self, *args):
-        message = ' '.join(str(arg) for arg in args)
-        self._log('DEBUG', message)
+    def _try_log(self, level, *args):
+        try:
+            self._log(level, ' '.join(str(arg) for arg in args))
+        except Exception as e:
+            self._log('ERROR', f'Log attempt failed for {level} with args {args}: {e}')
 
-    def info(self, *args):
-        message = ' '.join(str(arg) for arg in args)
-        self._log('INFO', message)
+     def debug(self, *args):
+        self._try_log('DEBUG', *args)
 
-    def warning(self, *args):
-        message = ' '.join(str(arg) for arg in args)
-        self._log('WARNING', message)
+     def info(self, *args):
+        self._try_log('INFO', *args)
 
-    def error(self, *args):
-        message = ' '.join(str(arg) for arg in args)
-        self._log('ERROR', message)
+     def warning(self, *args):
+        self._try_log('WARNING', *args)
 
-    def critical(self, *args):
-        message = ' '.join(str(arg) for arg in args)
-        self._log('CRITICAL', message)
+     def error(self, *args):
+        self._try_log('ERROR', *args)
 
-    def printer(self, *args):
-        message = ' '.join(str(arg) for arg in args)
-        self._log('PRINTER', message)
+     def critical(self, *args):
+        self._try_log('CRITICAL', *args)
+
+     def printer(self, *args):
+        self._try_log('PRINTER', *args)
 
     def _log(self, level, message):
         frame = inspect.currentframe().f_back.f_back
