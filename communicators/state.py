@@ -1,16 +1,6 @@
 import inspect, json, secrets
 from datetime import datetime, timezone
 
-def singleton(cls):
-    instances = {}
-    original_new = cls.__new__
-    def __new__(cls, *args, **kwargs):
-        if cls not in instances:
-            instances[cls] = original_new(cls, *args, **kwargs)
-        return instances[cls]
-    cls.__new__ = staticmethod(__new__)
-    return cls
-
 def truncate(limit: int, message) -> str:
     msg = str(message)
     if len(msg) > 2 * limit:
@@ -27,36 +17,34 @@ def manifest(message):
     print(f'{utc_ts} {process_path} {message}')
 
 class Manifest:
-    def _try_log(self, level, *args):
-        try:
-            strs = []
-            for arg in args:
-                strs.append(str(arg() if callable(arg) else arg))
-            self._log(level, ' '.join(strs))
-        except Exception as e:
-            self._log('ERROR', f'Log attempt failed for {level} with args {args}: {e}')
-
     def debug(self, *args):
-        self._try_log('DEBUG', *args)
+        message = ' '.join(str(arg) for arg in args)
+        self._log('DEBUG', message)
 
     def info(self, *args):
-        self._try_log('INFO', *args)
+        message = ' '.join(str(arg) for arg in args)
+        self._log('INFO', message)
 
     def warning(self, *args):
-        self._try_log('WARNING', *args)
+        message = ' '.join(str(arg) for arg in args)
+        self._log('WARNING', message)
 
     def error(self, *args):
-        self._try_log('ERROR', *args)
+        message = ' '.join(str(arg) for arg in args)
+        self._log('ERROR', message)
 
     def critical(self, *args):
-        self._try_log('CRITICAL', *args)
+        message = ' '.join(str(arg) for arg in args)
+        self._log('CRITICAL', message)
 
     def printer(self, *args):
-        self._try_log('PRINTER', *args)
+        message = ' '.join(str(arg) for arg in args)
+        self._log('PRINTER', message)
 
     def _log(self, level, message):
         frame = inspect.currentframe().f_back.f_back
         filename = frame.f_code.co_filename.rsplit('/', 1)[-1]
+        # func_name = frame.f_code.co_name
         class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
         func_name = frame.f_code.co_qualname
         if class_name and func_name.startswith(class_name + '.'):
