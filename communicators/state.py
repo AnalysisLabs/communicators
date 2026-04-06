@@ -29,7 +29,10 @@ def manifest(message):
 class Manifest:
     def _try_log(self, level, *args):
         try:
-            self._log(level, ' '.join(str(arg) for arg in args))
+            strs = []
+            for arg in args:
+                strs.append(str(arg() if callable(arg) else arg))
+            self._log(level, ' '.join(strs))
         except Exception as e:
             self._log('ERROR', f'Log attempt failed for {level} with args {args}: {e}')
 
@@ -54,7 +57,6 @@ class Manifest:
     def _log(self, level, message):
         frame = inspect.currentframe().f_back.f_back
         filename = frame.f_code.co_filename.rsplit('/', 1)[-1]
-        # func_name = frame.f_code.co_name
         class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
         func_name = frame.f_code.co_qualname
         if class_name and func_name.startswith(class_name + '.'):
