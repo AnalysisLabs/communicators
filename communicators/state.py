@@ -27,29 +27,29 @@ def manifest(message):
     print(f'{utc_ts} {process_path} {message}')
 
 class Manifest:
-def _try_log(self, level, *args):
-    try:
-        self._log(level, ' '.join(str(arg) for arg in args))
-    except Exception as e:
-        self._log('ERROR', f'Log attempt failed for {level} with args {args}: {e}')
+    def _try_log(self, level, *args):
+        try:
+            self._log(level, ' '.join(str(arg) for arg in args))
+        except Exception as e:
+            self._log('ERROR', f'Log attempt failed for {level} with args {args}: {e}')
 
     def debug(self, *args):
-    self._try_log('DEBUG', *args)
+        self._try_log('DEBUG', *args)
 
     def info(self, *args):
-    self._try_log('INFO', *args)
+        self._try_log('INFO', *args)
 
     def warning(self, *args):
-    self._try_log('WARNING', *args)
+        self._try_log('WARNING', *args)
 
     def error(self, *args):
-    self._try_log('ERROR', *args)
+        self._try_log('ERROR', *args)
 
     def critical(self, *args):
-    self._try_log('CRITICAL', *args)
+        self._try_log('CRITICAL', *args)
 
     def printer(self, *args):
-    self._try_log('PRINTER', *args)
+        self._try_log('PRINTER', *args)
 
     def _log(self, level, message):
         frame = inspect.currentframe().f_back.f_back
