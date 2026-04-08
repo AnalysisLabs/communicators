@@ -1,7 +1,7 @@
 import json, secrets, os, tracemalloc, signal, shutil, subprocess, time, threading
-import websockets.sync.client as ws_client
 from collections import deque
-from .state import manifest, truncate, freight
+from .state import manifest, truncate, freight, singleton
+from .ws_tamer import ws_bridge, WSTamer
 
 tracemalloc.start(7)
 
@@ -12,16 +12,6 @@ down == from middleware to communicator
 up == from communicator to middleware
 """
 
-def singleton(cls):
-    instances = {}
-    original_new = cls.__new__
-    def __new__(cls, *args, **kwargs):
-        if cls not in instances:
-            instances[cls] = original_new(cls, *args, **kwargs)
-        return instances[cls]
-    cls.__new__ = staticmethod(__new__)
-    return cls
-
 def inject_echo_payload(func):
     def wrapper(self, *args, **kwargs):
         if 'payload' not in kwargs and hasattr(self, 'echo_payload'):
@@ -29,6 +19,7 @@ def inject_echo_payload(func):
         return func(self, *args, **kwargs)
     return wrapper
 
+@ws_bridge
 @singleton
 class NegativeCom:
     # Clarification: Only NegativeCom has permission to initiate websocket connections.
@@ -39,6 +30,7 @@ class NegativeCom:
         self.echo_payload = None
         self.negative = self
         self.lock = threading.Lock()
+        self.ws = self.ws_tamer.init_websocket(config)
 
     def __new__(cls, config):
         if cls._instance is None:
@@ -57,19 +49,18 @@ class NegativeCom:
             for item in list(self.down_queue):
                 self._busy_down = True
                 if self.down_queue[0]:
-                    if 'communicator_token' not in self.down_queue[0]:
-                        self.down_queue[0]['communicator_token'] = f'{secrets.randbelow(10**29):029d}'
-                    self.send(self.down_queue[0])
-                    token = self.down_queue[0].get('communicator_token')
+                    self.sender(freight(self.down_queue[0]))
+                    token = (freight(self.down_queue[0])).get('communicator_token')
                     self.wait_for_echo(token)
                     self.down_queue.popleft()
                     self._busy_down = False
 
-    def send(self, payload):
-        pass
+    def sender(self, ws, payload):
+        self.ws_tamer.send_over_ws(ws, payload)
 
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
-    def listen_for_responses(self, websocket):
+    def receiver(self, websocket):
+        ws, message = self.ws_tamer.receive_over_ws(websocket)
         manifest.info(f'Message received: {truncate(500, message)}')
         data = json.loads(message)
         self.up_queue.append(data)
@@ -102,7 +93,7 @@ class NegativeCom:
         token = payload.get('communicator_token') if payload else None
         if token and self.ws:
             echo_payload = {'received': token}
-            self.ws.send(json.dumps(echo_payload))
+            sender(self.ws, json.dumps(echo_payload))
 
     def from_N(self, payload):
         manifest.info(truncate(500, payload))
@@ -113,7 +104,7 @@ class NegativeCom:
                 time.sleep(0.1)
                 pass
             else:
-                self.ws.send(json.dumps(echo_payload))
+                sender(self.ws, json.dumps(echo_payload))
 
     def to_N(self, payload):
         manifest.info(truncate(500, payload))
@@ -121,11 +112,7 @@ class NegativeCom:
         self.down_queue.append(payload)
         self.process_down_queue()
 
-    def close(self):
-        if self.ws:
-            self.ws.close()
-            self.ws = None
-
+@ws_bridge
 @singleton
 class PositiveCom:
     _instance = None
@@ -135,6 +122,8 @@ class PositiveCom:
         self.config = config or {}
         self.echo_payload = None
         self.positive = self
+        handler = self.receiver
+        self.ws = self.ws_tamer.accept_websocket_init(config, handler)
 
     def __new__(cls, config):
         if cls._instance is None:
@@ -194,7 +183,7 @@ class PositiveCom:
                 if token and token in self.ws_token_dict:
                     ws_id = self.ws_token_dict[token]
                     if ws_id in self.connections:
-                        self.connections[ws_id].send_str(json.dumps(payload))
+                        self.connections[ws_id].sender_str(json.dumps(payload))
                         token = self.down_queue[0].get('communicator_token')
                         self.wait_for_echo(token)
                         self.down_queue.popleft()
@@ -220,24 +209,25 @@ class PositiveCom:
         self._busy_up = False
 
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
-    def listen_for_responses(self, websocket, message):
+    def receiver(self, ws):
+        ws, message = self.ws_tamer.receive_over_ws(ws)
         if message:
             data = json.loads(message)
             token = data.get('communicator_token')
-            if token: self.ws_token_dict[token] = id(websocket)
+            if token: self.ws_token_dict[token] = id(ws)
             self.up_queue.append(data)
             manifest.info('Message appended to up_queue')
             self.process_up_queue()
 
-    def send(ws, payload):
-        pass
+    def sender(self, ws, payload):
+        self.ws_tamer.send_over_ws(ws, payload)
 
     @inject_echo_payload
     def echo(self, payload=None):
         token = payload.get('communicator_token') if payload else None
         if token and self.ws:
             echo_payload = {'received': token}
-            self.ws.send(json.dumps(echo_payload))
+            sender(self.ws, json.dumps(echo_payload))
 
     def to_P(self, payload):
         manifest.info(truncate(500, payload))
@@ -255,4 +245,4 @@ class PositiveCom:
             if payload.get('echo') == 'delay':
                 pass
             else:
-                send(ws, json.dumps(echo_payload))
+                sender(ws, json.dumps(echo_payload))
