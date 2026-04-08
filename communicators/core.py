@@ -30,6 +30,7 @@ class NegativeCom:
         self.echo_payload = None
         self.negative = self
         self.lock = threading.Lock()
+        self.ws_tamer = WSTamer()
         self.ws = self.ws_tamer.init_websocket(config)
 
     def __new__(cls, config):
@@ -122,6 +123,7 @@ class PositiveCom:
         self.config = config or {}
         self.echo_payload = None
         self.positive = self
+        self.ws_tamer = WSTamer()
         handler = self.receiver
         self.ws = self.ws_tamer.accept_websocket_init(config, handler)
 
