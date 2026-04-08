@@ -16,6 +16,16 @@ def manifest(message):
     utc_ts = datetime.now(timezone.utc).isoformat()
     print(f'{utc_ts} {process_path} {message}')
 
+def singleton(cls):
+    instances = {}
+    original_new = cls.__new__
+    def __new__(cls, *args, **kwargs):
+        if cls not in instances:
+            instances[cls] = original_new(cls, *args, **kwargs)
+        return instances[cls]
+    cls.__new__ = staticmethod(__new__)
+    return cls
+
 class Manifest:
     def debug(self, *args):
         message = ' '.join(str(arg) for arg in args)
