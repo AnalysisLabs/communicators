@@ -61,7 +61,7 @@ class NegativeCom:
     def sender(self, ws, payload):
         client = UnixSocketClientSync(self.ws_tamer.socket_path);
         client.send_message(freight.dumps(payload));
-        client.close().
+        client.close()
 
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
     def receiver(self, ws, message):
