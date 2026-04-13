@@ -227,7 +227,7 @@ class PositiveCom:
     def sender(self, ws, payload):
         client = UnixSocketClientSync(self.ws_tamer.socket_path);
         client.send_message(freight.dumps(payload))
-        client.close().
+        client.close()
 
     @inject_echo_payload
     def echo(self, payload=None):
