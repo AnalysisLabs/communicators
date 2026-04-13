@@ -51,6 +51,31 @@ class Manifest:
         message = ' '.join(str(arg) for arg in args)
         self._log('PRINTER', message)
 
+    def json(self, *args):
+        messages = []
+        for arg in args:
+            try:
+                if isinstance(arg, str):
+                    json.loads(arg)
+                messages.append(json.dumps(arg))
+            except:
+                messages.append('{invalid json}')
+        self._log('JSON', ' '.join(messages))
+
+    def freight(self, *args):
+        messages = []
+        for arg in args:
+            if isinstance(arg, freight) and hasattr(arg):
+                messages.append(arg)
+            else:
+                try:
+                    f = freight.dumps(arg)
+                    messages.append(f)
+                except:
+                    messages.append('{invalid freight}')
+        self._log('FREIGHT', ' '.join(messages))
+
+
     def _log(self, level, message):
         frame = inspect.currentframe().f_back.f_back
         filename = frame.f_code.co_filename.rsplit('/', 1)[-1]
@@ -72,48 +97,74 @@ class Manifest:
 manifest = Manifest()
 
 class freight(dict):
+
+    # Initializes freight dict with optional data and auto-generates communicator_token.
     def __init__(self, data=None):
         super().__init__(data or {})
-        self._ensure_token()
+        self._central_enforce()
 
-    def __str__(self):
-        return self.to_json()
-
-    def get(self, key, default=None):
-        val = super().get(key, default)
-        if val is not None and not isinstance(val, str):
-            return None
-        return val
-
-    def _ensure_token(self):
+    def _central_enforce(self):
+        for k, v in self.items():
+            if k != 'communicator_token' and (not isinstance(v, str) or ',' not in v):
+                raise ValueError(manifest.warning('Freight structure: CSV strings required'))
         if 'communicator_token' not in self:
             self['communicator_token'] = f'{secrets.randbelow(10**29):029d}'
 
-    def __setitem__(self, key, value):
-        if key != 'communicator_token' and (not isinstance(value, str) or ',' not in value):
-            raise ValueError(manifest.warning('Values must be CSV strings'))
-        super().__setitem__(key, value)
+    @staticmethods
+    def get(freight_obj, key, default=None):
+        val = freight_obj.get(key, default)
+        if val is not None and (not isinstance(val, str) or ',' not in val):
+            return default
+        return val
 
-    def update(self, *args, **kwargs):
-        super().update(*args, **kwargs)
-        self._ensure_token()
+    @staticmethod
+    def add(freight_obj, key, value):
+        if key == 'communicator_token':
+            raise ValueError('Cannot add communicator_token manually')
+        if key in freight_obj:
+            raise KeyError('Key already exists; use update instead')
+        if not isinstance(value, str) or ',' not in value:
+            raise ValueError('Value must be a CSV string (containing a comma)')
+        freight_obj[key] = value
 
-    def dump(self, payload):
-        if not isinstance(payload, dict):
-            raise ValueError('Payload must be a dict')
-        copied = payload.copy() if hasattr(payload, 'copy') else dict(payload)
-        copied.pop('communicator_token', None)
-        return copied
+    @staticmethod
+    def update(freight_obj, *args, **kwargs):
+        data = {}
+        if args:
+            data.update(args[0])
+        data.update(kwargs)
+        for key in data:
+            if key not in freight_obj:
+                raise KeyError(f"Cannot change keys by adding '{key}'.")
+        super(freight, freight_obj).update(data)
 
-    @classmethod
-    def from_json(cls, json_str):
-        data = json.loads(json_str)
-        if not isinstance(data, dict):
-            raise ValueError(manifest.warning('Must be dict'))
-        for v in data.values():
-            if not isinstance(v, str) or ',' not in v:
-                raise ValueError(manifest.warning('CSV required'))
-        return cls(data)
+    @staticmethod
+    def wipe(freight_obj):
+        for key in list(freight_obj.keys()):
+            if key != 'communicator_token':
+                freight_obj.pop(key)
+        return freight_obj
 
-    def to_json(self):
-        return json.dumps(dict(self))
+    @staticmethod
+    def loads(message):
+        data = json.loads(message)
+        instance = cls(data)
+        return instance
+
+    @staticmethod
+    def load(fp):
+        data = json.load(fp)
+        instance = cls(data)
+        return instance
+
+    @staticmethod
+    def dump(self, message):
+        data = json.dump(message)
+        data.pop('communicator_token', None)
+        return data
+
+    @staticmethod
+    def dumps(self, message):
+        data = json.dumps(message)
+        data.pop('communicator_token', None)
+        return data

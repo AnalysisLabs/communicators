@@ -1,7 +1,8 @@
-import json, secrets, os, tracemalloc, signal, shutil, subprocess, time, threading
+import json, secrets, os, tracemalloc, signal, shutil, subprocess, time, threading, uuid
 from collections import deque
 from .state import manifest, truncate, freight, singleton
 from .ws_tamer import ws_bridge, WSTamer
+from .unix_socket import UnixSocketClientSync, generate_unique_socket_path
 
 tracemalloc.start(7)
 
@@ -30,8 +31,9 @@ class NegativeCom:
         self.echo_payload = None
         self.negative = self
         self.lock = threading.Lock()
+        self.socket_path = generate_unique_socket_path()
         self.ws_tamer = WSTamer()
-        self.ws = self.ws_tamer.init_websocket(config)
+        self.ws = self.ws_tamer.negative_sequence(config)
 
     def __new__(cls, config):
         if cls._instance is None:
@@ -50,20 +52,21 @@ class NegativeCom:
             for item in list(self.down_queue):
                 self._busy_down = True
                 if self.down_queue[0]:
-                    self.sender(freight(self.down_queue[0]))
-                    token = (freight(self.down_queue[0])).get('communicator_token')
+                    self.sender(self.ws, freight.loads(self.down_queue[0]))
+                    token = freight.get(self.down_queue[0]), 'communicator_token'
                     self.wait_for_echo(token)
                     self.down_queue.popleft()
                     self._busy_down = False
 
     def sender(self, ws, payload):
-        self.ws_tamer.send_over_ws(ws, payload)
+        client = UnixSocketClientSync(self.ws_tamer.socket_path);
+        client.send_message(freight.dumps(payload));
+        client.close().
 
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
-    def receiver(self, websocket):
-        ws, message = self.ws_tamer.receive_over_ws(websocket)
+    def receiver(self, ws, message):
         manifest.info(f'Message received: {truncate(500, message)}')
-        data = json.loads(message)
+        data = freight.loads(message)
         self.up_queue.append(data)
         manifest.info('Message appended to up_queue')
         self.process_up_queue()
@@ -94,7 +97,7 @@ class NegativeCom:
         token = payload.get('communicator_token') if payload else None
         if token and self.ws:
             echo_payload = {'received': token}
-            sender(self.ws, json.dumps(echo_payload))
+            sender(self.ws, freight.dumps(echo_payload))
 
     def from_N(self, payload):
         manifest.info(truncate(500, payload))
@@ -105,11 +108,11 @@ class NegativeCom:
                 time.sleep(0.1)
                 pass
             else:
-                sender(self.ws, json.dumps(echo_payload))
+                sender(self.ws, freight.dumps(echo_payload))
 
     def to_N(self, payload):
         manifest.info(truncate(500, payload))
-        payload = freight(payload)
+        payload = freight.loads(payload)
         self.down_queue.append(payload)
         self.process_down_queue()
 
@@ -123,9 +126,10 @@ class PositiveCom:
         self.config = config or {}
         self.echo_payload = None
         self.positive = self
+        self.socket_path = generate_unique_socket_path()
         self.ws_tamer = WSTamer()
         handler = self.receiver
-        self.ws = self.ws_tamer.accept_websocket_init(config, handler)
+        self.ws = self.ws_tamer.positive_sequence(config, handler)
 
     def __new__(cls, config):
         if cls._instance is None:
@@ -185,7 +189,7 @@ class PositiveCom:
                 if token and token in self.ws_token_dict:
                     ws_id = self.ws_token_dict[token]
                     if ws_id in self.connections:
-                        self.connections[ws_id].sender_str(json.dumps(payload))
+                        self.sender(self.connections[ws_id], self.down_queue[0])
                         token = self.down_queue[0].get('communicator_token')
                         self.wait_for_echo(token)
                         self.down_queue.popleft()
@@ -211,10 +215,9 @@ class PositiveCom:
         self._busy_up = False
 
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
-    def receiver(self, ws):
-        ws, message = self.ws_tamer.receive_over_ws(ws)
+    def receiver(self, ws, message):
         if message:
-            data = json.loads(message)
+            data = freight.loads(message)
             token = data.get('communicator_token')
             if token: self.ws_token_dict[token] = id(ws)
             self.up_queue.append(data)
@@ -222,18 +225,20 @@ class PositiveCom:
             self.process_up_queue()
 
     def sender(self, ws, payload):
-        self.ws_tamer.send_over_ws(ws, payload)
+        client = UnixSocketClientSync(self.ws_tamer.socket_path);
+        client.send_message(freight.dumps(payload))
+        client.close().
 
     @inject_echo_payload
     def echo(self, payload=None):
         token = payload.get('communicator_token') if payload else None
         if token and self.ws:
             echo_payload = {'received': token}
-            sender(self.ws, json.dumps(echo_payload))
+            sender(self.ws, freight.dumps(echo_payload))
 
     def to_P(self, payload):
         manifest.info(truncate(500, payload))
-        payload = freight(payload)
+        payload = freight.loads(payload)
         self.down_queue.append(payload)
         self.process_down_queue()
 
@@ -247,4 +252,4 @@ class PositiveCom:
             if payload.get('echo') == 'delay':
                 pass
             else:
-                sender(ws, json.dumps(echo_payload))
+                sender(ws, freight.dumps(echo_payload))
