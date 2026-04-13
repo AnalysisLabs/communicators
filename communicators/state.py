@@ -110,7 +110,7 @@ class freight(dict):
         if 'communicator_token' not in self:
             self['communicator_token'] = f'{secrets.randbelow(10**29):029d}'
 
-    @staticmethods
+    @staticmethod
     def get(freight_obj, key, default=None):
         val = freight_obj.get(key, default)
         if val is not None and (not isinstance(val, str) or ',' not in val):
