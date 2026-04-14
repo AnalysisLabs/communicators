@@ -1,1 +1,21 @@
-/home/guatamap/Documents/Notes/com_versions.md
+# Com Versions
+
+### TODO:
+Test current system. It should work if started in the right order. use located print lines.
+
+### V1
+websocket connections between servers that are as simple to set up as stating positive and negative host and port
+Automatic serverification of @server class
+unlimited positive connections, but only one negative connection.
+
+#### V2
+add ping (if silent)/reconnect to communicator websockets.
+add multi-head negative routing
+add server instance spawning when buffer_count exceeds N.
+
+### V3
+user-side random selections from IP pool
+Geo-location sensitive
+
+See:
+[[Communicators]]

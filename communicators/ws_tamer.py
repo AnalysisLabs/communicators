@@ -1,4 +1,4 @@
-import tracemalloc, threading, asyncio, websockets
+import tracemalloc, threading, asyncio, websockets, math, random
 from aiohttp import web
 from .state import manifest, freight
 from .unix_socket import UnixSocketServerAsync, generate_unique_socket_path
@@ -27,9 +27,24 @@ class WSTamer:
         manifest.info('init_websocket start')
         addr = config.get('negative_address', {})
         ws_path = f"ws://{addr.get('host')}:{addr.get('port')}/ws"
-        self.ws = await websockets.connect(ws_path)
-        manifest.info('init_websocket end')
-        return self.ws
+        counter = 0.0
+        while counter <= 100.0:
+            try:
+                self.ws = await websockets.connect(ws_path)
+                manifest.info('init_websocket end')
+                return self.ws
+            except Exception as e:
+                manifest.error(f'Connection failed: {e}')
+                mu = 0.0
+                sigma = 2.0
+                k = 1.0
+                x = round(random.uniform(-k, k), 8)
+                y = 2*(norm.cdf(np.tan(((np.pi / (2 * k)) * x)), loc=mu, scale=sigma) - 0.5)
+                noise = y
+                counter += 0.3 + noise
+                wait_time = (1/12) * math.sqrt(counter**2 + 144)
+                await asyncio.sleep(wait_time)
+        raise Exception('Max retries exceeded')
 
     async def get_ws_closed_status(self, ws):
         manifest.info('Checking ws status...')
