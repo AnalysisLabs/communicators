@@ -52,8 +52,8 @@ class NegativeCom:
             for item in list(self.down_queue):
                 self._busy_down = True
                 if self.down_queue[0]:
-                    self.sender(self.ws, freight.loads(self.down_queue[0]))
-                    token = freight.get(self.down_queue[0]), 'communicator_token'
+                    self.sender(self.ws, self.down_queue[0])
+                    token = self.down_queue[0]['communicator_token']
                     self.wait_for_echo(token)
                     self.down_queue.popleft()
                     self._busy_down = False
@@ -66,7 +66,7 @@ class NegativeCom:
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
     def receiver(self, ws, message):
         manifest.info(f'Message received: {truncate(500, message)}')
-        data = freight.loads(message)
+        data = freight.upgrades(message=message)
         self.up_queue.append(data)
         manifest.info('Message appended to up_queue')
         self.process_up_queue()
@@ -78,7 +78,7 @@ class NegativeCom:
             self._busy_up = True
             if self.up_queue[0]:
                 self.negative.from_N(self.up_queue[0])
-                token = self.up_queue[0].get('communicator_token')
+                token = freight.get(freight_obj=self.up_queue[0], key='communicator_token')
                 self.wait_for_echo(token)
                 self.up_queue.popleft()
         manifest.info('up_queue processed')
@@ -94,14 +94,14 @@ class NegativeCom:
 
     @inject_echo_payload
     def echo(self, payload=None):
-        token = payload.get('communicator_token') if payload else None
+        token = freight.get(freight_obj=payload, key='communicator_token') if payload else None
         if token and self.ws:
             echo_payload = {'received': token}
-            sender(self.ws, freight.dumps(echo_payload))
+            sender(self.ws, freight.upgrades(echo_payload))
 
     def from_N(self, payload):
         manifest.info(truncate(500, payload))
-        token = payload.get('communicator_token')
+        token = freight.get(freight_obj=payload, key='communicator_token')
         if token and self.ws:
             echo_payload = {'received': token}
             if payload.get('echo') == 'delay':
@@ -112,7 +112,7 @@ class NegativeCom:
 
     def to_N(self, payload):
         manifest.info(truncate(500, payload))
-        payload = freight.loads(payload)
+        payload = freight.upgrades(payload)
         self.down_queue.append(payload)
         self.process_down_queue()
 
@@ -185,12 +185,12 @@ class PositiveCom:
             self._busy_down = True
             if self.down_queue[0]:
                 payload = self.down_queue[0]
-                token = payload.get('communicator_token')
+                token = freight.get(freight_obj=payload, key='communicator_token')
                 if token and token in self.ws_token_dict:
                     ws_id = self.ws_token_dict[token]
                     if ws_id in self.connections:
                         self.sender(self.connections[ws_id], self.down_queue[0])
-                        token = self.down_queue[0].get('communicator_token')
+                        token = freight.get(freight_obj=self.down_queue[0], key='communicator_token')
                         self.wait_for_echo(token)
                         self.down_queue.popleft()
         self._busy_down = False
@@ -209,7 +209,7 @@ class PositiveCom:
             self._busy_up = True
             if self.up_queue[0]:
                 self.positive.from_P(self.up_queue[0])
-                token = self.up_queue[0].get('communicator_token')
+                token = freight.get(freight_obj=self.up_queue[0], key='communicator_token')
                 self.wait_for_echo(token)
                 self.up_queue.popleft()
         self._busy_up = False
@@ -217,8 +217,8 @@ class PositiveCom:
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
     def receiver(self, ws, message):
         if message:
-            data = freight.loads(message)
-            token = data.get('communicator_token')
+            data = freight.upgrades(message=message)
+            token = freight.get(freight_obj=data, key='communicator_token')
             if token: self.ws_token_dict[token] = id(ws)
             self.up_queue.append(data)
             manifest.info('Message appended to up_queue')
@@ -226,25 +226,25 @@ class PositiveCom:
 
     def sender(self, ws, payload):
         client = UnixSocketClientSync(self.ws_tamer.socket_path);
-        client.send_message(freight.dumps(payload))
+        client.send_message(payload)
         client.close()
 
     @inject_echo_payload
     def echo(self, payload=None):
-        token = payload.get('communicator_token') if payload else None
+        token = freight.get(freight_obj=payload, key='communicator_token') if payload else None
         if token and self.ws:
             echo_payload = {'received': token}
-            sender(self.ws, freight.dumps(echo_payload))
+            sender(self.ws, freight.upgrades(echo_payload))
 
     def to_P(self, payload):
         manifest.info(truncate(500, payload))
-        payload = freight.loads(payload)
+        payload = freight.upgrades(payload)
         self.down_queue.append(payload)
         self.process_down_queue()
 
     def from_P(self, payload):
         manifest.info(truncate(500, payload))
-        token = payload.get('communicator_token')
+        token = freight.get(freight_obj=payload, key='communicator_token')
         ws_id = self.ws_token_dict.get(token)
         ws = self.connections.get(ws_id)
         if token and ws:

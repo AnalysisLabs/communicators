@@ -69,7 +69,7 @@ class Manifest:
                 messages.append(arg)
             else:
                 try:
-                    f = freight.dumps(arg)
+                    f = freight.upgrades(arg)
                     messages.append(f)
                 except:
                     messages.append('{invalid freight}')
@@ -111,14 +111,14 @@ class freight(dict):
             self['communicator_token'] = f'{secrets.randbelow(10**29):029d}'
 
     @staticmethod
-    def get(freight_obj, key, default=None):
+    def get(freight_obj=None, key=None, default=None):
         val = freight_obj.get(key, default)
         if val is not None and (not isinstance(val, str) or ',' not in val):
             return default
         return val
 
     @staticmethod
-    def add(freight_obj, key, value):
+    def add(freight_obj=None, key=None, value=None):
         if key == 'communicator_token':
             raise ValueError('Cannot add communicator_token manually')
         if key in freight_obj:
@@ -128,7 +128,14 @@ class freight(dict):
         freight_obj[key] = value
 
     @staticmethod
-    def update(freight_obj, *args, **kwargs):
+    def pop(freight_obj=None, key=None, default=None):
+        if key == 'communicator_token':
+            raise ValueError('Popping communicator_token is forbidden. You must use dump(s) to remove communicator_token')
+        else:
+            return freight_obj.pop(key, default)
+
+    @staticmethod
+    def update(freight_obj=None, *args, **kwargs):
         data = {}
         if args:
             data.update(args[0])
@@ -139,32 +146,44 @@ class freight(dict):
         super(freight, freight_obj).update(data)
 
     @staticmethod
-    def wipe(freight_obj):
+    def wipe(freight_obj=None):
         for key in list(freight_obj.keys()):
             if key != 'communicator_token':
                 freight_obj.pop(key)
         return freight_obj
 
     @staticmethod
-    def loads(message):
+    def loads(freight_obj=None, message=None):
+        if freight_obj is None:
+            freight_obj = cls()
         data = json.loads(message)
-        instance = cls(data)
-        return instance
+        freight_obj.__init__(data)
+        return freight_obj
 
     @staticmethod
-    def load(fp):
+    def upgrades(message):
+        if message is None:
+            message = cls()
+        data = json.loads(message)
+        message.__init__(data)
+        return message
+
+    @staticmethod
+    def load(freight_obj=None, fp=None):
+        if freight_obj is None:
+            freight_obj = cls()
         data = json.load(fp)
-        instance = cls(data)
-        return instance
+        freight_obj.__init__(data)
+        return freight_obj
 
     @staticmethod
-    def dump(self, message):
-        data = json.dump(message)
+    def dump(freight_obj=None, file_destination=None):
+        data = dict(freight_obj) if freight_obj else {}
         data.pop('communicator_token', None)
-        return data
+        json.dump(data, file_destination)
 
     @staticmethod
-    def dumps(self, message):
-        data = json.dumps(message)
+    def dumps(freight_obj=None):
+        data = json.dumps(freight_obj)
         data.pop('communicator_token', None)
         return data

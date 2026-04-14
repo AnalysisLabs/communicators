@@ -43,13 +43,13 @@ class WSTamer:
             return 'Default'
 
     async def handle_unix_message(self, message):
-        data = freight.loads(message)
+        data = freight.upgrades(message)
         await self.send_over_ws(self.ws, data)
 
     async def send_over_ws(self, ws, payload):
         manifest.info('send_over_ws start')
         if ws:
-            await ws.send(freight.dumps(payload))
+            await ws.send(payload)
         manifest.info('send_over_ws end')
 
     async def receive_over_ws(self, ws):
@@ -58,7 +58,7 @@ class WSTamer:
             message = await ws.recv()
             client = UnixSocketClientAsync(self.socket_path)
             await client.connect()
-            await client.send_message(freight.dumps({'ws': str(ws), 'message': message}))
+            await client.send_message({'ws': str(ws), 'message': message})
             return ws, message
         return None, None
 
@@ -82,23 +82,5 @@ class WSTamer:
     def positive_sequence(self, config, handler):
         manifest.info('positive_sequence start')
         asyncio.run_coroutine_threadsafe(self.accept_websocket_init(config, handler), self.loop)
-
-# Or class
-"""
-Directive to AI about how to understank the following code block:
-ws_tamer.ws_bridge exists since I do not think that we need to explicitly include the startup (init + accept)
-or the ws management functions explicitly in the api use case (core.py) since we can use decorators
-or whatever to make them virtually present when first needed.
-this way the api use case only needs a sender and reciever function explicitly present.
-Thus we need ws_bridge (which I am happy to upgrade to a class if thet fits better) will
-define the @ws_bridge for core.py so we can have the benefit of the other functions of
-ws_tamer without out having to directly call them. this way the raw functions could be
-used directly by someone, while core.py will enjoy all the benefits of abstraction.
-Obviouslt the current ws is just a rough draft produced by copy and pasting from the
-previous version of the communicators library. To be clear core.py is basicly the way
-it should be but ws_tamer will need a lot of work.
-"""
-def ws_bridge(cls):
-    pass
 
 
