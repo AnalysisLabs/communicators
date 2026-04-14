@@ -1,5 +1,6 @@
-import inspect, json, secrets
+import inspect, json, secrets, os
 from datetime import datetime, timezone
+from pathlib import Path
 
 def truncate(limit: int, message) -> str:
     msg = str(message)
@@ -7,6 +8,8 @@ def truncate(limit: int, message) -> str:
         return msg[:limit] + '...' + msg[-limit:]
     return msg
 
+"""
+#Do not touch this. It is preserved for purely historical reasons.
 def manifest(message):
     frame = inspect.currentframe().f_back
     filename = frame.f_code.co_filename.rsplit('/', 1)[-1]
@@ -15,6 +18,7 @@ def manifest(message):
     process_path = f'[{filename}.{class_name}.{func_name}]' if class_name else f'[{filename}.{func_name}]'
     utc_ts = datetime.now(timezone.utc).isoformat()
     print(f'{utc_ts} {process_path} {message}')
+"""
 
 def singleton(cls):
     instances = {}
@@ -27,6 +31,7 @@ def singleton(cls):
     return cls
 
 class Manifest:
+
     def debug(self, *args):
         message = ' '.join(str(arg) for arg in args)
         self._log('DEBUG', message)
@@ -75,6 +80,32 @@ class Manifest:
                     messages.append('{invalid freight}')
         self._log('FREIGHT', ' '.join(messages))
 
+    def _get_internal_files(self):
+        gitignore_path = Path('~/Communicators/.gitignore')
+        ignored = set()
+        if gitignore_path.exists():
+            with open(gitignore_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        ignored.add(line)
+        dirs = [Path('~/Communicators/communicators/'), Path('~/Communicators/')]
+        files = set()
+        for d in dirs:
+            if d.exists():
+                for f in d.rglob('*'):
+                    if f.is_file() and f.name not in ignored:
+                        files.add(f.name)
+        return files
+
+    def _find_external_caller(self, internal_files):
+        frame = inspect.currentframe()
+        while frame:
+            caller_file = frame.f_code.co_filename.split('/')[-1]
+            if caller_file not in internal_files:
+                return f'{frame.f_code.co_filename}.{frame.f_code.co_qualname}'
+            frame = frame.f_back
+        return None
 
     def _log(self, level, message):
         frame = inspect.currentframe().f_back.f_back
@@ -87,6 +118,11 @@ class Manifest:
         func_name = func_name.replace('.<locals>', '.')
         class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
         process_path = f'[{filename}.{class_name}.{func_name}]' if class_name else f'[{filename}.{func_name}]'
+        internal_files = self._get_internal_files()
+        if filename in internal_files:
+            external_caller = self._find_external_caller(internal_files)
+            if external_caller:
+                process_path = f'[{external_caller} from {process_path[1:-1]}]'
         process_path = process_path.replace('..', '.')
         utc_ts = datetime.now(timezone.utc).isoformat()
         if level:
