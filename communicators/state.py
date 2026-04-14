@@ -8,18 +8,6 @@ def truncate(limit: int, message) -> str:
         return msg[:limit] + '...' + msg[-limit:]
     return msg
 
-"""
-#Do not touch this. It is preserved for purely historical reasons.
-def manifest(message):
-    frame = inspect.currentframe().f_back
-    filename = frame.f_code.co_filename.rsplit('/', 1)[-1]
-    func_name = frame.f_code.co_name
-    class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
-    process_path = f'[{filename}.{class_name}.{func_name}]' if class_name else f'[{filename}.{func_name}]'
-    utc_ts = datetime.now(timezone.utc).isoformat()
-    print(f'{utc_ts} {process_path} {message}')
-"""
-
 def singleton(cls):
     instances = {}
     original_new = cls.__new__
@@ -81,7 +69,7 @@ class Manifest:
         self._log('FREIGHT', ' '.join(messages))
 
     def _get_internal_files(self):
-        gitignore_path = Path('~/Communicators/.gitignore')
+        gitignore_path = Path.home() / 'Communicators/.gitignore'
         ignored = set()
         if gitignore_path.exists():
             with open(gitignore_path) as f:
@@ -89,7 +77,7 @@ class Manifest:
                     line = line.strip()
                     if line and not line.startswith('#'):
                         ignored.add(line)
-        dirs = [Path('~/Communicators/communicators/'), Path('~/Communicators/')]
+        dirs = [Path.home() / 'Communicators/communicators/', Path.home() / 'Communicators/']
         files = set()
         for d in dirs:
             if d.exists():
@@ -122,7 +110,7 @@ class Manifest:
         if filename in internal_files:
             external_caller = self._find_external_caller(internal_files)
             if external_caller:
-                process_path = f'[{external_caller} from {process_path[1:-1]}]'
+                process_path = f'[{process_path[1:-1]} from {external_caller}]'
         process_path = process_path.replace('..', '.')
         utc_ts = datetime.now(timezone.utc).isoformat()
         if level:
