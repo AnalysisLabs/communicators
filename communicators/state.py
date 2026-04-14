@@ -84,7 +84,7 @@ class Manifest:
                 for f in d.rglob('*'):
                     if f.is_file() and f.name not in ignored:
                         files.add(f.name)
-        print("files: ", iles)
+        print("files: ", files)
         return files
 
     def _find_external_caller(self, internal_files):
