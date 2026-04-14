@@ -63,12 +63,13 @@ class NegativeCom:
         client.close()
 
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
-    def receiver(self, ws, message):
-        manifest.info(f'Message received: {truncate(500, message)}')
-        data = freight.upgrades(message=message)
-        self.up_queue.append(data)
-        manifest.info('Message appended to up_queue')
-        self.process_up_queue()
+    def receiver(self, ws, message=None):
+        if message:
+            manifest.info(f'Message received: {truncate(500, message)}')
+            data = freight.upgrades(message=message)
+            self.up_queue.append(data)
+            manifest.info('Message appended to up_queue')
+            self.process_up_queue()
 
     def process_up_queue(self):
         if self._busy_up: return
@@ -213,7 +214,7 @@ class PositiveCom:
         self._busy_up = False
 
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
-    def receiver(self, ws, message):
+    def receiver(self, ws, message=None):
         if message:
             data = freight.upgrades(message=message)
             token = freight.get(freight_obj=data, key='communicator_token')
