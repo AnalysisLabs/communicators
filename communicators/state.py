@@ -84,10 +84,12 @@ class Manifest:
                 for f in d.rglob('*'):
                     if f.is_file() and f.name not in ignored:
                         files.add(f.name)
+        print("files: ", iles)
         return files
 
     def _find_external_caller(self, internal_files):
         frame = inspect.currentframe()
+        print("Frame: ", frame)
         while frame:
             caller_file = frame.f_code.co_filename.split('/')[-1]
             if caller_file not in internal_files:
