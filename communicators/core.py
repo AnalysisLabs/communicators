@@ -20,7 +20,6 @@ def inject_echo_payload(func):
         return func(self, *args, **kwargs)
     return wrapper
 
-@ws_bridge
 @singleton
 class NegativeCom:
     # Clarification: Only NegativeCom has permission to initiate websocket connections.
@@ -116,7 +115,6 @@ class NegativeCom:
         self.down_queue.append(payload)
         self.process_down_queue()
 
-@ws_bridge
 @singleton
 class PositiveCom:
     _instance = None
