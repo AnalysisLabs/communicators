@@ -1,7 +1,7 @@
 import json, secrets, os, tracemalloc, signal, shutil, subprocess, time, threading, uuid
 from collections import deque
 from .state import manifest, truncate, freight, singleton
-from .ws_tamer import ws_bridge, WSTamer
+from .ws_tamer import WSTamer
 from .unix_socket import UnixSocketClientSync, generate_unique_socket_path
 
 tracemalloc.start(7)
