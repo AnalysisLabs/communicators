@@ -29,7 +29,7 @@ def server(cls):
             positive_addr = self.config.get('positive_address', {})
             host = positive_addr.get('host')
             port = int(positive_addr.get('port'))
-            with serve(self.positive.listen_for_responses, host, port) as server:
+            with serve(self.positive.receiver, host, port) as server:
                 server.serve_forever()
     return Wrapped
 
@@ -65,6 +65,6 @@ def PositiveCommunicator(cls):
             positive_addr = self.config.get('positive_address', {})
             host = positive_addr.get('host')
             port = int(positive_addr.get('port'))
-            with serve(self.positive.listen_for_responses, host, port) as server:
+            with serve(self.positive.receiver, host, port) as server:
                 server.serve_forever()
     return Wrapped
