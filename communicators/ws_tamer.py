@@ -1,4 +1,4 @@
-import tracemalloc, threading, asyncio, websockets, math, random
+import tracemalloc, threading, asyncio, websockets, math, random, numpy
 from scipy.stats import norm
 from aiohttp import web
 from .state import manifest, freight
@@ -40,7 +40,7 @@ class WSTamer:
                 sigma = 2.0
                 k = 1.0
                 x = round(random.uniform(-k, k), 8)
-                y = 2*(norm.cdf(np.tan(((np.pi / (2 * k)) * x)), loc=mu, scale=sigma) - 0.5)
+                y = 2*(norm.cdf(numpy.tan(((numpy.pi / (2 * k)) * x)), loc=mu, scale=sigma) - 0.5)
                 noise = y
                 counter += 0.3 + noise
                 wait_time = (1/12) * math.sqrt(counter**2 + 144)
