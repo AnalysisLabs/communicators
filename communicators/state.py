@@ -69,16 +69,14 @@ class Manifest:
         self._log('FREIGHT', ' '.join(messages))
 
     def _get_internal_files(self):
-        dirs = [Path(__file__).parent]
-        print("dirs", dirs)
+        parent_dir = Path(__file__).parent
+        print("parent_dir: ", parent_dir)
         files = set()
-        for d in dirs:
-            print("d: ", d)
-            if d.exists():
-                print("d.exists: ", d)
-                for f in d.rglob('*'):
-                    print("f: ", f)
-                    files.add(f.name)
+        if parent_dir.exists():
+            print("parent_dir.exists: ", parent_dir)
+            for f in parent_dir.rglob('*'):
+                print("f: ", f)
+                files.add(f.name)
         print("files: ", files)
         return files
 
