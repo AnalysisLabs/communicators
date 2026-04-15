@@ -192,12 +192,12 @@ class freight(dict):
 
     @staticmethod
     def dump(freight_obj=None, file_destination=None):
-        data = dict(freight_obj) if freight_obj else {}
         data.pop('communicator_token', None)
+        data = dict(freight_obj) if freight_obj else {}
         json.dump(data, file_destination)
 
     @staticmethod
     def dumps(freight_obj=None):
-        data = json.dumps(freight_obj)
         data.pop('communicator_token', None)
+        data = json.dumps(freight_obj)
         return data
