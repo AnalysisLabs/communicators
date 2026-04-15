@@ -29,8 +29,8 @@ class UnixSocketClientSync:
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.connect(self.socket_path)
 
-    def connect(self):
-        self.sock.connect(self.socket_path)
+    def connect(socket_path):
+        self.sock.connect(socket_path)
 
     def send_message(self, message: str):
         framed = UnixSocketFramer.frame_message(message)
