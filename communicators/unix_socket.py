@@ -10,6 +10,7 @@ def generate_unique_socket_path():
 class UnixSocketFramer:
     @staticmethod
     def frame_message(message: str) -> bytes:
+        message = str(message)
         msg_bytes = message.encode('utf-8')
         length = struct.pack('!I', len(msg_bytes))
         return length + msg_bytes
