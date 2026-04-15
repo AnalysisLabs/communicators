@@ -119,8 +119,13 @@ class freight(dict):
 
     def _central_enforce(self):
         for k, v in self.items():
-            if k != 'communicator_token' and (not isinstance(v, str) or ',' not in v):
-                raise ValueError(manifest.warning('Freight structure: CSV strings required'))
+            if k != 'communicator_token':
+                if not isinstance(v, str):
+                    raise ValueError(manifest.warning('Freight structure: values must be strings'))
+                elif ',' in v:
+                    parts = [p.strip() for p in v.split(',') if p.strip()]
+                    if len(parts) < 2:
+                        raise ValueError(manifest.warning('Freight structure: compound values require comma sepparated values format (csv)'))
         if 'communicator_token' not in self:
             self['communicator_token'] = f'{secrets.randbelow(10**29):029d}'
 
