@@ -32,7 +32,7 @@ class WSTamer:
         while counter <= 100.0:
             try:
                 self.ws = await websockets.connect(ws_path)
-                manifest.info('init_websocket end')
+                manifest.info('init_websocket end: ', addr)
                 return self.ws
             except Exception as e:
                 manifest.error(f'Connection failed: {e}')
