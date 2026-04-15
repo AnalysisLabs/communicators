@@ -177,10 +177,10 @@ class freight(dict):
     @staticmethod
     def upgrades(message):
         if message is None:
-            message = cls()
-        data = message if isinstance(message, dict) else json.loads(message)
-        message.__init__(data)
-        return message
+            return cls()
+        if isinstance(message, dict):
+            return cls(message)
+        return cls(json.loads(message))
 
     @staticmethod
     def load(freight_obj=None, fp=None):
