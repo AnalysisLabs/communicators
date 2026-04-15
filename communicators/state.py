@@ -170,7 +170,7 @@ class freight(dict):
     def loads(freight_obj=None, message=None):
         if freight_obj is None:
             freight_obj = cls()
-        data = json.loads(message)
+        data = message if isinstance(message, dict) else json.loads(message)
         freight_obj.__init__(data)
         return freight_obj
 
@@ -178,7 +178,7 @@ class freight(dict):
     def upgrades(message):
         if message is None:
             message = cls()
-        data = json.loads(message)
+        data = message if isinstance(message, dict) else json.loads(message)
         message.__init__(data)
         return message
 
