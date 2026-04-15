@@ -83,6 +83,7 @@ class Manifest:
         for d in dirs:
             if d.exists():
                 for f in d.rglob('*'):
+                    print("f: ", f)
                     if f.is_file() and f.name not in ignored:
                         files.add(f.name)
         print("files: ", files)
