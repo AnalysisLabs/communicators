@@ -70,19 +70,14 @@ class Manifest:
 
     def _get_internal_files(self):
         parent_dir = Path(__file__).parent
-        print("parent_dir: ", parent_dir)
         files = set()
         if parent_dir.exists():
-            print("parent_dir.exists: ", parent_dir)
             for f in parent_dir.iterdir():
-                print("f: ", f)
                 files.add(f.name)
-        print("files: ", files)
         return files
 
     def _find_external_caller(self, internal_files):
         frame = inspect.currentframe()
-        print("Frame: ", frame)
         while frame:
             caller_file = frame.f_code.co_filename.split('/')[-1]
             if caller_file not in internal_files:
