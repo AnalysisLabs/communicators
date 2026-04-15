@@ -1,1 +1,0 @@
-/home/guatamap/Documents/Notes/Backoff Function.md

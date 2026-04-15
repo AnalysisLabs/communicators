@@ -27,6 +27,7 @@ class UnixSocketClientSync:
     def __init__(self, socket_path: str):
         self.socket_path = socket_path
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.connect(self.socket_path)
 
     def connect(self):
         self.sock.connect(self.socket_path)
