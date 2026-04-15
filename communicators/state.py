@@ -78,7 +78,7 @@ class Manifest:
                     if line and not line.startswith('#'):
                         ignored.add(line)
         dirs = [Path(__file__).parent.parent / 'Communicators/communicators/', Path(__file__).parent.parent / 'Communicators/']
-        print("gitignore_path", gitignore_path)
+        print("dirs", dirs)
         files = set()
         for d in dirs:
             if d.exists():
