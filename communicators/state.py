@@ -81,6 +81,7 @@ class Manifest:
         print("dirs", dirs)
         files = set()
         for d in dirs:
+            print("d: ", d)
             if d.exists():
                 print("d.exists: ", d)
                 for f in d.rglob('*'):
