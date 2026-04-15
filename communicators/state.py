@@ -74,7 +74,7 @@ class Manifest:
         files = set()
         if parent_dir.exists():
             print("parent_dir.exists: ", parent_dir)
-            for f in parent_dir:
+            for f in parent_dir.rglob('*'):
                 print("f: ", f)
                 files.add(f.name)
         print("files: ", files)
