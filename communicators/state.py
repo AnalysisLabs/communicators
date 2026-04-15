@@ -69,7 +69,7 @@ class Manifest:
         self._log('FREIGHT', ' '.join(messages))
 
     def _get_internal_files(self):
-        gitignore_path = Path.home() / 'Communicators/.gitignore'
+        gitignore_path = Path(__file__).parent.parent / 'Communicators/.gitignore'
         ignored = set()
         if gitignore_path.exists():
             with open(gitignore_path) as f:
@@ -77,7 +77,7 @@ class Manifest:
                     line = line.strip()
                     if line and not line.startswith('#'):
                         ignored.add(line)
-        dirs = [Path.home() / 'Communicators/communicators/', Path.home() / 'Communicators/']
+        dirs = [Path(__file__).parent.parent / 'Communicators/communicators/', Path(__file__).parent.parent / 'Communicators/']
         print("Path.home()", Path.home())
         files = set()
         for d in dirs:
