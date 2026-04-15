@@ -82,6 +82,7 @@ class Manifest:
         files = set()
         for d in dirs:
             if d.exists():
+                print("d.exists: ", d)
                 for f in d.rglob('*'):
                     print("f: ", f)
                     if f.is_file() and f.name not in ignored:
