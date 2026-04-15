@@ -80,7 +80,7 @@ class Manifest:
         frame = inspect.currentframe()
         while frame:
             caller_file = frame.f_code.co_filename.split('/')[-1]
-            if caller_file not in internal_files:
+            if caller_file not in internal_files and "/usr/lib/python" not in frame.f_code.co_filename:
                 return f'{frame.f_code.co_filename}.{frame.f_code.co_qualname}'
             frame = frame.f_back
         return None
