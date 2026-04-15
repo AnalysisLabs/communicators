@@ -78,6 +78,7 @@ class Manifest:
                     if line and not line.startswith('#'):
                         ignored.add(line)
         dirs = [Path.home() / 'Communicators/communicators/', Path.home() / 'Communicators/']
+        print("Path.home()", Path.home())
         files = set()
         for d in dirs:
             if d.exists():
