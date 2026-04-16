@@ -1,6 +1,6 @@
 import json, secrets, os, tracemalloc, signal, shutil, subprocess, time, threading, uuid
 from collections import deque
-from .state import manifest, truncate, freight, singleton
+from .state import manifest, truncate, freight, singleton, aux_multiton
 from .ws_tamer import WSTamer
 from .unix_socket import UnixSocketClientSync, generate_unique_socket_path
 
@@ -20,7 +20,7 @@ def inject_echo_payload(func):
         return func(self, *args, **kwargs)
     return wrapper
 
-@singleton
+@aux_multiton
 class NegativeCom:
     # Clarification: Only NegativeCom has permission to initiate websocket connections.
     _instance = None
@@ -116,7 +116,7 @@ class NegativeCom:
         self.down_queue.append(payload)
         self.process_down_queue()
 
-@singleton
+@aux_multiton
 class PositiveCom:
     _instance = None
     # Clarification: PositiveCom only has permission to receive and maintain websocket connections.

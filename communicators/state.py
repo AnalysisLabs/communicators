@@ -1,6 +1,12 @@
-import inspect, json, secrets, os
+import inspect, json, secrets, os, threading
+_shared_lock = threading.Lock()
 from datetime import datetime, timezone
+from weakref import WeakValueDictionary
 from pathlib import Path
+
+# -----------------------------
+# Generic state functions that don't require full classes
+# -----------------------------
 
 def truncate(limit: int, message) -> str:
     msg = str(message)
@@ -17,6 +23,31 @@ def singleton(cls):
         return instances[cls]
     cls.__new__ = staticmethod(__new__)
     return cls
+
+def anchor_multiton(cls):
+    instances = WeakValueDictionary()
+    original_new = cls.__new__
+    def __new__(cls, *args, **kwargs):
+        with _shared_lock:
+            if cls not in instances:
+                instances[cls] = original_new(cls, *args, **kwargs)
+        return instances[cls]
+    cls.__new__ = staticmethod(__new__)
+    return cls
+
+def aux_multiton(anchor_cls):
+    instances = WeakValueDictionary()
+    def decorator(cls):
+        original_new = cls.__new__
+        def __new__(cls, *args, **kwargs):
+            with _shared_lock:
+                chain_key = frozenset([anchor_cls, cls])
+                if chain_key not in instances:
+                    instances[chain_key] = original_new(cls, *args, **kwargs)
+            return instances[chain_key]
+        cls.__new__ = staticmethod(__new__)
+        return cls
+    return decorator
 
 class Manifest:
 

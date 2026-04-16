@@ -11,7 +11,7 @@ Background: ws_tamer will act like a library within a library while it is gettin
 
 Note: This is version 1. In version one, reconnection and redundant connection between any two servers are strictly forbidden. While postive and negatice coms need thier own listener on its own thread, those thread must be recycled, an dif such fails, that should result in a manifest like, "Attempting to send on closed WS" and no attempt to restore the ws. To clarify, a ws is NEVER supposed to be closed, except when the entire server system is shut down.
 """
-
+@aux_multiton
 class WSTamer:
     def __init__(self):
         manifest.info('WSTamer __init__ start')
