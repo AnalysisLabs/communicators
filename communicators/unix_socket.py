@@ -1,6 +1,5 @@
 import socket, asyncio, struct, os, uuid, sys, inspect
-sys.path.insert(0, os.path.dirname(__file__))
-from state import manifest, singleton
+from .state import manifest, singleton
 def generate_unique_socket_path():
     path = f'/tmp/{uuid.uuid4()}.sock'
     while os.path.exists(path):
