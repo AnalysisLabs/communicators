@@ -1,7 +1,7 @@
 import tracemalloc, threading, asyncio, websockets, math, random, numpy
 from scipy.stats import norm
 from aiohttp import web
-from .state import manifest, freight
+from .state import manifest, freight, aux_multiton
 from .unix_socket import UnixSocketServerAsync, generate_unique_socket_path
 
 """
