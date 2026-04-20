@@ -5,5 +5,7 @@ communicators-venv/
 decorators1.py
 core1.py
 core2.py
+state1.py
+ws_tamer1.py
 github_key.txt
 git_commands.txt

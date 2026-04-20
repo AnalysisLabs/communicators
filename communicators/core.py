@@ -20,6 +20,7 @@ def inject_echo_payload(func):
         return func(self, *args, **kwargs)
     return wrapper
 
+@unix_client
 @aux_multiton
 class NegativeCom:
     # Clarification: Only NegativeCom has permission to initiate websocket connections.
@@ -60,7 +61,6 @@ class NegativeCom:
     def sender(self, ws, payload):
         client = UnixSocketClientSync(self.ws_tamer.socket_path); #This line
         client.send_message(freight.upgrades(payload));
-        client.close()
 
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
     def receiver(self, ws, message=None):
@@ -116,6 +116,7 @@ class NegativeCom:
         self.down_queue.append(payload)
         self.process_down_queue()
 
+@unix_server
 @aux_multiton
 class PositiveCom:
     _instance = None
@@ -226,7 +227,6 @@ class PositiveCom:
     def sender(self, ws, payload):
         client = UnixSocketClientSync(self.ws_tamer.socket_path);
         client.send_message(payload)
-        client.close()
 
     @inject_echo_payload
     def echo(self, payload=None):
