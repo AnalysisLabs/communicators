@@ -84,7 +84,7 @@ class Manifest:
                 messages.append(json.dumps(arg))
             except:
                 messages.append('{invalid json}')
-        self._log('JSON', ' '.join(messages))
+        self._log('JSON', (' '.join(messages)))
 
     def freight(self, *args):
         messages = []
@@ -97,7 +97,7 @@ class Manifest:
                     messages.append(f)
                 except:
                     messages.append('{invalid freight}')
-        self._log('FREIGHT', ' '.join(messages))
+        self._log('FREIGHT', (' '.join(messages)))
 
     def _get_internal_files(self):
         parent_dir = Path(__file__).parent

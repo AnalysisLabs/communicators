@@ -1,4 +1,4 @@
-// communicators_core.cp
+// communicators_core.cpp
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
@@ -8,18 +8,18 @@
 #include <deque>
 #include <mutex>
 
+#include manifest
+
 namespace py = pybind11;
 
 // ====================== 1. Minimal manifest (logging) ======================
 struct Manifest {
     void printer(const std::string& msg) {
-        std::cout << "[PRINTER] " << msg << std::endl;
+        manifest_printer(msg);  // Delegate to the new module
     }
     void info(const std::string& msg) {
-        std::cout << "[INFO] " << msg << std::endl;
+        manifest_info(msg);
     }
-    // add debug/warning/error later if needed
-};
 
 static Manifest g_manifest;
 
