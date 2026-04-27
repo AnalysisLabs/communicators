@@ -1,0 +1,229 @@
+{
+  "main": {
+    "id": "2819c1b069344e6a",
+    "type": "split",
+    "children": [
+      {
+        "id": "d00016fc0aa7a426",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ad58eaee1e540ce3",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "communicators/Orchestration Script - Communicators.md",
+                "mode": "preview",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Orchestration Script - Communicators"
+            }
+          },
+          {
+            "id": "3251b4aae7db2292",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "communicators/Orchestration Script - Communicators.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Orchestration Script - Communicators"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "17d0fc72564c9b83",
+    "type": "split",
+    "children": [
+      {
+        "id": "4a4e205553ada32a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3d0cad3532dd6ea5",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "34226ad6e392c53e",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "9239ac46bf3f3e4b",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 218.5
+  },
+  "right": {
+    "id": "8ecd9c22d6df09c5",
+    "type": "split",
+    "children": [
+      {
+        "id": "db15e73db52aa082",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "7e959e1a2ecdd139",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "plot1.png",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for plot1"
+            }
+          },
+          {
+            "id": "3ff8df2a9bc59d2f",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "plot1.png",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from plot1"
+            }
+          },
+          {
+            "id": "cbd0b03f15dd857b",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "60aeee5957524bcb",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "c843286cfc247682",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "plot1.png",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of plot1"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "3251b4aae7db2292",
+  "lastOpenFiles": [
+    "communicators/ffiir/fiirr_description.md",
+    "communicators/ffiir/yaml_extraction.py",
+    "communicators/Orchestration Script - Communicators.md",
+    "communicators/ffiir/to_from.py",
+    "communicators/control-script/control-script.md",
+    "Communicators.md",
+    "communicators/control-layer-methods/control-layer-methods.md",
+    "communicators/control-layer-methods/Homeostatis/homeostasis.py",
+    "communicators/control-layer-methods/Homeostatis",
+    "communicators/state-methods/state-methods.md",
+    "communicators/control-layer-methods/homeostasis.py",
+    "communicators/prelude/prelude.md",
+    "communicators/node-methods/node-methods.md",
+    "communicators/graph-methods/graph-methods.md",
+    "communicators/control-layer-methods/healing_tree.py",
+    "communicators/control-layer-methods/manifest_integrator.py",
+    "communicators/control-layer-methods/bash_wrappers.py",
+    "communicators/control-layer-methods/registry.py",
+    "communicators/control-layer-methods/lifecycle.py",
+    "com_versions.md",
+    "Untitled 1.md",
+    "Untitled.md",
+    "communicators.png",
+    "plot1.png",
+    "README.md"
+  ]
+}
