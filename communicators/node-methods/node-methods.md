@@ -57,8 +57,6 @@ class NodeType(Enum):
     PYTHON_ENTRYPOINT = "python"
     BASH_SCRIPT = "bash"
     BINARY = "binary"
-    DOCKER_CONTAINER = "docker"   # future
-    LAB_HARDWARE = "hardware"     # future
 
 def resolve_node_type(spec: NodeSpec) -> NodeType:
     if spec.executable.endswith(".py"):

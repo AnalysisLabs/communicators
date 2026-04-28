@@ -271,9 +271,6 @@ This approach keeps the healing logic small, testable, and aligned with the “i
 		- python wrapped bash methods
 - Extra nodes
 - Intra graphs
-- Foreign function interface intermediate representation (fiirr)
-	- to_from
-	- yaml_extraction
 - Control script
 	- Load yaml config
 	- IR
