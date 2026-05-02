@@ -1,0 +1,92 @@
+{
+  "communicators": {
+    "Frontend": {
+      "type": "Node",
+      "anchor": "self",
+      "location": "/home/guatamap/Analysis Labs/Wrappers/wrapperFront5.py",
+      "class": "ChatAppFrontend",
+      "Negative": "OSend",
+      "Positive": null,
+      "socket_path": null,
+      "population": 1,
+      "communicators": {
+        "unix_socket": {
+          "endpoints": "Frontend -> Negative, Frontend -> Negative -> ws_tamer",
+          "location": "/home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators/graph-methods/conections/unix_socket.py"
+        },
+        "Negative": {
+          "type": "Node",
+          "anchor": "Frontend",
+          "location": "/home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators/node-methods/core.py",
+          "class": "NegativeCom",
+          "Negative": "OSend",
+          "Positive": null,
+          "socket_path": null,
+          "population": "buffer(100)"
+        },
+        "Negative_WS": {
+          "type": "Node",
+          "anchor": "Frontend -> Negative",
+          "location": "/home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators/graph-methods/conections/ws_tamer.py",
+          "class": "negative_sequence",
+          "Negative": "OSend",
+          "Positive": null,
+          "socket_path": null,
+          "population": "max"
+        },
+        "Positive": {
+          "type": "Node",
+          "anchor": "Frontend",
+          "location": "/home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators/node-methods/core.py",
+          "class": "PositiveCom",
+          "Negative": null,
+          "Positive": "Frontend",
+          "socket_path": null,
+          "population": 100
+        },
+        "Positive_WS": {
+          "type": "Node",
+          "anchor": "Frontend -> Positive",
+          "location": "/home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators/graph-methods/conections/ws_tamer.py",
+          "class": "positive_sequence",
+          "Negative": null,
+          "Positive": "Frontend",
+          "socket_path": null,
+          "population": 1
+        }
+      }
+    },
+    "OSend": {
+      "location": "/home/guatamap/Analysis Labs/Wrappers/submit_builder.py",
+      "class": "BackendWorker",
+      "Negative": "UserProxy",
+      "Positive": "Frontend"
+    },
+    "UserProxy": {
+      "location": "/home/guatamap/Analysis Labs/Wrappers/proxy_server.py",
+      "class": "proxy_middleware",
+      "Negative": {
+        "name": "BusinessEnd",
+        "host": "162.202.71.225",
+        "port": 942
+      },
+      "Positive": "OSend"
+    },
+    "BusinessEdge": {
+      "location": "/home/guatamap/analysis-labs-website/website/edge/python_edge.py",
+      "class": "edge_middleware",
+      "Negative": "Backend",
+      "Positive": {
+        "name": "UserProxy",
+        "host": "162.202.71.225",
+        "port": 942
+      }
+    },
+    "Backend": {
+      "location": "/home/guatamap/analysis-labs-website/website/app_backend/backend.py",
+      "class": "Application",
+      "Negative": null,
+      "Positive": "BusinessEdge"
+    }
+  }
+}

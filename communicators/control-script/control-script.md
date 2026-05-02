@@ -15,9 +15,8 @@ It embodies the **"Thin Bootstrap / Launcher Layer"** and **"Reconciliation Loop
 
 ```mermaid
 graph TD
-    A[control-script entry] --> B[prelude.initialize]
-    B --> C[IdealState.from_yaml]
-    C --> D[ffiir.build_ir]
+    A[control-script entry] --> B[control-layer-methods.landscape]
+    B --> D[state_methods.build_ir]
     D --> E[create ProcessRegistry]
     E --> F[spawn per-node HomeostasisLoop]
     F --> G[spawn per-graph HomeostasisLoop]
@@ -26,6 +25,28 @@ graph TD
     I --> J[sleep or wait for event]
     J --> H
 ```
+
+  
+
+- **A (control-script entry)**: This is the starting point where the control script begins execution, typically invoked from the command line or a wrapper script, initializing the entire orchestration process by setting up the environment and kicking off the prelude setup.
+
+- **B (prelude.landscape)**: Here, the system performs initial setup tasks, such as importing necessary modules, loading environment variables, configuring logging, and preparing shared resources like manifest file descriptors or signal handlers, ensuring a clean foundation for the rest of the script.
+
+- **C (IdealState.from_yaml)**: The desired state of the system is loaded from a YAML configuration file, parsing it into an internal representation that defines the graph of nodes, their dependencies, configurations, and other declarative settings without yet validating or executing anything.
+
+- **D (state_methods.build_ir)**: The loaded ideal state is transformed into a validated Intermediate Representation (IR), which checks for errors like cycles, unresolved node types, or invalid configurations, normalizing the data into a format ready for instantiation and reconciliation.
+
+- **E (create ProcessRegistry)**: A centralized registry is instantiated to track all running processes, nodes, and their states, providing a queryable inventory for monitoring health, managing lifecycles, and supporting operations like restarts or status checks.
+
+- **F (spawn per-node HomeostasisLoop)**: Individual homeostasis loops are created and started for each node in the graph; each loop is a lightweight thread or task dedicated to monitoring and reconciling the state of its specific node, handling tasks like health checks and self-healing without interfering with others.
+
+- **G (spawn per-graph HomeostasisLoop)**: Similarly, a homeostasis loop is spawned for the overall graph, overseeing high-level coordination, dependencies between nodes, and global state reconciliation to ensure the entire system aligns with the ideal state.
+
+- **H (main_reconcile_loop)**: This enters the core reconciliation loop, where the system continuously compares the ideal state against the real state, computes differences, and executes actions (like starting, stopping, or restarting nodes) to drive convergence, while integrating healing strategies for any detected issues.
+
+- **I (write manifest checkpoint)**: Every significant event, state change, or action taken during reconciliation is logged to the manifest in chronological order, creating a timestamped, queryable record for observability, debugging, and auditing purposes.
+
+- **J (sleep or wait for event)**: The system pauses briefly, either sleeping for a configured interval or waiting for external events (like signals or notifications), allowing resources to rest before resuming the loop, ensuring efficient operation without constant polling.
 
 ## Core Responsibilities
 

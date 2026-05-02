@@ -61,7 +61,7 @@ Environment variables that the prelude guarantees are always present for child n
 - `COMMUNICATORS_GRAPH_ID`
 - `COMMUNICATORS_PARENT_PID`
 
-### 4. Early Initialization & Validation
+### 4. Early Initialization & Validation (landscape)
 On import (or explicit `prelude.initialize()`), the module:
 - Creates required runtime directories with correct permissions
 - Validates that the process is running inside a proper cgroup / resource-limited environment (when applicable)

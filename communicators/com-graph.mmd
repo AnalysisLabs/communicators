@@ -1,0 +1,82 @@
+---
+title: Communicators Topology – Full Ground Truth (with Internal Structure)
+---
+
+flowchart TB
+    %% ========== FRONTEND (only Negative side) ==========
+    subgraph Frontend["Frontend"]
+        F["<b>Frontend</b><br/>class: ChatAppFrontend<br/>population: as needed"]
+        F_Neg["<b>Negative</b><br/>class: NegativeCom<br/>population: buffer(100)"]
+        F_NegWS["<b>Negative_WS</b><br/>class: negative_sequence<br/>population: max"]
+
+        F <-->|"inheritence"| F_Neg
+        F_Neg <-->|"unix_socket"| F_NegWS
+    end
+
+    %% ========== OSEND (complete) ==========
+    subgraph OSend["OSend"]
+        O["<b>OSend</b><br/>class: BackendWorker<br/>population: 1"]
+        O_Pos["<b>Positive</b><br/>class: PositiveCom<br/>population: 100"]
+        O_PosWS["<b>Positive_WS</b><br/>class: positive_sequence<br/>population: 1"]
+        O_Neg["<b>Negative</b><br/>class: NegativeCom<br/>population: buffer(100)"]
+        O_NegWS["<b>Negative_WS</b><br/>class: negative_sequence<br/>population: max"]
+
+        O <-->|"inheritence"| O_Pos
+        O_Pos <-->|"unix_socket"| O_PosWS
+        O <-->|"inheritence"| O_Neg
+        O_Neg <-->|"unix_socket"| O_NegWS
+    end
+
+    %% ========== USERPROXY (complete + remote) ==========
+    subgraph UserProxy["UserProxy"]
+        U["<b>UserProxy</b><br/>class: proxy_middleware<br/>population: 1"]
+        U_Pos["<b>Positive</b><br/>class: PositiveCom<br/>population: 100"]
+        U_PosWS["<b>Positive_WS</b><br/>class: positive_sequence<br/>population: 1"]
+        U_Neg["<b>Negative</b><br/>class: NegativeCom<br/>population: buffer(100)"]
+        U_NegWS["<b>Negative_WS</b><br/>class: negative_sequence<br/>population: max"]
+
+        U <-->|"inheritence"| U_Pos
+        U_Pos <-->|"unix_socket"| U_PosWS
+        U <-->|"inheritence"| U_Neg
+        U_Neg <-->|"unix_socket"| U_NegWS
+    end
+
+    %% ========== BUSINESSEDGE (complete + remote) ==========
+    subgraph BusinessEdge["BusinessEdge"]
+        B["<b>BusinessEdge</b><br/>class: edge_middleware<br/>population: 1"]
+        B_Pos["<b>Positive</b><br/>class: PositiveCom<br/>population: 100"]
+        B_PosWS["<b>Positive_WS</b><br/>class: positive_sequence<br/>population: 1"]
+        B_Neg["<b>Negative</b><br/>class: NegativeCom<br/>population: buffer(100)"]
+        B_NegWS["<b>Negative_WS</b><br/>class: negative_sequence<br/>population: max"]
+
+        B <-->|"inheritence"| B_Pos
+        B_Pos <-->|"unix_socket"| B_PosWS
+        B <-->|"inheritence"| B_Neg
+        B_Neg <-->|"unix_socket"| B_NegWS
+    end
+
+    %% ========== BACKEND (only Positive side) ==========
+    subgraph Backend["Backend"]
+        BE["<b>Backend</b><br/>class: Application<br/>population: auto"]
+        BE_Pos["<b>Positive</b><br/>class: PositiveCom<br/>population: 100"]
+        BE_PosWS["<b>Positive_WS</b><br/>class: positive_sequence<br/>population: 1"]
+
+        BE <-->|"inheritence"| BE_Pos
+        BE_Pos <-->|"unix_socket"| BE_PosWS
+    end
+
+    %% Force main communicators to stack top-to-bottom (Frontend at top)
+	F ~~~ O
+	O ~~~ U
+	U ~~~ B
+	B ~~~ BE
+
+    %% ========== HORIZONTAL MAIN CHAIN (via WS counterparts) ==========
+    F_Neg <-->|"unix_socket"| O_Pos
+    O_Neg <-->|"unix_socket"| U_Pos
+    U_NegWS <-->|"162.202.71.225:942<br/>ws_socket"| B_PosWS
+    B_Neg <-->|"unix_socket"| BE_Pos
+
+    %% Optional styling
+    classDef main fill:#e8f4fd,stroke:#1a5276,stroke-width:4px,rx:14,ry:14;
+    class Frontend,OSend,UserProxy,BusinessEdge,Backend main

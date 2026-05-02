@@ -1,0 +1,38 @@
+communicator: Frontend
+    location: /home/guatamap/Analysis Labs/Wrappers/wrapperFront5.py
+    class: ChatAppFrontend
+    Negative: OSend
+    Positive: None
+    population: as needed
+
+communicator: OSend
+    location: /home/guatamap/Analysis Labs/Wrappers/submit_builder.py
+    class: BackendWorker
+    Negative: UserProxy
+    Positive: Frontend
+    population: 1
+
+communicator: UserProxy
+    location: /home/guatamap/Analysis Labs/Wrappers/proxy_server.py
+    class: proxy_middleware
+    Negative: BusinessEnd
+        host: 162.202.71.225
+        port: 942
+    Positive: OSend
+    population: 1
+
+communicator: BusinessEdge
+    location: /home/guatamap/analysis-labs-website/website/edge/python_edge.py
+    class: edge_middleware
+    Negative: Backend
+    Positive: UserProxy
+        host: 162.202.71.225
+        port: 942
+    population: 1
+
+communicator: Backend
+    location: /home/guatamap/analysis-labs-website/website/app_backend/backend.py
+    class: Application
+    Negative: None
+    Positive: BusinessEdge
+    population: auto

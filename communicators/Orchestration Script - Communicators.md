@@ -59,7 +59,7 @@ Core loop:
 6. Sleep / wait for events
 
 ### 10. Standardized Node Interface
-- Simple, versioned protocol (Unix domain sockets or lightweight HTTP/gRPC) for:
+- Simple, versioned protocol (Unix domain sockets or Web Sockets) for:
   - Heartbeats / health checks
   - Status and progress reporting
   - Log streaming
@@ -276,6 +276,96 @@ This approach keeps the healing logic small, testable, and aligned with the “i
 	- IR
 	- use IR to put nodes/graph into their own homeostasis loops
 	- use exhaustive self-healing or raise errors when a server or graph goes down.
+
+  
+
+```mermaid
+
+graph LR;
+
+communicators["communicators"] --> prelude["prelude"];
+
+communicators --> orchestration["Orchestration Script - Communicators.md"];
+
+communicators --> control_script["control-script"];
+
+communicators --> control_layer_methods["control-layer-methods"];
+
+communicators --> node_methods["node-methods"];
+
+communicators --> state_methods["state-methods"];
+
+communicators --> graph_methods["graph-methods"];
+
+prelude --> standard_imports["standard-imports.py"];
+
+prelude --> env[".env"];
+
+prelude --> prelude_py["prelude.py"];
+
+prelude --> landscaping["landscaping.py"];
+
+prelude --> prelude_md["prelude.md"];
+
+prelude --> alias["alias.py"];
+
+control_script --> control_md["control-script.md"];
+
+control_script --> orchestration-script["orchestration-script.py"];
+
+control_layer_methods --> healing_tree["healing_tree.py"];
+
+control_layer_methods --> control_layer_md["control-layer-methods.md"];
+
+control_layer_methods --> registry["registry.py"];
+
+control_layer_methods --> homeostatis["Homeostatis"];
+
+homeostatis --> homeostasis["homeostasis.py"];
+
+control_layer_methods --> manifest_integrator["manifest_integrator.py"];
+
+control_layer_methods --> launcher["launcher.py"];
+
+control_layer_methods --> bash_wrappers["bash_wrappers.py"];
+
+node_methods --> core["core.py"];
+
+node_methods --> to_from["to_from.py"];
+
+node_methods --> load_core["load_core.py"];
+
+node_methods --> node_md["node-methods.md"];
+
+node_methods --> resolution["resolution.py"];
+
+state_methods --> manifest["manifest.py"];
+
+state_methods --> state["state.py"];
+
+state_methods --> smart_error["smart_error_handling.py"];
+
+state_methods --> ideal_state["ideal_state.py"];
+
+state_methods --> state_md["state-methods.md"];
+
+state_methods --> reconciliation["reconciliation_loop.py"];
+
+graph_methods --> conections["conections"];
+
+conections --> init["__init__.py"];
+
+conections --> unix_socket["unix_socket.py"];
+
+conections --> ws_tamer["ws_tamer.py"];
+
+graph_methods --> load_spreading["load_spreading.py"];
+
+graph_methods --> elementary["elementary.py"];
+
+graph_methods --> graph_md["graph-methods.md"];
+
+```
 
 ---
 ## Critique of this Hierarchy

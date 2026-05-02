@@ -1,0 +1,286 @@
+{
+  "metadata": {
+    "title": "Communicators Topology – Full Ground Truth (with Internal Structure)",
+    "generated_from": "mermaid_code.mmd",
+    "generated_at": "2026-05-02T12:05:24.136004+00:00",
+    "naming_scheme": "Semantic + Role-Based (e.g. F_Main, E_F_Neg__O_Pos)",
+    "description": "Nested representation of communicator topology with unique UUIDs on all non-WS edges."
+  },
+  "communicators": {
+    "Frontend": {
+      "short": "F",
+      "nodes": {
+        "Main": {
+          "id": "F_Main",
+          "original_id": "F",
+          "class": "ChatAppFrontend",
+          "population": "as needed",
+          "type": "anchor"
+        },
+        "Negative": {
+          "id": "F_Neg",
+          "original_id": "F_Neg",
+          "class": "NegativeCom",
+          "population": "buffer(100)",
+          "type": "aux"
+        }
+      },
+      "internal_edges": [
+        {
+          "from": "F_Main",
+          "to": "F_Neg",
+          "type": "inheritance",
+          "id": "E_F_Main__F_Neg",
+          "uuid": "331e3d69-f1cc-4a0b-82e5-cb724409a92f"
+        }
+      ]
+    },
+    "OSend": {
+      "short": "O",
+      "nodes": {
+        "Main": {
+          "id": "O_Main",
+          "original_id": "O",
+          "class": "BackendWorker",
+          "population": "1",
+          "type": "anchor"
+        },
+        "Negative": {
+          "id": "O_Neg",
+          "original_id": "O_Neg",
+          "class": "NegativeCom",
+          "population": "buffer(100)",
+          "type": "aux"
+        },
+        "Positive": {
+          "id": "O_Pos",
+          "original_id": "O_Pos",
+          "class": "PositiveCom",
+          "population": "100",
+          "type": "aux"
+        }
+      },
+      "internal_edges": [
+        {
+          "from": "O_Main",
+          "to": "O_Neg",
+          "type": "inheritance",
+          "id": "E_O_Main__O_Neg",
+          "uuid": "41e6e6f4-3136-4e20-973a-184890f47858"
+        },
+        {
+          "from": "O_Main",
+          "to": "O_Pos",
+          "type": "inheritance",
+          "id": "E_O_Main__O_Pos",
+          "uuid": "999ef687-c502-4b2f-a89f-6b3710f292ae"
+        }
+      ]
+    },
+    "UserProxy": {
+      "short": "U",
+      "nodes": {
+        "Main": {
+          "id": "U_Main",
+          "original_id": "U",
+          "class": "proxy_middleware",
+          "population": "1",
+          "type": "anchor"
+        },
+        "Negative": {
+          "id": "U_Neg",
+          "original_id": "U_Neg",
+          "class": "NegativeCom",
+          "population": "buffer(100)",
+          "type": "aux"
+        },
+        "Negative_WS": {
+          "id": "U_NegWS",
+          "original_id": "U_NegWS",
+          "class": "negative_sequence",
+          "population": "max",
+          "type": "aux"
+        },
+        "Positive": {
+          "id": "U_Pos",
+          "original_id": "U_Pos",
+          "class": "PositiveCom",
+          "population": "100",
+          "type": "aux"
+        }
+      },
+      "internal_edges": [
+        {
+          "from": "U_Main",
+          "to": "U_Neg",
+          "type": "inheritance",
+          "id": "E_U_Main__U_Neg",
+          "uuid": "d8ab6db0-37da-4777-aa13-1d0485f114db"
+        },
+        {
+          "from": "U_Neg",
+          "to": "U_NegWS",
+          "type": "unix_socket",
+          "id": "E_U_Neg__U_NegWS",
+          "uuid": "fc449fe4-a856-42e0-896a-562d225da65c"
+        },
+        {
+          "from": "U_Main",
+          "to": "U_Pos",
+          "type": "inheritance",
+          "id": "E_U_Main__U_Pos",
+          "uuid": "db72db63-c05b-44b7-b1b3-418b0ec4abf0"
+        }
+      ]
+    },
+    "BusinessEdge": {
+      "short": "B",
+      "nodes": {
+        "Main": {
+          "id": "B_Main",
+          "original_id": "B",
+          "class": "edge_middleware",
+          "population": "1",
+          "type": "anchor"
+        },
+        "Negative": {
+          "id": "B_Neg",
+          "original_id": "B_Neg",
+          "class": "NegativeCom",
+          "population": "buffer(100)",
+          "type": "aux"
+        },
+        "Positive": {
+          "id": "B_Pos",
+          "original_id": "B_Pos",
+          "class": "PositiveCom",
+          "population": "100",
+          "type": "aux"
+        },
+        "Positive_WS": {
+          "id": "B_PosWS",
+          "original_id": "B_PosWS",
+          "class": "positive_sequence",
+          "population": "1",
+          "type": "aux"
+        }
+      },
+      "internal_edges": [
+        {
+          "from": "B_Main",
+          "to": "B_Neg",
+          "type": "inheritance",
+          "id": "E_B_Main__B_Neg",
+          "uuid": "084d9bb5-9407-4c12-a213-52b853268a87"
+        },
+        {
+          "from": "B_Main",
+          "to": "B_Pos",
+          "type": "inheritance",
+          "id": "E_B_Main__B_Pos",
+          "uuid": "ef2caa29-5da1-4ffe-be6f-86af59d9cbe1"
+        },
+        {
+          "from": "B_Pos",
+          "to": "B_PosWS",
+          "type": "unix_socket",
+          "id": "E_B_Pos__B_PosWS",
+          "uuid": "6e9d9f59-53f3-4e46-96bd-c8ce6c5eb3ce"
+        }
+      ]
+    },
+    "Backend": {
+      "short": "BA",
+      "nodes": {
+        "Main": {
+          "id": "BA_Main",
+          "original_id": "BA",
+          "class": "Application",
+          "population": "auto",
+          "type": "anchor"
+        },
+        "Positive": {
+          "id": "BA_Pos",
+          "original_id": "BA_Pos",
+          "class": "PositiveCom",
+          "population": "100",
+          "type": "aux"
+        }
+      },
+      "internal_edges": [
+        {
+          "from": "BA_Main",
+          "to": "BA_Pos",
+          "type": "inheritance",
+          "id": "E_BA_Main__BA_Pos",
+          "uuid": "7c32676b-fd2f-475f-8c47-1d3fe4347cb0"
+        }
+      ]
+    }
+  },
+  "inter_communicator_edges": [
+    {
+      "from": "F_Neg",
+      "to": "O_Pos",
+      "type": "unix_socket",
+      "id": "E_F_Neg__O_Pos",
+      "uuid": "ecbc2117-e4e5-41c9-8e12-2980511e306c"
+    },
+    {
+      "from": "O_Neg",
+      "to": "U_Pos",
+      "type": "unix_socket",
+      "id": "E_O_Neg__U_Pos",
+      "uuid": "e815cd7c-33c0-4684-b573-f5a3a29ace86"
+    },
+    {
+      "from": "U_NegWS",
+      "to": "B_PosWS",
+      "type": "ws_socket",
+      "id": "E_U_NegWS__B_PosWS",
+      "uuid": "a0d2da7d-cf62-4be1-98bc-a7cf51a14503"
+    },
+    {
+      "from": "B_Neg",
+      "to": "BA_Pos",
+      "type": "unix_socket",
+      "id": "E_B_Neg__BA_Pos",
+      "uuid": "51ff1613-75cb-4469-b4d6-d277d9c93669"
+    }
+  ],
+  "abstract_edges": [
+    {
+      "from": "F",
+      "to": "O",
+      "type": "unix_socket",
+      "id": "E_F__O_abstract",
+      "uuid": "30bc01ce-b8f4-46f5-b48e-479f8eb26df8"
+    },
+    {
+      "from": "O",
+      "to": "U",
+      "type": "unix_socket",
+      "id": "E_O__U_abstract",
+      "uuid": "23659ac5-0b69-4e6c-8c81-e5cf73e1243e"
+    },
+    {
+      "from": "U",
+      "to": "B",
+      "type": "ws_socket",
+      "id": "E_U__B_abstract",
+      "uuid": "38c671f5-1ec5-485a-8ae7-0b697e453925"
+    },
+    {
+      "from": "B",
+      "to": "BA",
+      "type": "unix_socket",
+      "id": "E_B__BA_abstract",
+      "uuid": "50203c7c-6ccc-48a5-91f1-34be2815f602"
+    }
+  ],
+  "uuid_summary": {
+    "total_non_ws_edges": 18,
+    "unique_uuids": 18,
+    "all_unique": true
+  }
+}

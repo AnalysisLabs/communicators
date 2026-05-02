@@ -1,0 +1,60 @@
+```mermaid
+---
+title: Communicators Topology – Full Ground Truth (with Internal Structure)
+---
+
+flowchart TB
+    subgraph Frontend["Frontend"]
+        F["<b>Frontend</b><br/>class: ChatAppFrontend<br/>population: as needed"]
+        F_Neg["<b>Negative</b><br/>class: NegativeCom<br/>population: buffer(100)"]
+        F <-->|"inheritence"| F_Neg
+    end
+
+    subgraph OSend["OSend"]
+        O["<b>OSend</b><br/>class: BackendWorker<br/>population: 1"]
+        O_Neg["<b>Negative</b><br/>class: NegativeCom<br/>population: buffer(100)"]
+        O_Pos["<b>Positive</b><br/>class: PositiveCom<br/>population: 100"]
+        O <-->|"inheritence"| O_Neg
+        O <-->|"inheritence"| O_Pos
+    end
+
+    subgraph UserProxy["UserProxy"]
+        U["<b>UserProxy</b><br/>class: proxy_middleware<br/>population: 1"]
+        U_Neg["<b>Negative</b><br/>class: NegativeCom<br/>population: buffer(100)"]
+        U_NegWS["<b>Negative_WS</b><br/>class: negative_sequence<br/>population: max"]
+        U_Pos["<b>Positive</b><br/>class: PositiveCom<br/>population: 100"]
+        U <-->|"inheritence"| U_Neg
+        U_Neg <-->|"unix_socket"| U_NegWS
+        U <-->|"inheritence"| U_Pos
+    end
+
+    subgraph BusinessEdge["BusinessEdge"]
+        B["<b>BusinessEdge</b><br/>class: edge_middleware<br/>population: 1"]
+        B_Neg["<b>Negative</b><br/>class: NegativeCom<br/>population: buffer(100)"]
+        B_Pos["<b>Positive</b><br/>class: PositiveCom<br/>population: 100"]
+        B_PosWS["<b>Positive_WS</b><br/>class: positive_sequence<br/>population: 1"]
+        B <-->|"inheritence"| B_Neg
+        B <-->|"inheritence"| B_Pos
+        B_Pos <-->|"unix_socket"| B_PosWS
+    end
+
+    subgraph Backend["Backend"]
+        BA["<b>Backend</b><br/>class: Application<br/>population: auto"]
+        BA_Pos["<b>Positive</b><br/>class: PositiveCom<br/>population: 100"]
+        BA <-->|"inheritence"| BA_Pos
+    end
+
+    F ~~~ O
+    O ~~~ U
+    U ~~~ B
+    B ~~~ BA
+
+    F_Neg <-->|"unix_socket"| O_Pos
+    O_Neg <-->|"unix_socket"| U_Pos
+    U_NegWS <-->|"162.202.71.225:942<br/>ws_socket"| B_PosWS
+    B_Neg <-->|"unix_socket"| BA_Pos
+
+    %% Optional styling
+    classDef main fill:#e8f4fd,stroke:#1a5276,stroke-width:4px,rx:14,ry:14;
+    class Frontend,OSend,UserProxy,BusinessEdge,Backend main
+```
