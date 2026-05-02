@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "communicators/Communicators-Graph.md",
-                "mode": "source",
+                "file": "communicators/state-methods/state-methods.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Communicators-Graph"
+              "title": "state-methods"
             }
           },
           {
@@ -228,25 +228,25 @@
   },
   "active": "22db0b888efdd76e",
   "lastOpenFiles": [
+    "communicators/Communicators-Graph.md",
+    "communicators/state-methods/topology.json",
+    "communicators/state-methods/mermaid_code.mmd",
+    "communicators/state-methods/ir-sample.yaml",
+    "communicators/state-methods/ir-sample.json",
+    "communicators/state-methods/ideal.yaml",
+    "communicators/state-methods/generate_topology_json.py",
+    "communicators/state-methods/generate_mermaid.py",
+    "communicators/state-methods/Communicators-Graph.md",
+    "communicators/state-methods/com-graph.mmd",
     "communicators/topology.json",
     "communicators/generate_topology_json.py",
-    "communicators/Unconfirmed 107029.crdownload",
     "communicators/control-layer-methods/control-layer-methods.md",
-    "communicators/2.mmd",
     "Untitled 1.md",
     "Untitled 2.md",
-    "communicators/Communicators-Graph.md",
-    "communicators/mermaid_code.mmd",
     "communicators/control-script/control-script.md",
-    "communicators/generate_mermaid.py",
-    "communicators/Unconfirmed 282325.crdownload",
-    "communicators/com-graph.mmd",
     "communicators/state-methods/state-methods.md",
     "communicators/prelude/prelude.md",
-    "communicators/ir-sample.json",
     "communicators/Orchestration Script - Communicators.md",
-    "communicators/ir-sample.yaml",
-    "communicators/ideal.yaml",
     "README.md",
     "communicators/control-layer-methods/Landscaping.md",
     "communicators/state-methods/Namespace Modules.md",

@@ -56,8 +56,6 @@ def parse_ideal_yaml(filepath: str) -> List[Dict[str, Any]]:
                     elif key in ('Negative', 'Positive'):
                         if val and val.lower() != 'none':
                             peer = val
-                            if peer == "BusinessEnd":
-                                peer = "BusinessEdge"  # fix typo in example
                             is_remote = False
                             host: Optional[str] = None
                             port: Optional[str] = None
@@ -134,25 +132,20 @@ def generate_mermaid(yaml_path: str) -> str:
         has_neg_ws = isinstance(neg, dict)
         has_pos_ws = isinstance(pos, dict)
 
-        neg_pop = "buffer(100)"
-        pos_pop = "100"
-        neg_ws_pop = "max"
-        pos_ws_pop = "1"
-
         lines.append(f'    subgraph {name}["{name}"]')
 
         # Main node
         lines.append(f'        {short}["<b>{name}</b><br/>class: {class_name}<br/>population: {pop}"]')
 
         if has_neg:
-            lines.append(f'        {short}_Neg["<b>Negative</b><br/>class: NegativeCom<br/>population: {neg_pop}"]')
+            lines.append(f'        {short}_Neg["<b>Negative</b><br/>class: NegativeCom<br/>population: {pop}"]')
             if has_neg_ws:
-                lines.append(f'        {short}_NegWS["<b>Negative_WS</b><br/>class: negative_sequence<br/>population: {neg_ws_pop}"]')
+                lines.append(f'        {short}_NegWS["<b>Negative_WS</b><br/>class: negative_sequence<br/>population: {pop}"]')
 
         if has_pos:
-            lines.append(f'        {short}_Pos["<b>Positive</b><br/>class: PositiveCom<br/>population: {pos_pop}"]')
+            lines.append(f'        {short}_Pos["<b>Positive</b><br/>class: PositiveCom<br/>population: {pop}"]')
             if has_pos_ws:
-                lines.append(f'        {short}_PosWS["<b>Positive_WS</b><br/>class: positive_sequence<br/>population: {pos_ws_pop}"]')
+                lines.append(f'        {short}_PosWS["<b>Positive_WS</b><br/>class: positive_sequence<br/>population: {pop}"]')
 
         # Internal inheritance + unix_socket edges
         if has_neg:
