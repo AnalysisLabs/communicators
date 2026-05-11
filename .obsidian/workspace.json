@@ -4,67 +4,38 @@
     "type": "split",
     "children": [
       {
-        "id": "d00016fc0aa7a426",
+        "id": "4b8f3fd08ee6f276",
         "type": "tabs",
         "children": [
           {
-            "id": "6d0d1a3f30aaf1d0",
+            "id": "e05f48a003dbc6bf",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "communicators/prelude/prelude.md",
+                "file": "communicators/control-script/control_script.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "prelude"
+              "title": "control_script"
             }
           },
           {
-            "id": "4fc93b254d7a660c",
+            "id": "868209ca7d77917e",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "communicators/control-script/control-script.md",
-                "mode": "preview",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "control-script"
-            }
-          },
-          {
-            "id": "22db0b888efdd76e",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "communicators/state-methods/state-methods.md",
-                "mode": "preview",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "state-methods"
-            }
-          },
-          {
-            "id": "3251b4aae7db2292",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "communicators/control-layer-methods/control-layer-methods.md",
+                "file": "communicators/state-methods/panel.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "control-layer-methods"
+              "title": "panel"
             }
           }
-        ],
-        "currentTab": 2
+        ]
       }
     ],
     "direction": "vertical"
@@ -121,7 +92,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 218.5
+    "width": 200
   },
   "right": {
     "id": "8ecd9c22d6df09c5",
@@ -226,37 +197,44 @@
       "bases:Create new base": false
     }
   },
-  "active": "22db0b888efdd76e",
+  "active": "e05f48a003dbc6bf",
   "lastOpenFiles": [
-    "communicators/Communicators-Graph.md",
-    "communicators/state-methods/topology.json",
-    "communicators/state-methods/mermaid_code.mmd",
-    "communicators/state-methods/ir-sample.yaml",
-    "communicators/state-methods/ir-sample.json",
-    "communicators/state-methods/ideal.yaml",
-    "communicators/state-methods/generate_topology_json.py",
-    "communicators/state-methods/generate_mermaid.py",
-    "communicators/state-methods/Communicators-Graph.md",
-    "communicators/state-methods/com-graph.mmd",
-    "communicators/topology.json",
-    "communicators/generate_topology_json.py",
-    "communicators/control-layer-methods/control-layer-methods.md",
-    "Untitled 1.md",
-    "Untitled 2.md",
+    "communicators/state-methods/panel.md",
+    "communicators/control-script/control_script.md",
+    "communicators/control-script/control-description.md",
+    "Untitled.md",
     "communicators/control-script/control-script.md",
     "communicators/state-methods/state-methods.md",
-    "communicators/prelude/prelude.md",
-    "communicators/Orchestration Script - Communicators.md",
-    "README.md",
-    "communicators/control-layer-methods/Landscaping.md",
     "communicators/state-methods/Namespace Modules.md",
-    "communicators/graph-methods/graph-methods.md",
-    "communicators/node-methods/node-methods.md",
-    "communicators/ffiir/fiirr_description.md",
+    "communicators/Homeostatis/Homeostasis.md",
+    "communicators/state-methods/Communicators-Graph.md",
+    "communicators/control-layer-methods/Landscaping.md",
+    "communicators/control-layer-methods/control-layer-methods.md",
+    "communicators.png",
     "Communicators.md",
     "com_versions.md",
-    "Untitled.md",
-    "communicators.png",
-    "plot1.png"
+    "communicators/graph-methods/graph-methods.md",
+    "communicators/node-methods/node-methods.md",
+    "communicators/node-methods/Breathing/Breathing.md",
+    "communicators/Orchestration Script - Communicators.md",
+    "communicators/Homeostatis/feedback.py",
+    "communicators/Homeostatis/healing.py",
+    "communicators/Homeostatis/health_check.py",
+    "communicators/Homeostatis/startup.py",
+    "communicators/Homeostatis/Feedback",
+    "communicators/node-methods/Breathing",
+    "communicators/state-methods/Process Registry.md",
+    "communicators/control-layer-methods/Homeostatis/Homeostasis.md",
+    "communicators/Homeostatis/homeostasis.py",
+    "communicators/Homeostatis/__init__.py",
+    "communicators/Homeostatis/Startup",
+    "communicators/Homeostatis/HealthCheck",
+    "plot1.png",
+    "communicators/control-layer-methods/Process Registry.md",
+    "communicators/Communicators-Graph.md",
+    "Untitled 2.md",
+    "communicators/prelude/prelude.md",
+    "README.md",
+    "communicators/ffiir/fiirr_description.md"
   ]
 }

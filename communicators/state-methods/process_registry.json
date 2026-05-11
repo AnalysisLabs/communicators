@@ -1,0 +1,3800 @@
+{
+  "metadata": {
+    "title": "Process Registry – Instance Allocation",
+    "generated_from": "topology.json",
+    "generated_at": "2026-05-09T18:57:16.483915+00:00",
+    "naming_scheme": "Semantic + Role-Based (same as topology.json)",
+    "description": "Every node from the communicator topology augmented with pre-allocated instances. Each instance carries a unique instance_id (1-1000), a self_address UUID, and a pid placeholder.",
+    "max_instances": 1000
+  },
+  "communicators": {
+    "Frontend": {
+      "short": "F",
+      "nodes": {
+        "Main": {
+          "id": "F_Main",
+          "class": "ChatAppFrontend",
+          "population": "as needed",
+          "type": "anchor",
+          "location": "/home/guatamap/Analysis Labs/Wrappers/wrapperFront5.py",
+          "venv": "/home/guatamap/Analysis Labs/chat-venv",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "b3c02d46-cef5-4ec9-a6ec-0a638a25cef4",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "2": {
+              "instance_id": 2,
+              "self_address": "e7c7f391-a939-4a17-b06d-fbc6b740a7d3",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "3": {
+              "instance_id": 3,
+              "self_address": "24862c91-a87a-4763-996f-a7381130d0ba",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "4": {
+              "instance_id": 4,
+              "self_address": "9eb27763-db7a-4bac-83fc-0c9d015b5312",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "5": {
+              "instance_id": 5,
+              "self_address": "fda67ff0-6788-444f-a09d-9ef263f48d1b",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "6": {
+              "instance_id": 6,
+              "self_address": "322b4fce-f761-48b3-bee0-67e586e77715",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "7": {
+              "instance_id": 7,
+              "self_address": "835fd73f-fb7f-4ef6-b170-3115269d2eab",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "8": {
+              "instance_id": 8,
+              "self_address": "b4a7219a-3b1a-4588-93b2-ccdb19bc2244",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "9": {
+              "instance_id": 9,
+              "self_address": "22d0eb95-94e5-4529-b57f-fad40c43f8e2",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "10": {
+              "instance_id": 10,
+              "self_address": "6d35eec9-5122-45b4-8ddb-ed6def5f85d6",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "11": {
+              "instance_id": 11,
+              "self_address": "529b34f4-ce36-461d-8800-c4d259a1a3f2",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "12": {
+              "instance_id": 12,
+              "self_address": "5c19ea43-9c44-460c-9057-400a7e4138f9",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "13": {
+              "instance_id": 13,
+              "self_address": "3fb8dcc1-419f-414f-b929-37d674962a1c",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "14": {
+              "instance_id": 14,
+              "self_address": "6c142dbe-3cc2-4e36-95d8-235f423e400a",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "15": {
+              "instance_id": 15,
+              "self_address": "d11bdc66-60de-44b7-9e51-120ace234d3f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "16": {
+              "instance_id": 16,
+              "self_address": "f0602542-1e2c-4f3d-9c72-7c7145a86cb7",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "17": {
+              "instance_id": 17,
+              "self_address": "6afd7c29-d889-456b-ab7c-8cf956ba32c1",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "18": {
+              "instance_id": 18,
+              "self_address": "de7dc71d-07ad-476f-8bff-d6b340833673",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "19": {
+              "instance_id": 19,
+              "self_address": "7879ed6e-b4c7-42cf-8695-26db791815b2",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "20": {
+              "instance_id": 20,
+              "self_address": "e169b796-93a4-4277-a2e5-573b67ea9412",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "21": {
+              "instance_id": 21,
+              "self_address": "494a0268-ed64-4eeb-b51f-e498d03e5b6a",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "22": {
+              "instance_id": 22,
+              "self_address": "906669a4-09fd-4a9e-b40c-22a21652d668",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "23": {
+              "instance_id": 23,
+              "self_address": "250b9674-3e77-44f3-8643-6ab1fec77231",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "24": {
+              "instance_id": 24,
+              "self_address": "c2102cfd-3452-410a-beeb-0abe9802e356",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "25": {
+              "instance_id": 25,
+              "self_address": "3ba9daca-6c63-4d7e-bad0-e1d92d58da1f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "26": {
+              "instance_id": 26,
+              "self_address": "14e47f7a-4905-49dd-a0e0-7bd317515627",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "27": {
+              "instance_id": 27,
+              "self_address": "b24a667e-13fd-45d2-b562-cd247423adbc",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "28": {
+              "instance_id": 28,
+              "self_address": "092e3fc1-f89a-4e6b-839e-15c4e875f918",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "29": {
+              "instance_id": 29,
+              "self_address": "7e31502d-3a2f-44d1-a7bc-3dc9c7a1c25d",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "30": {
+              "instance_id": 30,
+              "self_address": "71edc120-4009-4908-b3b2-2d9f958db015",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "31": {
+              "instance_id": 31,
+              "self_address": "d65d382c-e851-4c61-83f3-62d1f7b1e3c1",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "32": {
+              "instance_id": 32,
+              "self_address": "1b1acba7-2e54-429a-a8bf-44e9d89b560c",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "33": {
+              "instance_id": 33,
+              "self_address": "4be667aa-2dc3-4287-a1dd-b3574bd7c3b7",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "34": {
+              "instance_id": 34,
+              "self_address": "fccd4306-bddb-49a0-bff6-fd254e76e38e",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "35": {
+              "instance_id": 35,
+              "self_address": "1ca7f554-9e36-4db0-b2aa-523af57a3a07",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "36": {
+              "instance_id": 36,
+              "self_address": "bc691420-7387-4bd4-86d2-47fba2415ceb",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "37": {
+              "instance_id": 37,
+              "self_address": "56f66db2-fda4-4141-986c-8b2da63f8973",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "38": {
+              "instance_id": 38,
+              "self_address": "f55f278a-a146-4096-9a33-3ebf921ac3a0",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "39": {
+              "instance_id": 39,
+              "self_address": "8475b222-ad74-49eb-9d13-d9f1c29ffe92",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "40": {
+              "instance_id": 40,
+              "self_address": "67836342-afd9-47c1-bbc5-e1c9807299df",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "41": {
+              "instance_id": 41,
+              "self_address": "16f3938b-c701-4024-a819-84f6e6d05273",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "42": {
+              "instance_id": 42,
+              "self_address": "46f43842-834d-4d8a-84f9-4baa2a23c1af",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "43": {
+              "instance_id": 43,
+              "self_address": "c804ff56-eccd-4110-b291-adc8bb7d3946",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "44": {
+              "instance_id": 44,
+              "self_address": "577553f4-4302-4e92-89ba-7a5da4531231",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "45": {
+              "instance_id": 45,
+              "self_address": "7cc2018d-fdc8-4974-81fe-ed706f8d41fb",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "46": {
+              "instance_id": 46,
+              "self_address": "d7a0dd72-1b19-4a1d-b01e-fa9ee760f44f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "47": {
+              "instance_id": 47,
+              "self_address": "590699c7-5ce3-4131-a0b2-8b5d0ad3f93e",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "48": {
+              "instance_id": 48,
+              "self_address": "a5c5cc89-136f-4647-ac0d-8959ebb758e4",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "49": {
+              "instance_id": 49,
+              "self_address": "4411100d-0c52-4ce7-8fcb-8fe3cc757f59",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "50": {
+              "instance_id": 50,
+              "self_address": "916bd105-cad7-4abc-b39f-903d0a6fd47b",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        },
+        "Negative": {
+          "id": "F_Neg",
+          "class": "NegativeCom",
+          "population": "as needed",
+          "type": "aux",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "f514bc31-cf11-4887-af91-898c7b0aee88",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "2": {
+              "instance_id": 2,
+              "self_address": "815acceb-3331-4e54-880d-df38bc471455",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "3": {
+              "instance_id": 3,
+              "self_address": "38419e2c-6c5e-45f2-9c34-50219f7067a1",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "4": {
+              "instance_id": 4,
+              "self_address": "5f832c9b-0774-4ca1-9dc5-be9f8b3ff557",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "5": {
+              "instance_id": 5,
+              "self_address": "1beab85c-f13e-4206-9a40-b8a88e101b6c",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "6": {
+              "instance_id": 6,
+              "self_address": "fdf953bc-f218-4246-8977-34dd4295383f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "7": {
+              "instance_id": 7,
+              "self_address": "58ed862f-f4b1-4662-ba1c-bb9e0934b153",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "8": {
+              "instance_id": 8,
+              "self_address": "9f206d31-6f40-4433-ab97-dab85b27e9fb",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "9": {
+              "instance_id": 9,
+              "self_address": "87477fb2-96d5-4619-a339-8d1a03a0b4f1",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "10": {
+              "instance_id": 10,
+              "self_address": "2a507e97-a6a2-44f0-aeb3-2a84f7857d0d",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "11": {
+              "instance_id": 11,
+              "self_address": "e724af85-5109-491b-b34f-ebf392b2edd4",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "12": {
+              "instance_id": 12,
+              "self_address": "a0df2f00-23b3-4cca-9854-13fb1286a7f2",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "13": {
+              "instance_id": 13,
+              "self_address": "81796d52-c285-46d7-ba93-701addd69ff9",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "14": {
+              "instance_id": 14,
+              "self_address": "fbc7a9ed-d95a-430e-b440-ca8650fc3dfe",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "15": {
+              "instance_id": 15,
+              "self_address": "2f0aad93-1fb3-401b-8a15-90a5adb24f16",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "16": {
+              "instance_id": 16,
+              "self_address": "d0c1dad4-4390-4697-9e31-c2d75e9b44cf",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "17": {
+              "instance_id": 17,
+              "self_address": "13888a2d-b240-40cb-bb63-bb09b7981d5c",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "18": {
+              "instance_id": 18,
+              "self_address": "f9408c41-b967-47c3-8858-da60cf09b21e",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "19": {
+              "instance_id": 19,
+              "self_address": "cf9ea2b6-a188-4778-b4a6-53ae5bdab39e",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "20": {
+              "instance_id": 20,
+              "self_address": "a3de4cce-7742-470f-9e20-ab731ddaba5f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "21": {
+              "instance_id": 21,
+              "self_address": "9ac58dd1-3999-404b-b760-556472725df1",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "22": {
+              "instance_id": 22,
+              "self_address": "a373c350-194c-4e71-9f89-c430521fa5de",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "23": {
+              "instance_id": 23,
+              "self_address": "fd37bdb2-e747-4c19-93c7-52ebaea6e3d1",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "24": {
+              "instance_id": 24,
+              "self_address": "9fdd7b07-0a87-429b-a2a2-f09b6da70867",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "25": {
+              "instance_id": 25,
+              "self_address": "37b157d9-1c03-4fcd-91f3-c99a0195e12e",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "26": {
+              "instance_id": 26,
+              "self_address": "78a90b78-4688-4e33-8df7-b629677e53dd",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "27": {
+              "instance_id": 27,
+              "self_address": "b3f1c3de-e2e8-49c9-93a1-84600ae255bc",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "28": {
+              "instance_id": 28,
+              "self_address": "5c3eaa9e-6b96-4379-86c7-b44809410073",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "29": {
+              "instance_id": 29,
+              "self_address": "f1f71141-5e6a-4cfd-9adc-1fae6e3b4a90",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "30": {
+              "instance_id": 30,
+              "self_address": "a059b7ca-ce9e-4cbb-bdf4-9adb4c2dc0d3",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "31": {
+              "instance_id": 31,
+              "self_address": "09be51bb-c79f-4c19-8189-d63a580c8d63",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "32": {
+              "instance_id": 32,
+              "self_address": "39fda56d-510c-4222-9444-6bc591e667f5",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "33": {
+              "instance_id": 33,
+              "self_address": "bed2255f-c66a-4786-a7e1-662a97d28a9f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "34": {
+              "instance_id": 34,
+              "self_address": "b7b956ca-6999-4d1b-a8f9-e952c96b9feb",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "35": {
+              "instance_id": 35,
+              "self_address": "34400069-7073-4df8-be62-99bd09c44b35",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "36": {
+              "instance_id": 36,
+              "self_address": "14192b96-c4db-4786-8a4e-d1f7b622be80",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "37": {
+              "instance_id": 37,
+              "self_address": "a8ea50dc-feb1-4456-a938-d0b8f4fafbf9",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "38": {
+              "instance_id": 38,
+              "self_address": "6b73dad5-af77-445b-9b15-65f3981525d6",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "39": {
+              "instance_id": 39,
+              "self_address": "2f42b4a4-5002-49c5-a616-2a623d242912",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "40": {
+              "instance_id": 40,
+              "self_address": "f792b868-7f70-4630-9e38-cbe5e3cb8b36",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "41": {
+              "instance_id": 41,
+              "self_address": "d2d6c9ca-4e55-45df-ae42-7a55d04bd74a",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "42": {
+              "instance_id": 42,
+              "self_address": "bc8e0f28-f1ef-4888-bf62-fb29169b0221",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "43": {
+              "instance_id": 43,
+              "self_address": "bd374fb2-a6e1-40d3-a14d-0d9f36de497f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "44": {
+              "instance_id": 44,
+              "self_address": "796d3964-6bfd-4664-8c69-87bf75878d6e",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "45": {
+              "instance_id": 45,
+              "self_address": "a9e05902-6895-4e56-97e9-257038a351aa",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "46": {
+              "instance_id": 46,
+              "self_address": "2b5eeb15-60cb-432e-8b1a-193f59501ed0",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "47": {
+              "instance_id": 47,
+              "self_address": "f288ce50-786b-4bd3-ad61-2187a81e55d0",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "48": {
+              "instance_id": 48,
+              "self_address": "206b2b35-6fad-4cb5-9719-b38caa152c0a",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "49": {
+              "instance_id": 49,
+              "self_address": "0d89dd63-185a-4195-8514-1d039be6b40e",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "50": {
+              "instance_id": 50,
+              "self_address": "9950210e-1653-49eb-9c3a-0e705ebd4479",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        }
+      },
+      "internal_edges": [
+        {
+          "from": "F_Main",
+          "to": "F_Neg",
+          "type": "inheritance",
+          "id": "E_F_Main__F_Neg",
+          "uuid": "f401063e-96c9-43bd-9381-a7fe172d69f3"
+        }
+      ]
+    },
+    "OSend": {
+      "short": "O",
+      "nodes": {
+        "Main": {
+          "id": "O_Main",
+          "class": "BackendWorker",
+          "population": "1",
+          "type": "anchor",
+          "location": "/home/guatamap/Analysis Labs/Wrappers/submit_builder.py",
+          "venv": "/home/guatamap/Analysis Labs/chat-venv",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "bf6fa7ff-eca0-4e66-8077-7b41aa2e045b",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        },
+        "Negative": {
+          "id": "O_Neg",
+          "class": "NegativeCom",
+          "population": "1",
+          "type": "aux",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "af1e59e5-0fd7-47da-a816-a7f092d24369",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        },
+        "Positive": {
+          "id": "O_Pos",
+          "class": "PositiveCom",
+          "population": "1",
+          "type": "aux",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "cd70de26-b84d-488d-a00f-7edb026e4ba6",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        }
+      },
+      "internal_edges": [
+        {
+          "from": "O_Main",
+          "to": "O_Neg",
+          "type": "inheritance",
+          "id": "E_O_Main__O_Neg",
+          "uuid": "5e7690c3-a6fb-423e-ac1c-e85251ed75f1"
+        },
+        {
+          "from": "O_Main",
+          "to": "O_Pos",
+          "type": "inheritance",
+          "id": "E_O_Main__O_Pos",
+          "uuid": "3325b7c8-79cc-4389-8965-1ac146616724"
+        }
+      ]
+    },
+    "UserProxy": {
+      "short": "U",
+      "nodes": {
+        "Main": {
+          "id": "U_Main",
+          "class": "proxy_middleware",
+          "population": "1",
+          "type": "anchor",
+          "location": "/home/guatamap/Analysis Labs/Wrappers/proxy_server.py",
+          "venv": "/home/guatamap/Analysis Labs/chat-venv",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "7f5efd54-b484-498b-b9d6-ef43dd2d0825",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        },
+        "Negative": {
+          "id": "U_Neg",
+          "class": "NegativeCom",
+          "population": "1",
+          "type": "aux",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "1e43c63b-d741-4c08-9d33-1842a621ecb2",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        },
+        "Negative_WS": {
+          "id": "U_NegWS",
+          "class": "negative_sequence",
+          "population": "1",
+          "type": "aux",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "d588993a-9a9f-4784-b1b6-5a4b50e831d9",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        },
+        "Positive": {
+          "id": "U_Pos",
+          "class": "PositiveCom",
+          "population": "1",
+          "type": "aux",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "221c4c07-86ec-4c71-ab65-63c5f7011baf",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        }
+      },
+      "internal_edges": [
+        {
+          "from": "U_Main",
+          "to": "U_Neg",
+          "type": "inheritance",
+          "id": "E_U_Main__U_Neg",
+          "uuid": "1df94809-629e-4ac3-ad62-e2b70639fa37"
+        },
+        {
+          "from": "U_Neg",
+          "to": "U_NegWS",
+          "type": "unix_socket",
+          "id": "E_U_Neg__U_NegWS",
+          "uuid": "d963fd6a-ac65-4fed-b6e8-ed0de18c069f",
+          "uuid_pool": {
+            "a0981b6b-0164-466f-b932-175e34f12ed4": {
+              "requested": false,
+              "working": false
+            },
+            "0a992406-e0a1-4c9d-8ef7-a5bfbd5c6a33": {
+              "requested": false,
+              "working": false
+            },
+            "97893cc0-1a49-4ca4-ab4d-1f0e0dcd34ec": {
+              "requested": false,
+              "working": false
+            },
+            "ba8b1125-3afd-4584-b88c-78b018f510a3": {
+              "requested": false,
+              "working": false
+            },
+            "33d61e8d-b4c8-4092-aeff-0d6398529cd2": {
+              "requested": false,
+              "working": false
+            },
+            "cc6ee9d4-c1f6-43a9-a948-40824e353ac0": {
+              "requested": false,
+              "working": false
+            },
+            "fe208790-3458-4653-a8d3-7d2f64cdd716": {
+              "requested": false,
+              "working": false
+            },
+            "a336170a-c608-4d97-bed0-a9584b43dbaa": {
+              "requested": false,
+              "working": false
+            },
+            "914b0fe2-e095-46f6-90b4-d7717b74a596": {
+              "requested": false,
+              "working": false
+            },
+            "3fcf3832-75df-4099-8b26-dba33fd1f3cc": {
+              "requested": false,
+              "working": false
+            },
+            "2960ccc0-68a7-48ba-bdfa-d84832374507": {
+              "requested": false,
+              "working": false
+            },
+            "78249f38-2dec-4342-b223-3e47528494c0": {
+              "requested": false,
+              "working": false
+            },
+            "8293cd6e-f980-4119-a545-15298eb3bd16": {
+              "requested": false,
+              "working": false
+            },
+            "10c1b545-4ec1-4235-8990-a26b9c87de8e": {
+              "requested": false,
+              "working": false
+            },
+            "028ba077-96b5-4a83-ad31-d98f9189528b": {
+              "requested": false,
+              "working": false
+            },
+            "cde579fb-55eb-43c0-ac40-add1019cf349": {
+              "requested": false,
+              "working": false
+            },
+            "d1898c67-6c08-4e90-a824-68dc48c7c211": {
+              "requested": false,
+              "working": false
+            },
+            "544cfcc9-7964-4478-8ddd-83762cc98ae3": {
+              "requested": false,
+              "working": false
+            },
+            "57f3e2bf-6ded-4a41-b880-19f88262b3a7": {
+              "requested": false,
+              "working": false
+            },
+            "8a6990fc-9c85-47cf-8851-f54cc9821bbe": {
+              "requested": false,
+              "working": false
+            },
+            "0e0169cf-f04c-4e1b-bcf7-b3616197b9e8": {
+              "requested": false,
+              "working": false
+            },
+            "c7ca33a4-3786-42e6-b935-c0e9c6d2b38f": {
+              "requested": false,
+              "working": false
+            },
+            "bc195594-6b42-417f-b576-5d5b4360a1bd": {
+              "requested": false,
+              "working": false
+            },
+            "09e4fc51-3f98-4d59-970c-598087514c75": {
+              "requested": false,
+              "working": false
+            },
+            "ec9586d8-5e90-4790-845f-f0eea199d37d": {
+              "requested": false,
+              "working": false
+            },
+            "878ba7cd-7061-40c2-9fd4-65eda3d79243": {
+              "requested": false,
+              "working": false
+            },
+            "ee14194d-086f-434c-98a8-8f96bf2cc8b2": {
+              "requested": false,
+              "working": false
+            },
+            "c11dd464-4776-46a4-af83-7485cd162f84": {
+              "requested": false,
+              "working": false
+            },
+            "849a1174-1d03-4e4d-814a-6b576d1f8ee4": {
+              "requested": false,
+              "working": false
+            },
+            "91ecfad9-9883-45d9-a0a6-f340afa603ab": {
+              "requested": false,
+              "working": false
+            },
+            "4ee7f154-0b65-40e5-9a13-4beec26d1e59": {
+              "requested": false,
+              "working": false
+            },
+            "141298fc-897d-4013-a82c-3398462282cc": {
+              "requested": false,
+              "working": false
+            },
+            "3be1724b-7588-4987-81ea-ad2a13e1350f": {
+              "requested": false,
+              "working": false
+            },
+            "07c3ef1d-f3c2-4fc0-a8b5-605fa2819675": {
+              "requested": false,
+              "working": false
+            },
+            "4f98881f-3adc-4664-b5c5-d2a5563b87aa": {
+              "requested": false,
+              "working": false
+            },
+            "64bb7212-4aea-497b-9f6b-fa9bf5cc92f7": {
+              "requested": false,
+              "working": false
+            },
+            "64265787-bc03-4fc1-b8a2-73841edd308c": {
+              "requested": false,
+              "working": false
+            },
+            "98a52c18-152c-4189-a526-2f35327f77e5": {
+              "requested": false,
+              "working": false
+            },
+            "ffa2a274-1dae-44f0-b29f-d7b7cc4c9e3e": {
+              "requested": false,
+              "working": false
+            },
+            "44c298bf-e64f-4bc5-a28e-3dcf50264bcd": {
+              "requested": false,
+              "working": false
+            },
+            "7f67de4c-f508-489d-9f09-4bc22b0f84c9": {
+              "requested": false,
+              "working": false
+            },
+            "99346889-2793-41a5-b478-2f6acd072f7a": {
+              "requested": false,
+              "working": false
+            },
+            "9c21f4b3-1633-41de-9fad-5002e2c50a3b": {
+              "requested": false,
+              "working": false
+            },
+            "89a27ae3-d835-43f6-9a0c-c6db843a95a7": {
+              "requested": false,
+              "working": false
+            },
+            "083d4714-4af8-4d39-b143-8d82b1b95256": {
+              "requested": false,
+              "working": false
+            },
+            "dd76ee47-ea2d-46be-b01b-c8120ec316a1": {
+              "requested": false,
+              "working": false
+            },
+            "3a1f808a-466f-4c1a-aece-31c68aaacc02": {
+              "requested": false,
+              "working": false
+            },
+            "c686e513-c3b3-494b-84b5-95451590b077": {
+              "requested": false,
+              "working": false
+            },
+            "692ae688-2556-46da-bf29-8ad3c095d5d4": {
+              "requested": false,
+              "working": false
+            },
+            "1917062e-b071-4e51-b25f-c9c357e00750": {
+              "requested": false,
+              "working": false
+            },
+            "dfbde66e-3634-4ea6-9f35-523de330c7d3": {
+              "requested": false,
+              "working": false
+            },
+            "a0b85545-a156-4059-b336-eacd54c2691a": {
+              "requested": false,
+              "working": false
+            },
+            "86f0b52c-8941-4a62-baa0-966dadc4ec8c": {
+              "requested": false,
+              "working": false
+            },
+            "5b9593cf-3ffd-42fe-a103-f7b8e0c48109": {
+              "requested": false,
+              "working": false
+            },
+            "b5073241-2e30-4eed-a380-8ab8765826ce": {
+              "requested": false,
+              "working": false
+            },
+            "a09693d1-83b1-4181-8c6d-9557d8447f01": {
+              "requested": false,
+              "working": false
+            },
+            "2f8ffaf5-3a61-484f-bc53-fa52b9c9e23c": {
+              "requested": false,
+              "working": false
+            },
+            "ba5d1ad8-07fa-4fe2-95b6-1d74f16335c9": {
+              "requested": false,
+              "working": false
+            },
+            "e510a89e-8791-498a-a624-dceaf4fd3522": {
+              "requested": false,
+              "working": false
+            },
+            "05c11dd1-0fde-4305-8fbe-112d6c69a1d0": {
+              "requested": false,
+              "working": false
+            },
+            "83b3d260-b01d-4d2b-afc3-a0ed0d19e5ec": {
+              "requested": false,
+              "working": false
+            },
+            "566fb5c9-7c23-4ca4-9390-34ee679a76c7": {
+              "requested": false,
+              "working": false
+            },
+            "e04f9f6e-8d16-4b96-9c95-31dfe3c98fbe": {
+              "requested": false,
+              "working": false
+            },
+            "24446291-b3af-4dc0-8fcc-e309d3bba2ad": {
+              "requested": false,
+              "working": false
+            },
+            "4f0ab18c-f2b9-46bc-83a5-58e261dc0cc8": {
+              "requested": false,
+              "working": false
+            },
+            "1abd1462-e519-4641-b6af-54b1aaeb6e27": {
+              "requested": false,
+              "working": false
+            },
+            "3933a1ab-8570-42d1-857f-4bd2005c839a": {
+              "requested": false,
+              "working": false
+            },
+            "c48b64b1-a08c-42ef-b563-43ca2cd86e78": {
+              "requested": false,
+              "working": false
+            },
+            "70aa136d-fb48-4bfd-96ac-6a3a06e527b7": {
+              "requested": false,
+              "working": false
+            },
+            "ce01ac00-89d6-4c08-89a1-c3cfd1f14885": {
+              "requested": false,
+              "working": false
+            },
+            "63d998dd-55f8-4eeb-9993-90b5f7b5b12b": {
+              "requested": false,
+              "working": false
+            },
+            "2afd56f8-4f12-4c8a-b229-0aa0acb9ce79": {
+              "requested": false,
+              "working": false
+            },
+            "fe121481-4f16-4649-b264-3f4311cbccf9": {
+              "requested": false,
+              "working": false
+            },
+            "f95c1de1-046d-448d-8f1e-3209d2d70d7b": {
+              "requested": false,
+              "working": false
+            },
+            "972f5579-1969-4d23-bbb6-f3c43cb86c49": {
+              "requested": false,
+              "working": false
+            },
+            "7822e63b-b99f-451b-ba71-9c5c8066f572": {
+              "requested": false,
+              "working": false
+            },
+            "85c303da-c134-4133-a63e-8423383c25de": {
+              "requested": false,
+              "working": false
+            },
+            "e6009e00-78e0-4342-b349-081ae1c0a50c": {
+              "requested": false,
+              "working": false
+            },
+            "b03ad762-2581-4485-9019-16ff5d0a74b5": {
+              "requested": false,
+              "working": false
+            },
+            "49a572aa-43f2-445c-9ca4-c0d43fcde57a": {
+              "requested": false,
+              "working": false
+            },
+            "64021094-2d22-47a7-8bdd-82994c7d504f": {
+              "requested": false,
+              "working": false
+            },
+            "7de46d74-c6cb-48e0-b26b-8f8feac8bdc0": {
+              "requested": false,
+              "working": false
+            },
+            "08699bab-7fc9-4c26-ac76-044ed44f08c8": {
+              "requested": false,
+              "working": false
+            },
+            "981adf04-68a4-4824-bc4b-e51bc61b2abe": {
+              "requested": false,
+              "working": false
+            },
+            "ee49ecfc-62c5-4dd9-ac77-de825a760d15": {
+              "requested": false,
+              "working": false
+            },
+            "fa5f18a0-6a61-4c9d-a3bc-426cd300328d": {
+              "requested": false,
+              "working": false
+            },
+            "2f74fa75-7635-43f0-8aae-7dabdcc0d8b9": {
+              "requested": false,
+              "working": false
+            },
+            "5b318f69-3ea7-4fda-8172-5b38b5ff1d72": {
+              "requested": false,
+              "working": false
+            },
+            "31417af9-56c0-471f-b146-020a8eb60870": {
+              "requested": false,
+              "working": false
+            },
+            "c88d4583-f1f0-4834-b111-917326a8da80": {
+              "requested": false,
+              "working": false
+            },
+            "16249eeb-81cb-42be-a0cd-1ac7a56610e3": {
+              "requested": false,
+              "working": false
+            },
+            "67fec726-8061-4108-b6d1-716fb38b755d": {
+              "requested": false,
+              "working": false
+            },
+            "0a822ed3-ad1b-4783-b98d-252bf81e9485": {
+              "requested": false,
+              "working": false
+            },
+            "643e5e51-429b-48cf-973b-dbb87fdf890e": {
+              "requested": false,
+              "working": false
+            },
+            "5576b9ba-8129-44fd-948c-b1df652cbcf1": {
+              "requested": false,
+              "working": false
+            },
+            "449a9d82-c1d1-4f9b-ab95-6aa0ecb26b79": {
+              "requested": false,
+              "working": false
+            },
+            "3fe4273b-08f3-44d0-bb6e-e69735a464b8": {
+              "requested": false,
+              "working": false
+            },
+            "c488f7ba-a999-4fff-ad9c-c9cacbe29fbe": {
+              "requested": false,
+              "working": false
+            },
+            "f4e573a3-bcd8-4554-9336-87f4c49e53ea": {
+              "requested": false,
+              "working": false
+            },
+            "df85ba4f-1371-4a9d-a02c-b4a164ee3068": {
+              "requested": false,
+              "working": false
+            }
+          }
+        },
+        {
+          "from": "U_Main",
+          "to": "U_Pos",
+          "type": "inheritance",
+          "id": "E_U_Main__U_Pos",
+          "uuid": "f6f3d8dc-9fe6-488b-aa3c-82e608877e09"
+        }
+      ]
+    },
+    "BusinessEdge": {
+      "short": "B",
+      "nodes": {
+        "Main": {
+          "id": "B_Main",
+          "class": "edge_middleware",
+          "population": "1",
+          "type": "anchor",
+          "location": "/home/guatamap/analysis-labs-website/website/edge/python_edge.py",
+          "venv": "/home/guatamap/analysis-labs-website/web-venv",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "e32154ed-f222-4791-bfd5-cebaa751deb8",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        },
+        "Negative": {
+          "id": "B_Neg",
+          "class": "NegativeCom",
+          "population": "1",
+          "type": "aux",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "0d4d0117-8535-4142-a42a-daca67ff6850",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        },
+        "Positive": {
+          "id": "B_Pos",
+          "class": "PositiveCom",
+          "population": "1",
+          "type": "aux",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "a8bf4825-f54f-4167-a79e-25bf37a82459",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        },
+        "Positive_WS": {
+          "id": "B_PosWS",
+          "class": "positive_sequence",
+          "population": "1",
+          "type": "aux",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "499910b5-5d26-494d-bd87-250d3ea1e306",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        }
+      },
+      "internal_edges": [
+        {
+          "from": "B_Main",
+          "to": "B_Neg",
+          "type": "inheritance",
+          "id": "E_B_Main__B_Neg",
+          "uuid": "75ce2cf5-d580-48fe-9f78-858d1fa4d0d3"
+        },
+        {
+          "from": "B_Main",
+          "to": "B_Pos",
+          "type": "inheritance",
+          "id": "E_B_Main__B_Pos",
+          "uuid": "fb971397-8302-45e5-8c6f-a88bb32bf32b"
+        },
+        {
+          "from": "B_Pos",
+          "to": "B_PosWS",
+          "type": "unix_socket",
+          "id": "E_B_Pos__B_PosWS",
+          "uuid": "66ce7aaa-b024-4ca3-aaea-fe93b31ded06",
+          "uuid_pool": {
+            "04f6c21e-d0b0-41fd-9334-b83650dc19d2": {
+              "requested": false,
+              "working": false
+            },
+            "c3f74059-a925-451a-b5a3-838ab57bdc5b": {
+              "requested": false,
+              "working": false
+            },
+            "3c77aa38-2be6-423c-84a4-ad5fbc704604": {
+              "requested": false,
+              "working": false
+            },
+            "1defeb10-6d7e-4030-8eef-6d04c60c1c28": {
+              "requested": false,
+              "working": false
+            },
+            "a7633055-8e70-46e6-8df1-05752f363e8d": {
+              "requested": false,
+              "working": false
+            },
+            "5ddd984e-afbf-4c59-92f7-058ea2993014": {
+              "requested": false,
+              "working": false
+            },
+            "d458e471-114e-4c53-975a-a31fbec1c91d": {
+              "requested": false,
+              "working": false
+            },
+            "c90a51cb-0fac-4299-a855-81e50797dc3f": {
+              "requested": false,
+              "working": false
+            },
+            "1814dc11-b4d7-45a2-b46e-34b1f490a18e": {
+              "requested": false,
+              "working": false
+            },
+            "5e85109a-1958-4a05-9210-649168dbb438": {
+              "requested": false,
+              "working": false
+            },
+            "1e98dc8b-4d33-40dd-90a4-ff1421d37088": {
+              "requested": false,
+              "working": false
+            },
+            "2b9e6335-bc1c-4e6f-af99-957ff6f95e7c": {
+              "requested": false,
+              "working": false
+            },
+            "a1eee0ba-f39b-464f-a6f7-868ce278a164": {
+              "requested": false,
+              "working": false
+            },
+            "10cffe52-64eb-4c73-854c-9120eaf436dd": {
+              "requested": false,
+              "working": false
+            },
+            "112ee438-1f31-49a5-bf7a-d60158b139ea": {
+              "requested": false,
+              "working": false
+            },
+            "45573eb7-17c7-4958-86a2-c40ba13dd3e7": {
+              "requested": false,
+              "working": false
+            },
+            "1cf72525-d255-4883-b530-5b6322980b49": {
+              "requested": false,
+              "working": false
+            },
+            "28cccdac-d094-4699-857b-070aebc27f25": {
+              "requested": false,
+              "working": false
+            },
+            "6e5b81f7-9884-4a5b-8179-0728131bca72": {
+              "requested": false,
+              "working": false
+            },
+            "5735f318-3fa1-460b-8370-aafa8f9d6941": {
+              "requested": false,
+              "working": false
+            },
+            "7b5888e1-3016-477a-89eb-33e7418f3a60": {
+              "requested": false,
+              "working": false
+            },
+            "56565646-f535-4a37-a0ad-84f617bc01d3": {
+              "requested": false,
+              "working": false
+            },
+            "c922d5da-c718-4154-b192-516b00272155": {
+              "requested": false,
+              "working": false
+            },
+            "afe35242-b4e5-444b-bc52-5feb84e134a4": {
+              "requested": false,
+              "working": false
+            },
+            "fbe89f92-7053-48fe-861c-edf7bee75479": {
+              "requested": false,
+              "working": false
+            },
+            "17f61c2c-9da7-43b1-af06-e91db9d7f3ae": {
+              "requested": false,
+              "working": false
+            },
+            "d18c1a29-146d-4fcd-af47-1a9c5670762e": {
+              "requested": false,
+              "working": false
+            },
+            "9a17dfef-f3d5-4c60-80c7-1e7f7012689a": {
+              "requested": false,
+              "working": false
+            },
+            "e2cbdf40-2867-41fd-b874-b410cceac2c6": {
+              "requested": false,
+              "working": false
+            },
+            "23cc92d0-8f91-4526-b760-adc9321809bf": {
+              "requested": false,
+              "working": false
+            },
+            "2a7b7fe4-2d28-4cdc-9f32-0a916b971034": {
+              "requested": false,
+              "working": false
+            },
+            "ac93c9a2-3f35-4cb4-b135-14effab4e4ad": {
+              "requested": false,
+              "working": false
+            },
+            "8cb8799a-b869-4d78-9cec-73e9b09b74f2": {
+              "requested": false,
+              "working": false
+            },
+            "0fd5e601-6a21-40ab-8b23-588511ef6681": {
+              "requested": false,
+              "working": false
+            },
+            "e1159273-e347-4b66-838e-4cdb1975d21e": {
+              "requested": false,
+              "working": false
+            },
+            "a075a268-4a08-4837-886d-0063ea4b7917": {
+              "requested": false,
+              "working": false
+            },
+            "7227919d-8b9c-47ae-86c6-bab6248093bb": {
+              "requested": false,
+              "working": false
+            },
+            "a50d45b7-ec7c-4aae-9d2c-1f672e4ec07e": {
+              "requested": false,
+              "working": false
+            },
+            "fc11aceb-50af-486e-ab77-162b98c90573": {
+              "requested": false,
+              "working": false
+            },
+            "41dec907-36bc-49ac-bcbb-504e584a7122": {
+              "requested": false,
+              "working": false
+            },
+            "e0f19d56-f35b-4849-a90d-152970d31e8e": {
+              "requested": false,
+              "working": false
+            },
+            "a5580d77-8675-48cf-b11e-b48ad5b7015e": {
+              "requested": false,
+              "working": false
+            },
+            "70d708ee-5a9a-4f5b-b163-259d83a95150": {
+              "requested": false,
+              "working": false
+            },
+            "e160a54c-2d17-4fb2-9af1-e13e3a22ba5f": {
+              "requested": false,
+              "working": false
+            },
+            "c366e022-d663-4b66-8da1-1b2289176893": {
+              "requested": false,
+              "working": false
+            },
+            "a007c8e2-b459-4ca8-b2ec-b2e9e5e6cd14": {
+              "requested": false,
+              "working": false
+            },
+            "27e7c128-4329-4850-907d-ad83a4cd7cc6": {
+              "requested": false,
+              "working": false
+            },
+            "8ebfd97c-a9bb-499f-bf01-3e07418d0d66": {
+              "requested": false,
+              "working": false
+            },
+            "06eee278-6803-4845-a0fa-482e2e943476": {
+              "requested": false,
+              "working": false
+            },
+            "1e02588f-e4c9-4e6d-af19-01df8511ffd6": {
+              "requested": false,
+              "working": false
+            },
+            "aa78f0ef-9d0b-48e3-b548-345fbffc5c81": {
+              "requested": false,
+              "working": false
+            },
+            "a93f3b47-f379-40cf-9b15-b7640aaa5805": {
+              "requested": false,
+              "working": false
+            },
+            "52f7dc71-c99f-4245-bf5e-bfc72339a7bf": {
+              "requested": false,
+              "working": false
+            },
+            "45185747-ccba-4466-ac6f-3f609089c2e4": {
+              "requested": false,
+              "working": false
+            },
+            "45e0a6be-13d5-4926-9124-b0720501a677": {
+              "requested": false,
+              "working": false
+            },
+            "f1dd35a6-26aa-4815-81e3-5f50af43a6eb": {
+              "requested": false,
+              "working": false
+            },
+            "b314f4c0-8b06-4baa-aca9-37db637eccd7": {
+              "requested": false,
+              "working": false
+            },
+            "359810f7-fde3-486f-8e82-c8770e88d9a1": {
+              "requested": false,
+              "working": false
+            },
+            "5d86c957-63c0-4743-8d3a-eaaf0bf9c66d": {
+              "requested": false,
+              "working": false
+            },
+            "83643a1f-be35-4e18-acac-99550416184d": {
+              "requested": false,
+              "working": false
+            },
+            "99a97066-a572-4b18-9ec9-2c3fdcec76c2": {
+              "requested": false,
+              "working": false
+            },
+            "617c97fd-d4ac-476f-bbc9-521381bc275c": {
+              "requested": false,
+              "working": false
+            },
+            "74988816-5984-42de-acc2-2666251f5147": {
+              "requested": false,
+              "working": false
+            },
+            "ef79d9a5-5532-43c6-8a69-8483a77f5a56": {
+              "requested": false,
+              "working": false
+            },
+            "788edc02-e318-4947-b708-40d4aebf5ac4": {
+              "requested": false,
+              "working": false
+            },
+            "d06d63a5-6580-4aa3-b5ad-1c43e654531f": {
+              "requested": false,
+              "working": false
+            },
+            "40b2eca4-c52e-4a49-bf5e-4216cba3966b": {
+              "requested": false,
+              "working": false
+            },
+            "f5d86c5e-064d-4ff7-a598-1bb7b1965735": {
+              "requested": false,
+              "working": false
+            },
+            "bc29054d-c02a-4e76-9901-37a09b532594": {
+              "requested": false,
+              "working": false
+            },
+            "d07cb7ca-705a-4149-8db1-62190dbf527f": {
+              "requested": false,
+              "working": false
+            },
+            "e645c726-0606-4f26-9e34-f1bef97da6c2": {
+              "requested": false,
+              "working": false
+            },
+            "2a020c20-7723-4899-a2de-af796343fad0": {
+              "requested": false,
+              "working": false
+            },
+            "d0bd1048-7549-4640-9a15-4b676f1958d3": {
+              "requested": false,
+              "working": false
+            },
+            "0a780110-3eb0-48c4-bf41-9ef603956d88": {
+              "requested": false,
+              "working": false
+            },
+            "a70c0c55-eb8a-4ec1-96f5-e90da2956a34": {
+              "requested": false,
+              "working": false
+            },
+            "2eb181c5-e52d-428b-8acd-ab235b3d5518": {
+              "requested": false,
+              "working": false
+            },
+            "2bc629ff-9fa3-4827-a038-8b4f71c79ac0": {
+              "requested": false,
+              "working": false
+            },
+            "54556a47-ec1d-405d-9c39-c51b8f6b50d0": {
+              "requested": false,
+              "working": false
+            },
+            "a2416ed2-7157-46fd-8b5e-1040ea95e15a": {
+              "requested": false,
+              "working": false
+            },
+            "46157140-180b-4964-ad25-9757a8bc31f9": {
+              "requested": false,
+              "working": false
+            },
+            "2613fd5b-2441-43be-9dd0-6f816b7d99c8": {
+              "requested": false,
+              "working": false
+            },
+            "66763195-4559-4539-a867-1d53c3043038": {
+              "requested": false,
+              "working": false
+            },
+            "cc2476bc-1c62-45f3-8ffe-c0dc889ec0ce": {
+              "requested": false,
+              "working": false
+            },
+            "5cf14390-d05d-49be-aa78-455a7f57e110": {
+              "requested": false,
+              "working": false
+            },
+            "d153269b-497c-40e9-90f2-bd24a70d3cff": {
+              "requested": false,
+              "working": false
+            },
+            "38fed3cf-32f4-4f12-b292-2789cc7160e2": {
+              "requested": false,
+              "working": false
+            },
+            "27f4adda-3a7b-45ea-b391-7a126a862bf2": {
+              "requested": false,
+              "working": false
+            },
+            "dce085a2-d602-4de8-a2ae-da6ef12762b7": {
+              "requested": false,
+              "working": false
+            },
+            "368b35a0-d398-4811-86e4-de272b8cc16c": {
+              "requested": false,
+              "working": false
+            },
+            "02c0cf2b-11ca-447c-b8c1-7580ee848311": {
+              "requested": false,
+              "working": false
+            },
+            "efbe0f3f-8e31-416d-a059-d77ba27403e3": {
+              "requested": false,
+              "working": false
+            },
+            "95a356e3-561d-4c67-a015-9c3e422dfeda": {
+              "requested": false,
+              "working": false
+            },
+            "cf8711ef-373e-4467-a703-bb1c47db3d62": {
+              "requested": false,
+              "working": false
+            },
+            "802ae913-dac4-400a-b97b-80ca5bd89a88": {
+              "requested": false,
+              "working": false
+            },
+            "69f57d90-09eb-4452-a6d1-2dd7b09a9c3f": {
+              "requested": false,
+              "working": false
+            },
+            "3a173d82-7ca7-4e24-9a68-bb2dd337ae1d": {
+              "requested": false,
+              "working": false
+            },
+            "45169f9a-3ada-4e09-ad08-5f09391c17f5": {
+              "requested": false,
+              "working": false
+            },
+            "85612462-67ce-4542-92fa-730b988c1011": {
+              "requested": false,
+              "working": false
+            },
+            "2dbc1f1a-f550-4cbf-8945-e390c6946d14": {
+              "requested": false,
+              "working": false
+            },
+            "7b8eab36-dbd3-4e35-84df-9bda10f8e5ee": {
+              "requested": false,
+              "working": false
+            }
+          }
+        }
+      ]
+    },
+    "Backend": {
+      "short": "BA",
+      "nodes": {
+        "Main": {
+          "id": "BA_Main",
+          "class": "Application",
+          "population": "auto",
+          "type": "anchor",
+          "location": "/home/guatamap/analysis-labs-website/website/app_backend/backend.py",
+          "venv": "/home/guatamap/analysis-labs-website/web-venv",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "dc62130f-e87e-42e5-bb4b-0ae7b3424e10",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "2": {
+              "instance_id": 2,
+              "self_address": "68971eee-2857-4677-ad0c-2bfe9fb4f95a",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "3": {
+              "instance_id": 3,
+              "self_address": "ec889988-d7c3-4f6f-8a68-e9b4fe74675f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "4": {
+              "instance_id": 4,
+              "self_address": "6d26e8e6-dfc1-44c6-99c7-044f4a954ff6",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "5": {
+              "instance_id": 5,
+              "self_address": "c22f01d2-5db1-4b52-a204-33007c89b74c",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "6": {
+              "instance_id": 6,
+              "self_address": "2a83ac9d-ddb5-45d7-871d-dd3f2763e21e",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "7": {
+              "instance_id": 7,
+              "self_address": "1c7e1504-5042-43b8-bfac-af7b17698c72",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "8": {
+              "instance_id": 8,
+              "self_address": "3a1ea7f9-6b1e-4083-b697-877c9aa712c4",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "9": {
+              "instance_id": 9,
+              "self_address": "1eb40b4b-767e-4e4d-a9f9-e151e0b7f890",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "10": {
+              "instance_id": 10,
+              "self_address": "f393d929-f3ed-4e03-9956-604ac3d6406a",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "11": {
+              "instance_id": 11,
+              "self_address": "dffe174d-2821-4285-856b-0ee28febdc1f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "12": {
+              "instance_id": 12,
+              "self_address": "cd343b81-6843-477c-afe2-448eff42b893",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "13": {
+              "instance_id": 13,
+              "self_address": "a88b7f6d-f208-4681-9900-31cfe9d06fbc",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "14": {
+              "instance_id": 14,
+              "self_address": "ec89b1ed-4e36-4740-bec5-3e3125ec558a",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "15": {
+              "instance_id": 15,
+              "self_address": "6f2f81a4-79ec-4b48-a4ac-ce292caaa5c0",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "16": {
+              "instance_id": 16,
+              "self_address": "d9254129-ea45-4b67-9e96-25f424e7fe87",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "17": {
+              "instance_id": 17,
+              "self_address": "21d01a98-1caa-41d5-b68b-fcdda6b83147",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "18": {
+              "instance_id": 18,
+              "self_address": "3fac0d82-9007-40ff-8f48-1acbee32ed73",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "19": {
+              "instance_id": 19,
+              "self_address": "4e800e74-4706-4674-a535-40f60f54b14c",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "20": {
+              "instance_id": 20,
+              "self_address": "6b800734-a4e2-412f-ace8-b02216071879",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "21": {
+              "instance_id": 21,
+              "self_address": "f84184b2-7b44-45e9-8a27-6c5bf762a638",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "22": {
+              "instance_id": 22,
+              "self_address": "3d9365ef-bd29-4fa0-907b-93fd53635012",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "23": {
+              "instance_id": 23,
+              "self_address": "55d2c43b-bf1a-46b0-bda9-42c7686efa84",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "24": {
+              "instance_id": 24,
+              "self_address": "c58a76f7-b481-4e9e-8d4c-c4b0b80de25a",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "25": {
+              "instance_id": 25,
+              "self_address": "57a5d1c3-f51f-4d1c-b1a8-bd4c02dd18c4",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "26": {
+              "instance_id": 26,
+              "self_address": "57045025-f842-4fca-a630-a0982dc972c9",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "27": {
+              "instance_id": 27,
+              "self_address": "a1c1227e-a8f4-4fc8-8ba5-49fcf4fb4890",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "28": {
+              "instance_id": 28,
+              "self_address": "c4b5952e-e500-40ab-a5a8-407fcf5a1d9f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "29": {
+              "instance_id": 29,
+              "self_address": "96e28438-a2b2-4c43-be02-985211064f16",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "30": {
+              "instance_id": 30,
+              "self_address": "a3818bd4-0e44-46c7-8658-b8935587b435",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "31": {
+              "instance_id": 31,
+              "self_address": "66186786-2373-40ff-bc4b-c33daa65f698",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "32": {
+              "instance_id": 32,
+              "self_address": "6c13c94e-75ae-4b7a-8dea-54bd10fa71ea",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "33": {
+              "instance_id": 33,
+              "self_address": "657481af-6e53-49b7-afff-fd0b5531ad72",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "34": {
+              "instance_id": 34,
+              "self_address": "58cb07d1-67d9-48bb-b386-19dd2504fa6f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "35": {
+              "instance_id": 35,
+              "self_address": "0d63882e-c1bf-49ce-8628-e8cf99cf4ae0",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "36": {
+              "instance_id": 36,
+              "self_address": "7998c6dc-1e1c-4aa7-8644-77bbbba0b2c2",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "37": {
+              "instance_id": 37,
+              "self_address": "feeac9f2-ae8a-4342-a053-12d2cdcba2be",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "38": {
+              "instance_id": 38,
+              "self_address": "627b784b-a1b8-4563-b5b7-c15bbc0fa212",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "39": {
+              "instance_id": 39,
+              "self_address": "445c0a16-ac14-46c6-867a-431808e6a888",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "40": {
+              "instance_id": 40,
+              "self_address": "3e009529-96fd-4dd4-b77c-506393aa5bdb",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "41": {
+              "instance_id": 41,
+              "self_address": "6029e5d9-d9f3-4de2-aaaf-f9d25a5804c8",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "42": {
+              "instance_id": 42,
+              "self_address": "37b20fe9-a29f-4bd5-937e-9902a38fdd5a",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "43": {
+              "instance_id": 43,
+              "self_address": "82071aff-281d-4ed4-960c-455b7c3cc4c5",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "44": {
+              "instance_id": 44,
+              "self_address": "0fcab047-a4c9-4757-85ea-a4aebc4ebd53",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "45": {
+              "instance_id": 45,
+              "self_address": "77155cbe-0e1b-4e09-a274-2eaee767442d",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "46": {
+              "instance_id": 46,
+              "self_address": "ea5c7f04-e0e4-422a-bc0f-3c075c18c2a8",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "47": {
+              "instance_id": 47,
+              "self_address": "34f37d65-6b60-46f2-9028-55126cf626ff",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "48": {
+              "instance_id": 48,
+              "self_address": "d7f40ab7-d2ca-475a-8e52-8e568bc24c0d",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "49": {
+              "instance_id": 49,
+              "self_address": "113c678b-ee97-4d4c-80cd-52abec1da4c1",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "50": {
+              "instance_id": 50,
+              "self_address": "d57bd324-74d1-4eec-85f1-7d2a0b426e02",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        },
+        "Positive": {
+          "id": "BA_Pos",
+          "class": "PositiveCom",
+          "population": "auto",
+          "type": "aux",
+          "instances": {
+            "1": {
+              "instance_id": 1,
+              "self_address": "faf0adee-d584-4d9b-a71b-dd8af11da897",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "2": {
+              "instance_id": 2,
+              "self_address": "9b275220-948c-42ee-9f8d-ca38db3252eb",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "3": {
+              "instance_id": 3,
+              "self_address": "5005d81e-9922-4fac-b00b-bb4452add0c2",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "4": {
+              "instance_id": 4,
+              "self_address": "f61d9060-82f5-4b6d-9208-86214abbbc57",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "5": {
+              "instance_id": 5,
+              "self_address": "17239561-68fa-4a30-a088-168093cb7970",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "6": {
+              "instance_id": 6,
+              "self_address": "6f2c5d0c-ef3b-41bc-9783-0fe407884a54",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "7": {
+              "instance_id": 7,
+              "self_address": "792e14c7-c720-4c70-a61a-f56fbe8d7a90",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "8": {
+              "instance_id": 8,
+              "self_address": "d49b589f-b687-4273-941b-db73f8780358",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "9": {
+              "instance_id": 9,
+              "self_address": "5805219a-85b7-4ca0-ac63-2d6f509f1acb",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "10": {
+              "instance_id": 10,
+              "self_address": "b472ec4c-fecf-4414-93e2-5e3869a7e02f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "11": {
+              "instance_id": 11,
+              "self_address": "d9ff7f73-4c9f-410a-849d-baeb265f0028",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "12": {
+              "instance_id": 12,
+              "self_address": "535b66e7-a964-47bb-b7c6-1b3d9926a0aa",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "13": {
+              "instance_id": 13,
+              "self_address": "3d13d3d1-2a05-42fd-b2c7-eaf64adc7038",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "14": {
+              "instance_id": 14,
+              "self_address": "4dc5f997-9da9-4ed6-863a-a2f6452b33a7",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "15": {
+              "instance_id": 15,
+              "self_address": "4c49c16f-4cb3-4164-8544-bc91ef6d7544",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "16": {
+              "instance_id": 16,
+              "self_address": "3c90ffdb-7902-4057-b78d-46459f2018cc",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "17": {
+              "instance_id": 17,
+              "self_address": "d8e181e9-a6d6-4baf-9da5-ff6b07f8a107",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "18": {
+              "instance_id": 18,
+              "self_address": "c146eb71-37a9-483b-999d-53fb167cc131",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "19": {
+              "instance_id": 19,
+              "self_address": "822b34d7-13e1-428d-9577-870706c2a92c",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "20": {
+              "instance_id": 20,
+              "self_address": "08794c9e-20e5-4847-9c3c-e03838568c27",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "21": {
+              "instance_id": 21,
+              "self_address": "68466532-d3b6-45cb-87ba-19a6bb54cf12",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "22": {
+              "instance_id": 22,
+              "self_address": "f7f4e0ff-ee76-4f1e-aa6e-870ae6c196d0",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "23": {
+              "instance_id": 23,
+              "self_address": "2d42bcab-819e-4af0-b2ca-8d40de0cb0eb",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "24": {
+              "instance_id": 24,
+              "self_address": "2d0a6d56-fe46-44e4-85f1-a37cc515d123",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "25": {
+              "instance_id": 25,
+              "self_address": "5a490ee7-2ff6-4108-84df-4698cc8c1485",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "26": {
+              "instance_id": 26,
+              "self_address": "39e003ac-9851-4077-a117-1c436c1efb89",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "27": {
+              "instance_id": 27,
+              "self_address": "d5bf298d-77fa-4722-b586-8f047663b6cf",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "28": {
+              "instance_id": 28,
+              "self_address": "af6939a0-cf1d-464d-8b2e-302e77d84755",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "29": {
+              "instance_id": 29,
+              "self_address": "0d4b14f4-5282-47e9-ac3a-57392f63d5fb",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "30": {
+              "instance_id": 30,
+              "self_address": "8b68ed5b-c721-4824-8e77-228d0150eeba",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "31": {
+              "instance_id": 31,
+              "self_address": "39d51970-eff2-4cb8-a113-9f7b0368f893",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "32": {
+              "instance_id": 32,
+              "self_address": "5ff356bf-670b-4151-be8a-a216e24aba11",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "33": {
+              "instance_id": 33,
+              "self_address": "7b558ea0-708d-4bb9-b9fe-c6637a9c02ab",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "34": {
+              "instance_id": 34,
+              "self_address": "5cc0f8e2-3dcf-46f7-9705-a05ff2fd5a5f",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "35": {
+              "instance_id": 35,
+              "self_address": "b7dc3208-dcb8-4872-9167-48914bcf2813",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "36": {
+              "instance_id": 36,
+              "self_address": "301ea4fe-fc98-471e-8036-47e940dffdd2",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "37": {
+              "instance_id": 37,
+              "self_address": "1732e991-a757-4b78-aafb-ce94673746fb",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "38": {
+              "instance_id": 38,
+              "self_address": "2fddaf3a-06de-43fa-b059-7f5e99feac22",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "39": {
+              "instance_id": 39,
+              "self_address": "fcbfc3df-5b69-4a0c-afb9-ea850a4778e8",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "40": {
+              "instance_id": 40,
+              "self_address": "8fd5e5c7-06ea-4921-afcc-6aca1d379d9c",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "41": {
+              "instance_id": 41,
+              "self_address": "5f0404a6-917c-4a1a-bbd8-ce4a9bb61f8c",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "42": {
+              "instance_id": 42,
+              "self_address": "a5fb099d-73db-47f5-b976-712c011d4f1e",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "43": {
+              "instance_id": 43,
+              "self_address": "66a199ef-01ca-4080-adec-3b84329fd3a3",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "44": {
+              "instance_id": 44,
+              "self_address": "81cd1dd3-6a23-4958-83c6-b52eabc389ff",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "45": {
+              "instance_id": 45,
+              "self_address": "8086081c-a619-4d81-8c74-3e3dc38c582a",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "46": {
+              "instance_id": 46,
+              "self_address": "985d016b-0dd7-4540-98db-7adcfdc0eabf",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "47": {
+              "instance_id": 47,
+              "self_address": "ffb9522d-2bbe-4386-b016-3eda39425f92",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "48": {
+              "instance_id": 48,
+              "self_address": "99dbc552-0277-4622-87b3-d32e4f5b2d65",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "49": {
+              "instance_id": 49,
+              "self_address": "c6cf09b8-615f-4e25-8f6d-cf142f7a1ea7",
+              "pid": null,
+              "requested": false,
+              "working": false
+            },
+            "50": {
+              "instance_id": 50,
+              "self_address": "5b117756-0447-415e-8c90-c83c29dad75d",
+              "pid": null,
+              "requested": false,
+              "working": false
+            }
+          }
+        }
+      },
+      "internal_edges": [
+        {
+          "from": "BA_Main",
+          "to": "BA_Pos",
+          "type": "inheritance",
+          "id": "E_BA_Main__BA_Pos",
+          "uuid": "d0512654-723a-4ecd-a33c-4ebfc6d26991"
+        }
+      ]
+    }
+  },
+  "total_allocated_instances": 0,
+  "inter_communicator_edges": [
+    {
+      "from": "F_Neg",
+      "to": "O_Pos",
+      "type": "unix_socket",
+      "id": "E_F_Neg__O_Pos",
+      "uuid": "710e4521-244b-49eb-86c0-df04f5c554d9",
+      "uuid_pool": {
+        "a81ecfb1-b4ef-4b85-824e-8ccd8c1599da": {
+          "requested": false,
+          "working": false
+        },
+        "4ca341dd-a6bd-42a5-b2fb-b210249f1700": {
+          "requested": false,
+          "working": false
+        },
+        "64134988-970d-4644-ac74-8ff0aaacffee": {
+          "requested": false,
+          "working": false
+        },
+        "4b1fba1c-a57f-4a36-aa5e-0c5f32d69776": {
+          "requested": false,
+          "working": false
+        },
+        "b215c91a-62b7-40df-89cc-e1d4a91bce82": {
+          "requested": false,
+          "working": false
+        },
+        "944d71ef-ae2d-4d9c-9b00-e73ad87ceb00": {
+          "requested": false,
+          "working": false
+        },
+        "4f71552c-dbad-49e6-9e37-868ded30b6dc": {
+          "requested": false,
+          "working": false
+        },
+        "6c91aa49-5a9a-445c-8c52-62affcea1c10": {
+          "requested": false,
+          "working": false
+        },
+        "9faff15f-5a86-4c9d-bf7a-59ca65d0c14a": {
+          "requested": false,
+          "working": false
+        },
+        "b3dca78b-510b-49dc-baa5-28ff4109e59c": {
+          "requested": false,
+          "working": false
+        },
+        "efa5b301-6ba3-4264-a3cc-567093f9ca4f": {
+          "requested": false,
+          "working": false
+        },
+        "2b455af8-7533-421a-9197-b398db9ab424": {
+          "requested": false,
+          "working": false
+        },
+        "bfb09c24-9ecd-4d1a-8f74-ff10171294ea": {
+          "requested": false,
+          "working": false
+        },
+        "4c1424b2-fd0a-4ed8-9839-ddebe1a0f3eb": {
+          "requested": false,
+          "working": false
+        },
+        "cb1ff2cd-23f5-4a13-b8dc-3f9ca02ae3ff": {
+          "requested": false,
+          "working": false
+        },
+        "31e5f1ac-b888-46eb-8bca-601216f93f84": {
+          "requested": false,
+          "working": false
+        },
+        "d89a906b-8de7-4f9b-8af4-afc9953160b2": {
+          "requested": false,
+          "working": false
+        },
+        "aaaf8378-b487-4146-8215-173289bb7cf4": {
+          "requested": false,
+          "working": false
+        },
+        "d44d224d-e3ac-4d9c-8942-9dacbf7b255a": {
+          "requested": false,
+          "working": false
+        },
+        "7934ba5a-2e22-401e-ad38-f429167f9b9c": {
+          "requested": false,
+          "working": false
+        },
+        "0a6791fb-36a6-4e40-9363-8e175fac80ac": {
+          "requested": false,
+          "working": false
+        },
+        "08f6b276-0906-42a8-813b-31b99fe7ede3": {
+          "requested": false,
+          "working": false
+        },
+        "1840b8e4-11a2-4fcf-b75b-116d83629953": {
+          "requested": false,
+          "working": false
+        },
+        "ac3aa0fc-358d-4b81-95f6-f95598546889": {
+          "requested": false,
+          "working": false
+        },
+        "c80bf249-4fd5-4e4c-9be1-37e094a9bc62": {
+          "requested": false,
+          "working": false
+        },
+        "348c0458-f014-48fa-8a9d-5af9d95db15c": {
+          "requested": false,
+          "working": false
+        },
+        "c78ea769-340f-445e-955b-eca6046ef222": {
+          "requested": false,
+          "working": false
+        },
+        "913c22d6-1e29-4dde-a0c2-ab2459d62acb": {
+          "requested": false,
+          "working": false
+        },
+        "1b4535d1-fb96-4088-b4f2-f9e5187aebf6": {
+          "requested": false,
+          "working": false
+        },
+        "15610d68-b482-4096-bc5d-4016bfe1a31c": {
+          "requested": false,
+          "working": false
+        },
+        "cf7ead20-16e5-4b08-afea-b14b77ad4c30": {
+          "requested": false,
+          "working": false
+        },
+        "61647977-1036-4782-8421-1b0b62b9fe57": {
+          "requested": false,
+          "working": false
+        },
+        "00dd9e23-2cd8-4e92-a8b7-7387eaf957e2": {
+          "requested": false,
+          "working": false
+        },
+        "77c33575-0b4f-463d-830f-1760e88b1485": {
+          "requested": false,
+          "working": false
+        },
+        "c5d32f3b-db4f-4056-b3a8-4a9a6c1d1a27": {
+          "requested": false,
+          "working": false
+        },
+        "94306842-7f50-4de6-adf1-6a355007e8f6": {
+          "requested": false,
+          "working": false
+        },
+        "fdc0d324-40e1-416c-a856-da694e1565e4": {
+          "requested": false,
+          "working": false
+        },
+        "db397f49-8b11-4f26-8506-b2ee750b2713": {
+          "requested": false,
+          "working": false
+        },
+        "4de6ce30-9f55-49e4-a773-39268c61524c": {
+          "requested": false,
+          "working": false
+        },
+        "ba8045ae-4afc-4312-87f0-01d2939daeb9": {
+          "requested": false,
+          "working": false
+        },
+        "98074977-147e-4bd9-bfb0-9e0cffdb720e": {
+          "requested": false,
+          "working": false
+        },
+        "e26db81a-31ca-41da-be9b-762ecd10437b": {
+          "requested": false,
+          "working": false
+        },
+        "72226c31-fffb-47d3-801e-79706e241423": {
+          "requested": false,
+          "working": false
+        },
+        "534d49c6-acf5-4856-9132-05b692a42afa": {
+          "requested": false,
+          "working": false
+        },
+        "71620398-522b-461b-ab1c-dd559b0367e3": {
+          "requested": false,
+          "working": false
+        },
+        "560371e8-1157-4bab-bcf2-574aa1b89dc7": {
+          "requested": false,
+          "working": false
+        },
+        "dafe3a82-8f2f-41a8-a444-1cfedbedd022": {
+          "requested": false,
+          "working": false
+        },
+        "ce830b50-7b3c-4afc-830f-5c6fb68c9fa5": {
+          "requested": false,
+          "working": false
+        },
+        "94433c8c-551d-4ca1-b2a0-1327a8180ab0": {
+          "requested": false,
+          "working": false
+        },
+        "836c1ccf-ce3b-42a4-8157-d7c09234301d": {
+          "requested": false,
+          "working": false
+        },
+        "e4b8dd12-5ddc-4dff-bf1e-6fd3d6b129d7": {
+          "requested": false,
+          "working": false
+        },
+        "0d15c417-bd86-4823-9ad7-a18f297e1ae8": {
+          "requested": false,
+          "working": false
+        },
+        "2bccca8e-3ce2-4c9e-8e90-84b17fb6def9": {
+          "requested": false,
+          "working": false
+        },
+        "805cfcdf-2eba-4c79-ac63-4f1c96862692": {
+          "requested": false,
+          "working": false
+        },
+        "ac49c974-b83d-486a-b2cc-e521970166d6": {
+          "requested": false,
+          "working": false
+        },
+        "74789fdb-2d7f-46b6-9244-af84c827d6d2": {
+          "requested": false,
+          "working": false
+        },
+        "ed1ade28-d6c3-41d9-915b-14b9307b5615": {
+          "requested": false,
+          "working": false
+        },
+        "68cb64f7-aa41-4788-a91f-316fda386498": {
+          "requested": false,
+          "working": false
+        },
+        "32e92725-1654-4010-a5a2-f6179c42d3a2": {
+          "requested": false,
+          "working": false
+        },
+        "2800ddaf-1f10-43a6-a5e0-361524f831e3": {
+          "requested": false,
+          "working": false
+        },
+        "ed1d8514-4e8a-47fb-9482-423186366d94": {
+          "requested": false,
+          "working": false
+        },
+        "32dab4dd-5ce7-4aad-a663-7aa84a21cdda": {
+          "requested": false,
+          "working": false
+        },
+        "a9d28269-9016-448c-967f-0e58bd34790c": {
+          "requested": false,
+          "working": false
+        },
+        "04e78b7a-287b-4904-bb74-39702c16cefb": {
+          "requested": false,
+          "working": false
+        },
+        "bd46f42a-a379-4438-82b0-25a27e4bb8e5": {
+          "requested": false,
+          "working": false
+        },
+        "a514222b-df2e-4e3f-9b5c-cdbf64c449d6": {
+          "requested": false,
+          "working": false
+        },
+        "a153c0c6-d7dd-432b-ab20-8f9b3c3d9a79": {
+          "requested": false,
+          "working": false
+        },
+        "1d7468b7-ba61-4aed-95df-5b50e0dd34ef": {
+          "requested": false,
+          "working": false
+        },
+        "0b9d1246-df9b-4245-9d22-4ef31aba91f8": {
+          "requested": false,
+          "working": false
+        },
+        "fbfdf93d-6ee7-45e4-905f-f1afe8ec76b2": {
+          "requested": false,
+          "working": false
+        },
+        "07882d20-b563-4a90-8f54-c656f0c3a33b": {
+          "requested": false,
+          "working": false
+        },
+        "b5dccff9-6666-4345-9dd4-403a524de3c4": {
+          "requested": false,
+          "working": false
+        },
+        "c52bff1d-d579-479a-bea3-0a7f92e0c410": {
+          "requested": false,
+          "working": false
+        },
+        "584ea3b6-7174-4a88-8af0-e602ce84037e": {
+          "requested": false,
+          "working": false
+        },
+        "d9d1e167-520b-4f92-8e56-b4c8e768e2fa": {
+          "requested": false,
+          "working": false
+        },
+        "c578289b-0a11-4edf-bd5c-58eedbac3e5a": {
+          "requested": false,
+          "working": false
+        },
+        "ae52376a-ba9f-4513-a0f6-54c20ac9a15c": {
+          "requested": false,
+          "working": false
+        },
+        "e986b9dc-a249-44c4-b164-d6cddcedf687": {
+          "requested": false,
+          "working": false
+        },
+        "477f2a4d-6a62-419e-8c35-d9fbe56d698e": {
+          "requested": false,
+          "working": false
+        },
+        "9f2ab7f6-2bf0-4247-889b-5ae43c73e48f": {
+          "requested": false,
+          "working": false
+        },
+        "427ef8a1-25cb-45a6-a10c-9394d598b6b3": {
+          "requested": false,
+          "working": false
+        },
+        "37a4e97c-5e74-46d2-84a7-f68ebc596fb8": {
+          "requested": false,
+          "working": false
+        },
+        "d8c6021c-6f8c-4087-94ae-5aca4c7eab30": {
+          "requested": false,
+          "working": false
+        },
+        "0e257ece-1337-4ac7-96c7-674a09b5d592": {
+          "requested": false,
+          "working": false
+        },
+        "ca31d5a6-cf92-45ed-9528-36813d7a3f3c": {
+          "requested": false,
+          "working": false
+        },
+        "b82026c6-a0d6-4488-b82c-38b3c60d8e83": {
+          "requested": false,
+          "working": false
+        },
+        "c469c34b-9dd5-4395-a935-30d61dd31c3b": {
+          "requested": false,
+          "working": false
+        },
+        "1dc7795a-e73d-43c6-a952-761e600758a2": {
+          "requested": false,
+          "working": false
+        },
+        "4f73ab53-b899-4b43-8b16-7886b1a9f211": {
+          "requested": false,
+          "working": false
+        },
+        "91f04cbd-635f-41ef-9d74-baf35f40c71d": {
+          "requested": false,
+          "working": false
+        },
+        "d1fd1935-5338-4aef-a9a3-310f1cfecddd": {
+          "requested": false,
+          "working": false
+        },
+        "d7e57514-2da9-4bd5-8534-ffecd133f45d": {
+          "requested": false,
+          "working": false
+        },
+        "6e428553-3409-4b86-a3fb-c33a547d6cb4": {
+          "requested": false,
+          "working": false
+        },
+        "03b8b785-ed21-40a2-aba5-9801fa1af100": {
+          "requested": false,
+          "working": false
+        },
+        "2e296fa7-d89e-461f-aa0f-1a9cf13df1ee": {
+          "requested": false,
+          "working": false
+        },
+        "b3ef6905-5ad4-438b-95ef-45e92a58e453": {
+          "requested": false,
+          "working": false
+        },
+        "22cf7c25-77aa-47ec-aed1-1509720ec654": {
+          "requested": false,
+          "working": false
+        },
+        "d8effe51-bd10-4796-9c0f-f8219291ce45": {
+          "requested": false,
+          "working": false
+        },
+        "f8f392fe-913b-41a3-91ee-44dc90cacc16": {
+          "requested": false,
+          "working": false
+        },
+        "3edccaa2-2160-461a-9f1c-4b90cc418fb6": {
+          "requested": false,
+          "working": false
+        }
+      }
+    },
+    {
+      "from": "O_Neg",
+      "to": "U_Pos",
+      "type": "unix_socket",
+      "id": "E_O_Neg__U_Pos",
+      "uuid": "bb99d44d-ab14-4df0-8091-7e5788585bcc",
+      "uuid_pool": {
+        "c04b3775-6204-4ed4-a3fb-3a657cde0512": {
+          "requested": false,
+          "working": false
+        },
+        "b0be466d-a05d-4657-939e-d0471ba95ac5": {
+          "requested": false,
+          "working": false
+        },
+        "a3f11e3e-6ff4-4337-b6c3-4c8ade8cc677": {
+          "requested": false,
+          "working": false
+        },
+        "4c1046f3-7400-4855-b1b0-700d87e2a156": {
+          "requested": false,
+          "working": false
+        },
+        "3a20cfe6-0454-4be0-8ab8-39c1f62e4777": {
+          "requested": false,
+          "working": false
+        },
+        "6cf93da7-da6b-4761-92a1-5319ad7ffe40": {
+          "requested": false,
+          "working": false
+        },
+        "b09dd1d7-392a-496f-b69a-de800fff0bf7": {
+          "requested": false,
+          "working": false
+        },
+        "589dafe3-a39b-477c-b577-39fb089d0c91": {
+          "requested": false,
+          "working": false
+        },
+        "8fc067b0-febb-4300-b755-a5c92f06a099": {
+          "requested": false,
+          "working": false
+        },
+        "5daaf591-c93d-43c3-a010-1787ec233847": {
+          "requested": false,
+          "working": false
+        },
+        "3cb52a9b-82e6-45cd-9eeb-627c754c077d": {
+          "requested": false,
+          "working": false
+        },
+        "4df509db-7714-4516-ad5d-715a601511ea": {
+          "requested": false,
+          "working": false
+        },
+        "6de377ca-b8b7-4b58-adf2-35bcea2bc4d9": {
+          "requested": false,
+          "working": false
+        },
+        "0e676d28-ade3-423f-8fd1-f189fef9563e": {
+          "requested": false,
+          "working": false
+        },
+        "6c7f03fc-b138-464c-9e97-725e3c49031d": {
+          "requested": false,
+          "working": false
+        },
+        "1e25d90d-1f02-4dec-af56-d4ff9b5f0c87": {
+          "requested": false,
+          "working": false
+        },
+        "06146a04-ad45-42b7-bc37-24f0b20e2836": {
+          "requested": false,
+          "working": false
+        },
+        "ab76797b-33dc-498d-a472-e10d5014d749": {
+          "requested": false,
+          "working": false
+        },
+        "62476ade-f71f-444f-a614-e8cca08a9162": {
+          "requested": false,
+          "working": false
+        },
+        "3a976898-4635-492e-9d36-d2bb83d72042": {
+          "requested": false,
+          "working": false
+        },
+        "b8b63a96-d422-4059-bea3-ff1d83b5d034": {
+          "requested": false,
+          "working": false
+        },
+        "09830465-8b4d-46e5-a5fd-a3e772f7e4e4": {
+          "requested": false,
+          "working": false
+        },
+        "acbb5ea8-36dc-46c7-8eda-06a699134bc6": {
+          "requested": false,
+          "working": false
+        },
+        "e96f0f2f-83f5-4cf6-8765-2dd6b30a45af": {
+          "requested": false,
+          "working": false
+        },
+        "27911a87-55f1-40f8-a032-a5772ceb9eec": {
+          "requested": false,
+          "working": false
+        },
+        "e2bb29a5-be7f-4160-846d-28a5be200f18": {
+          "requested": false,
+          "working": false
+        },
+        "0be4dd76-88b0-49df-b1cb-e4a76fd85374": {
+          "requested": false,
+          "working": false
+        },
+        "72b89ad8-58b6-401e-a7e6-a9da4d1c0443": {
+          "requested": false,
+          "working": false
+        },
+        "b26b9e7d-8dac-4207-b6d7-91d0bbe14aa6": {
+          "requested": false,
+          "working": false
+        },
+        "1664159c-53ce-4244-b940-f98e069adcd9": {
+          "requested": false,
+          "working": false
+        },
+        "192a9306-def2-4696-8c20-618dd306886f": {
+          "requested": false,
+          "working": false
+        },
+        "01c38c64-afd1-4a94-be64-07a1b4451b02": {
+          "requested": false,
+          "working": false
+        },
+        "fcf35d6d-ea2e-4f3e-a62f-e5a445dc7063": {
+          "requested": false,
+          "working": false
+        },
+        "fe4d0630-8814-4553-aa54-d143d67fc754": {
+          "requested": false,
+          "working": false
+        },
+        "ed131f5c-c473-4e50-a98c-021fd7217484": {
+          "requested": false,
+          "working": false
+        },
+        "b1dcf912-bda3-41d9-90a1-f848600abdc2": {
+          "requested": false,
+          "working": false
+        },
+        "afcd80d8-d795-4757-be00-a72ca56b6995": {
+          "requested": false,
+          "working": false
+        },
+        "fac4ba7a-0b8b-47f4-b96c-70b96befe4c2": {
+          "requested": false,
+          "working": false
+        },
+        "d574a48c-2499-4a8c-beb4-61ddcc8193e0": {
+          "requested": false,
+          "working": false
+        },
+        "e61fd5dc-1514-4e4c-b3d9-9421051ad57a": {
+          "requested": false,
+          "working": false
+        },
+        "e47e447b-4c22-40c4-95e7-6b0256716c6f": {
+          "requested": false,
+          "working": false
+        },
+        "84f1469d-ba06-4e9d-9b86-a9fb1077fe6d": {
+          "requested": false,
+          "working": false
+        },
+        "ea97f368-1b62-4a72-94ac-f9fa0f368eb3": {
+          "requested": false,
+          "working": false
+        },
+        "5f321f75-cd6f-4ab5-97d9-8f5f28142565": {
+          "requested": false,
+          "working": false
+        },
+        "009df4a8-63ac-4d2c-a5e6-f5be037c6034": {
+          "requested": false,
+          "working": false
+        },
+        "31a5e8dd-01d3-4911-a6ee-d38e975fa4ae": {
+          "requested": false,
+          "working": false
+        },
+        "ed886dc7-236a-4f97-87f3-331eb6a702f5": {
+          "requested": false,
+          "working": false
+        },
+        "75239c86-9ac1-4394-969b-ea72ff9ef7f0": {
+          "requested": false,
+          "working": false
+        },
+        "f5c1d883-a466-4e17-86c3-8ff0ae8a373d": {
+          "requested": false,
+          "working": false
+        },
+        "fe0553e7-915d-486a-a925-829d9adbfce7": {
+          "requested": false,
+          "working": false
+        },
+        "ace0a696-8f82-4540-90f4-1bc7174a7d6e": {
+          "requested": false,
+          "working": false
+        },
+        "86d4ceb5-613c-4108-8104-7b12dbe857f7": {
+          "requested": false,
+          "working": false
+        },
+        "be3889a7-ce6e-4181-9c2a-0be2943a9f64": {
+          "requested": false,
+          "working": false
+        },
+        "e639476a-fea9-4b25-95eb-58376eeb5dac": {
+          "requested": false,
+          "working": false
+        },
+        "f067d374-8218-49b8-9374-171f2216998d": {
+          "requested": false,
+          "working": false
+        },
+        "b035bd05-95b3-4f0c-aa31-f24f8c330004": {
+          "requested": false,
+          "working": false
+        },
+        "2b61422d-a237-482a-9376-01e410af0a3a": {
+          "requested": false,
+          "working": false
+        },
+        "65ec2497-5eea-49bf-8ad5-a1730f26d63a": {
+          "requested": false,
+          "working": false
+        },
+        "4bdd7f2f-c418-47c9-bd48-672a9727041b": {
+          "requested": false,
+          "working": false
+        },
+        "f3bec13d-1b91-47d3-8125-e03b51ee4168": {
+          "requested": false,
+          "working": false
+        },
+        "a86747d3-879c-44d5-a4e7-9cfa1c27904d": {
+          "requested": false,
+          "working": false
+        },
+        "11524314-c4fb-435f-8e55-2a170d706245": {
+          "requested": false,
+          "working": false
+        },
+        "a8515956-9960-45a1-82ab-5b91f4bcf874": {
+          "requested": false,
+          "working": false
+        },
+        "f7723005-217e-437d-9434-2526d82f8962": {
+          "requested": false,
+          "working": false
+        },
+        "bb4d12e8-77f0-4d4b-b888-7e915a9f7c2c": {
+          "requested": false,
+          "working": false
+        },
+        "6e999d85-13dd-422f-b7a4-69cdb5c1523d": {
+          "requested": false,
+          "working": false
+        },
+        "2fd03afe-a625-45b8-804c-1c9f28b1111e": {
+          "requested": false,
+          "working": false
+        },
+        "2500752e-4e9e-4f33-b3fc-51723cca94e1": {
+          "requested": false,
+          "working": false
+        },
+        "e1f27c49-ad73-458f-a48a-89c4a6c2dac1": {
+          "requested": false,
+          "working": false
+        },
+        "2692e0a5-1f47-4b0d-b3b4-517a955a9fd9": {
+          "requested": false,
+          "working": false
+        },
+        "a926c320-72f7-407d-b005-e1fdb333b361": {
+          "requested": false,
+          "working": false
+        },
+        "019cd6b6-6491-4cae-97ac-d2232975544f": {
+          "requested": false,
+          "working": false
+        },
+        "f534b6d1-044e-4836-8b41-afa92d6b2dc3": {
+          "requested": false,
+          "working": false
+        },
+        "5ffa7fe8-f9b2-4ee5-a7f4-bf733e3c6cab": {
+          "requested": false,
+          "working": false
+        },
+        "bb5f64da-e06f-4373-9388-d30812c340ac": {
+          "requested": false,
+          "working": false
+        },
+        "b98b481a-1e24-4bca-9cd4-508d780d37ec": {
+          "requested": false,
+          "working": false
+        },
+        "779133c7-ddb3-4c39-9606-e3e5f0806352": {
+          "requested": false,
+          "working": false
+        },
+        "58c8160a-291a-4a41-bb79-0b6e6cbabae9": {
+          "requested": false,
+          "working": false
+        },
+        "88f37ce3-8d49-4ff1-9da2-b39c172288e1": {
+          "requested": false,
+          "working": false
+        },
+        "50a506f3-b8e0-465b-b7f9-6e9ef217a287": {
+          "requested": false,
+          "working": false
+        },
+        "e09f98e0-689b-4de8-aee2-c368b7b4c65c": {
+          "requested": false,
+          "working": false
+        },
+        "a58749e2-c315-4b27-bc30-4414f8d68978": {
+          "requested": false,
+          "working": false
+        },
+        "98fde884-b635-40c0-b6bd-0ba650b857f3": {
+          "requested": false,
+          "working": false
+        },
+        "fce8f933-f5cb-4b23-bc5b-098b5d5c6465": {
+          "requested": false,
+          "working": false
+        },
+        "3987dd17-00e6-422b-8deb-1c230038963d": {
+          "requested": false,
+          "working": false
+        },
+        "e651f339-e598-42bf-94cb-6bcc5e5b9c85": {
+          "requested": false,
+          "working": false
+        },
+        "16db010c-4998-490e-8846-d6bd5e4be142": {
+          "requested": false,
+          "working": false
+        },
+        "3aea846d-06d3-4187-b7df-af84408debf8": {
+          "requested": false,
+          "working": false
+        },
+        "b98341f8-0459-4be6-bbe3-21dc7022f019": {
+          "requested": false,
+          "working": false
+        },
+        "121a644e-6d64-4d9a-8aa9-45a4e94a83e0": {
+          "requested": false,
+          "working": false
+        },
+        "65d8b543-6016-4491-a6d6-b8144a8da9d8": {
+          "requested": false,
+          "working": false
+        },
+        "a75d8d56-6f8e-430f-8790-f3abae61e7df": {
+          "requested": false,
+          "working": false
+        },
+        "af6f6ce2-16a1-44b9-ab45-3a8752ac9ff4": {
+          "requested": false,
+          "working": false
+        },
+        "1919a25c-d120-44a7-96b6-1c44c8c1aa8b": {
+          "requested": false,
+          "working": false
+        },
+        "744a1350-2463-465d-bddc-ccf59a3bd4fd": {
+          "requested": false,
+          "working": false
+        },
+        "d4e02331-bafb-45e7-9142-b184602fb735": {
+          "requested": false,
+          "working": false
+        },
+        "50fcb257-a09e-4751-b7f3-c791b9108429": {
+          "requested": false,
+          "working": false
+        },
+        "dd88baa8-c6aa-49d1-8964-0154a4946b2d": {
+          "requested": false,
+          "working": false
+        },
+        "8334dfb9-66dd-4336-9580-762157d2fa15": {
+          "requested": false,
+          "working": false
+        },
+        "cca5773c-15f6-46e4-a64b-bf573f0f5da9": {
+          "requested": false,
+          "working": false
+        }
+      }
+    },
+    {
+      "from": "U_NegWS",
+      "to": "BUS_Pos",
+      "type": "ws_socket",
+      "id": "E_U_NegWS__BUS_Pos",
+      "uuid": "259013bc-3c87-4873-b1ab-1a481a1313d8"
+    },
+    {
+      "from": "B_Neg",
+      "to": "BA_Pos",
+      "type": "unix_socket",
+      "id": "E_B_Neg__BA_Pos",
+      "uuid": "aabf0cc6-64d7-4e7c-8267-824e85f2f458",
+      "uuid_pool": {
+        "bd617c43-0262-4354-a4e7-8f2a6d94d998": {
+          "requested": false,
+          "working": false
+        },
+        "bed57aea-3936-4325-a444-d6772c3ce073": {
+          "requested": false,
+          "working": false
+        },
+        "1378a6f5-12a9-4b6c-a06f-2de4440f8520": {
+          "requested": false,
+          "working": false
+        },
+        "ef621d2f-a7da-4e7b-8d0d-b4eba997fdac": {
+          "requested": false,
+          "working": false
+        },
+        "0fc32590-43c9-4546-8a26-814551cca710": {
+          "requested": false,
+          "working": false
+        },
+        "78124f1b-db12-4a46-ad85-3d94f8c3bb32": {
+          "requested": false,
+          "working": false
+        },
+        "f6d11431-1685-48a5-818a-df7a37393bec": {
+          "requested": false,
+          "working": false
+        },
+        "b5ca7860-a7eb-44f5-9a51-b273620b9ddb": {
+          "requested": false,
+          "working": false
+        },
+        "c188b33a-74d0-4365-9753-a9a470ebabcc": {
+          "requested": false,
+          "working": false
+        },
+        "5f623f7f-add4-4b25-a017-f5801e566146": {
+          "requested": false,
+          "working": false
+        },
+        "90967e37-0163-405d-a00e-c3153c480434": {
+          "requested": false,
+          "working": false
+        },
+        "c8a0d809-6202-4f02-9052-9ac6c6812d58": {
+          "requested": false,
+          "working": false
+        },
+        "41432d21-da61-4363-97a8-60c77810667f": {
+          "requested": false,
+          "working": false
+        },
+        "b26b76a8-8f92-4bcd-8fc6-c0d1ad074e91": {
+          "requested": false,
+          "working": false
+        },
+        "f9643b34-5cc7-4c60-a890-f53206ebea35": {
+          "requested": false,
+          "working": false
+        },
+        "20c108e0-d607-4023-8fcd-7158260b426b": {
+          "requested": false,
+          "working": false
+        },
+        "a632c004-b772-4df2-9f3d-eeed0d225939": {
+          "requested": false,
+          "working": false
+        },
+        "e75cb19c-e9d8-4b51-97f8-f072f26b6f0a": {
+          "requested": false,
+          "working": false
+        },
+        "8b9a0ee6-6862-4389-8f5b-2fdbc045313f": {
+          "requested": false,
+          "working": false
+        },
+        "3afac59c-605e-4cfd-9e7c-12128b915a1e": {
+          "requested": false,
+          "working": false
+        },
+        "330b1a70-1838-4169-9141-92c1f96394c1": {
+          "requested": false,
+          "working": false
+        },
+        "1c8e774c-6d65-400b-a46a-ffeb70a90ab0": {
+          "requested": false,
+          "working": false
+        },
+        "78071729-c984-4374-b748-7653ce855271": {
+          "requested": false,
+          "working": false
+        },
+        "cce886b4-8240-4672-9a77-15a6bad20f60": {
+          "requested": false,
+          "working": false
+        },
+        "0bb8e064-dbfe-4040-ad1b-53b488d2e335": {
+          "requested": false,
+          "working": false
+        },
+        "c428a582-41d5-4424-a97e-c1d9817a2742": {
+          "requested": false,
+          "working": false
+        },
+        "a509a4f8-3b2b-4213-870a-bcfa80a1663b": {
+          "requested": false,
+          "working": false
+        },
+        "ddf45806-11de-4324-8b25-02ab5dfac080": {
+          "requested": false,
+          "working": false
+        },
+        "e92e3bfb-fcf0-43a4-863d-741583f9bf73": {
+          "requested": false,
+          "working": false
+        },
+        "68d35bac-4c49-4fbe-a225-48cf7324a8ba": {
+          "requested": false,
+          "working": false
+        },
+        "a0eb7bcc-d58c-4a9d-96ee-edd992a61429": {
+          "requested": false,
+          "working": false
+        },
+        "d353594e-c0f1-49d7-912f-27cfc97f9df7": {
+          "requested": false,
+          "working": false
+        },
+        "8e4e64db-0d91-4c89-9285-a7ccf5bed48e": {
+          "requested": false,
+          "working": false
+        },
+        "bcf9a4c2-d9cd-4ea4-80b6-c362905dd41e": {
+          "requested": false,
+          "working": false
+        },
+        "df1ea372-580d-4d2c-a853-6fce3eeced86": {
+          "requested": false,
+          "working": false
+        },
+        "f8b2eb86-6603-44fe-864b-7ad9b63883a3": {
+          "requested": false,
+          "working": false
+        },
+        "309e3ca7-a379-4e03-a49e-863458a42aa1": {
+          "requested": false,
+          "working": false
+        },
+        "71a04560-2915-43fa-a4b7-a5e5a88f7917": {
+          "requested": false,
+          "working": false
+        },
+        "cb25477e-c681-4872-a1ee-fab701165e5c": {
+          "requested": false,
+          "working": false
+        },
+        "4511ee41-a3de-452e-a0ea-60f28d621f4d": {
+          "requested": false,
+          "working": false
+        },
+        "55bf8d6f-5eda-4a1d-bd30-7dc0defdfa1f": {
+          "requested": false,
+          "working": false
+        },
+        "a1b31012-e453-48b1-8018-54828fd9b52a": {
+          "requested": false,
+          "working": false
+        },
+        "90424e63-4fac-4844-89a9-e014d314e441": {
+          "requested": false,
+          "working": false
+        },
+        "df9c61d6-0f85-4d1e-869d-c612e8be54f5": {
+          "requested": false,
+          "working": false
+        },
+        "705dd82c-05dd-4429-a6b2-9c4056547e46": {
+          "requested": false,
+          "working": false
+        },
+        "6563f1a4-5691-42a8-ba99-293f63e4b4a6": {
+          "requested": false,
+          "working": false
+        },
+        "adc8ed0e-8248-4605-b5e6-7c5d4f1ca95b": {
+          "requested": false,
+          "working": false
+        },
+        "41b97e90-ac8b-4fc0-92f6-e8298888d54c": {
+          "requested": false,
+          "working": false
+        },
+        "42c0556a-5dd7-4f3d-b981-45d0dbc908aa": {
+          "requested": false,
+          "working": false
+        },
+        "8c59f55a-7f8d-49b8-9d48-2f1c6f2d0af6": {
+          "requested": false,
+          "working": false
+        },
+        "bed35104-fcc0-4453-ade8-aacdd57d2860": {
+          "requested": false,
+          "working": false
+        },
+        "a9153fde-187a-4d4d-8f01-d1ae47d33d04": {
+          "requested": false,
+          "working": false
+        },
+        "703041ef-5bcf-4f11-b034-d742ce673f4a": {
+          "requested": false,
+          "working": false
+        },
+        "8772d127-0f22-45a8-9ecd-813de4c460d8": {
+          "requested": false,
+          "working": false
+        },
+        "fc1998c7-5697-4c98-a15e-bfdb127b1f10": {
+          "requested": false,
+          "working": false
+        },
+        "8526b715-34ad-4f7a-b963-c930f625164d": {
+          "requested": false,
+          "working": false
+        },
+        "c339d5f6-f6ec-494f-9fb1-3fb9a9989586": {
+          "requested": false,
+          "working": false
+        },
+        "92de99fa-9862-48ad-b314-6b24e6f90033": {
+          "requested": false,
+          "working": false
+        },
+        "4cf4d9ca-95bd-486d-b811-9123c2a6fcb9": {
+          "requested": false,
+          "working": false
+        },
+        "99a797aa-439f-4785-860e-b585f001a558": {
+          "requested": false,
+          "working": false
+        },
+        "81b26284-1408-44e3-a5b4-652ef8c929f1": {
+          "requested": false,
+          "working": false
+        },
+        "237fd093-a98d-4a5e-be3c-e0053f4ef5ce": {
+          "requested": false,
+          "working": false
+        },
+        "3f2952b0-9eb9-4de2-a258-cb5acb7ead0a": {
+          "requested": false,
+          "working": false
+        },
+        "4d5056a3-e187-486b-a6ae-9358bc5d12a0": {
+          "requested": false,
+          "working": false
+        },
+        "b8d7ae85-841f-4efa-9041-815fd4031a53": {
+          "requested": false,
+          "working": false
+        },
+        "ed8ca57c-4821-4a2e-bf27-ae385200cb70": {
+          "requested": false,
+          "working": false
+        },
+        "c2077694-6a8d-470e-88aa-b99cfeeef8ac": {
+          "requested": false,
+          "working": false
+        },
+        "76b73df7-d302-4640-9df0-814a142f0c9e": {
+          "requested": false,
+          "working": false
+        },
+        "f1e61373-f940-46f7-8fa6-3fcda50022ea": {
+          "requested": false,
+          "working": false
+        },
+        "366b2e28-c45b-4c3d-bb1b-e47da1edbd0b": {
+          "requested": false,
+          "working": false
+        },
+        "46eda5e4-9872-46b1-bb55-1acf08bde4c8": {
+          "requested": false,
+          "working": false
+        },
+        "0bca7d94-ed76-452a-b02d-dc867f394167": {
+          "requested": false,
+          "working": false
+        },
+        "98f5b12c-71a5-4e6d-96d0-04366ea91fed": {
+          "requested": false,
+          "working": false
+        },
+        "ede278b8-6f41-48ef-bb0d-73f89641d0e9": {
+          "requested": false,
+          "working": false
+        },
+        "2d02cc4c-e411-48cc-a48b-df7eecc92a3c": {
+          "requested": false,
+          "working": false
+        },
+        "eacf1b3f-54a5-46b1-be16-bb3dc8fbd28e": {
+          "requested": false,
+          "working": false
+        },
+        "2a6779dd-bc1a-44ef-aadf-5e9d203dcec0": {
+          "requested": false,
+          "working": false
+        },
+        "93aae225-c2e8-4809-b503-a55115af3764": {
+          "requested": false,
+          "working": false
+        },
+        "ea227b97-6663-49bb-8080-6fce5c66e9eb": {
+          "requested": false,
+          "working": false
+        },
+        "adbf85fb-766f-4487-a502-303ae4dd5d57": {
+          "requested": false,
+          "working": false
+        },
+        "a9b96c1f-083a-45b4-a999-b8c6da5faefb": {
+          "requested": false,
+          "working": false
+        },
+        "c5dde041-e344-4cf6-9331-fc162883070c": {
+          "requested": false,
+          "working": false
+        },
+        "cb874c79-b472-403f-97e6-6b37b07de50a": {
+          "requested": false,
+          "working": false
+        },
+        "f85c43cd-a692-449b-9861-dde28f0012a2": {
+          "requested": false,
+          "working": false
+        },
+        "6bff6005-ee4e-46fe-ba85-1187dba384db": {
+          "requested": false,
+          "working": false
+        },
+        "4faa1f97-0750-4de0-b8ac-4590fc918edc": {
+          "requested": false,
+          "working": false
+        },
+        "4e02bcb3-3f82-4eaf-8442-acd5ce9e4fcf": {
+          "requested": false,
+          "working": false
+        },
+        "980b6f11-f437-42e0-9bb7-0fa898a6d43a": {
+          "requested": false,
+          "working": false
+        },
+        "7fd8f15a-74c3-4864-a9fe-35783dc793e6": {
+          "requested": false,
+          "working": false
+        },
+        "74ed06f7-4b1b-4ccf-bc4d-4c03a4e0ed62": {
+          "requested": false,
+          "working": false
+        },
+        "10e6d6a6-df08-4d02-84fb-d40dc2ad9135": {
+          "requested": false,
+          "working": false
+        },
+        "68364011-0b05-4994-83d7-46a7041a7000": {
+          "requested": false,
+          "working": false
+        },
+        "51b91fb6-bbba-4950-a1ec-86aba288f24b": {
+          "requested": false,
+          "working": false
+        },
+        "8730b333-096d-4ee9-8ade-7cbdd9eabe78": {
+          "requested": false,
+          "working": false
+        },
+        "225e8ba8-cf55-4cbe-818e-e711e1d0d78b": {
+          "requested": false,
+          "working": false
+        },
+        "d9062bd9-c1e4-4304-a935-afe830cee117": {
+          "requested": false,
+          "working": false
+        },
+        "1162a95c-a708-44e8-b385-1775abad1d6c": {
+          "requested": false,
+          "working": false
+        },
+        "87809577-00d1-4ff5-9a6c-afb1f26d2958": {
+          "requested": false,
+          "working": false
+        },
+        "bd450abd-7eb9-4977-9c77-fd1f7aa28bb1": {
+          "requested": false,
+          "working": false
+        },
+        "ff32145e-2c0f-4568-94c2-ce41c910549a": {
+          "requested": false,
+          "working": false
+        }
+      }
+    }
+  ],
+  "abstract_edges": [
+    {
+      "from": "F",
+      "to": "O",
+      "type": "unix_socket",
+      "id": "E_F__O_abstract",
+      "uuid": "fe55d4f7-033a-4812-99fd-0509ae6e24b2"
+    },
+    {
+      "from": "O",
+      "to": "U",
+      "type": "unix_socket",
+      "id": "E_O__U_abstract",
+      "uuid": "173fcd3f-c19a-4edd-9a03-60de1d788c3d"
+    },
+    {
+      "from": "U",
+      "to": "B",
+      "type": "ws_socket",
+      "id": "E_U__B_abstract",
+      "uuid": "c531166c-9653-4d76-b9ca-18947c983acb"
+    },
+    {
+      "from": "B",
+      "to": "BA",
+      "type": "unix_socket",
+      "id": "E_B__BA_abstract",
+      "uuid": "37bce999-3d8e-48ee-8e21-7b05cdf674b5"
+    }
+  ],
+  "uuid_summary": {
+    "total_non_ws_edges": 18,
+    "unique_uuids": 18,
+    "all_unique": true
+  }
+}

@@ -2,7 +2,7 @@
   "metadata": {
     "title": "Communicators Topology – Full Ground Truth (with Internal Structure)",
     "generated_from": "mermaid_code.mmd",
-    "generated_at": "2026-05-02T19:34:00.099228+00:00",
+    "generated_at": "2026-05-08T23:34:41.985274+00:00",
     "naming_scheme": "Semantic + Role-Based (e.g. F_Main, E_F_Neg__O_Pos)",
     "description": "Nested representation of communicator topology with unique UUIDs on all non-WS edges."
   },
@@ -12,14 +12,14 @@
       "nodes": {
         "Main": {
           "id": "F_Main",
-          "original_id": "F",
           "class": "ChatAppFrontend",
           "population": "as needed",
-          "type": "anchor"
+          "type": "anchor",
+          "location": "/home/guatamap/Analysis Labs/Wrappers/wrapperFront5.py",
+          "venv": "/home/guatamap/Analysis Labs/chat-venv"
         },
         "Negative": {
           "id": "F_Neg",
-          "original_id": "F_Neg",
           "class": "NegativeCom",
           "population": "as needed",
           "type": "aux"
@@ -31,7 +31,7 @@
           "to": "F_Neg",
           "type": "inheritance",
           "id": "E_F_Main__F_Neg",
-          "uuid": "bb7cc2d6-bc02-4845-95ec-06a4ba574f35"
+          "uuid": "f401063e-96c9-43bd-9381-a7fe172d69f3"
         }
       ]
     },
@@ -40,21 +40,20 @@
       "nodes": {
         "Main": {
           "id": "O_Main",
-          "original_id": "O",
           "class": "BackendWorker",
           "population": "1",
-          "type": "anchor"
+          "type": "anchor",
+          "location": "/home/guatamap/Analysis Labs/Wrappers/submit_builder.py",
+          "venv": "/home/guatamap/Analysis Labs/chat-venv"
         },
         "Negative": {
           "id": "O_Neg",
-          "original_id": "O_Neg",
           "class": "NegativeCom",
           "population": "1",
           "type": "aux"
         },
         "Positive": {
           "id": "O_Pos",
-          "original_id": "O_Pos",
           "class": "PositiveCom",
           "population": "1",
           "type": "aux"
@@ -66,14 +65,14 @@
           "to": "O_Neg",
           "type": "inheritance",
           "id": "E_O_Main__O_Neg",
-          "uuid": "cfd5bf22-4d1e-45cf-9560-272e568c957b"
+          "uuid": "5e7690c3-a6fb-423e-ac1c-e85251ed75f1"
         },
         {
           "from": "O_Main",
           "to": "O_Pos",
           "type": "inheritance",
           "id": "E_O_Main__O_Pos",
-          "uuid": "dedab31c-415e-40ec-bbe5-bcdc01540b10"
+          "uuid": "3325b7c8-79cc-4389-8965-1ac146616724"
         }
       ]
     },
@@ -82,28 +81,26 @@
       "nodes": {
         "Main": {
           "id": "U_Main",
-          "original_id": "U",
           "class": "proxy_middleware",
           "population": "1",
-          "type": "anchor"
+          "type": "anchor",
+          "location": "/home/guatamap/Analysis Labs/Wrappers/proxy_server.py",
+          "venv": "/home/guatamap/Analysis Labs/chat-venv"
         },
         "Negative": {
           "id": "U_Neg",
-          "original_id": "U_Neg",
           "class": "NegativeCom",
           "population": "1",
           "type": "aux"
         },
         "Negative_WS": {
           "id": "U_NegWS",
-          "original_id": "U_NegWS",
           "class": "negative_sequence",
           "population": "1",
           "type": "aux"
         },
         "Positive": {
           "id": "U_Pos",
-          "original_id": "U_Pos",
           "class": "PositiveCom",
           "population": "1",
           "type": "aux"
@@ -115,21 +112,21 @@
           "to": "U_Neg",
           "type": "inheritance",
           "id": "E_U_Main__U_Neg",
-          "uuid": "8c1be9ca-4b3c-4d81-ab0f-6dbb29eec79e"
+          "uuid": "1df94809-629e-4ac3-ad62-e2b70639fa37"
         },
         {
           "from": "U_Neg",
           "to": "U_NegWS",
           "type": "unix_socket",
           "id": "E_U_Neg__U_NegWS",
-          "uuid": "ff956c62-7738-4e98-81a2-3f80f7ac1da4"
+          "uuid": "d963fd6a-ac65-4fed-b6e8-ed0de18c069f"
         },
         {
           "from": "U_Main",
           "to": "U_Pos",
           "type": "inheritance",
           "id": "E_U_Main__U_Pos",
-          "uuid": "0eb38b72-cf5d-421f-b461-fb8105239b8e"
+          "uuid": "f6f3d8dc-9fe6-488b-aa3c-82e608877e09"
         }
       ]
     },
@@ -138,28 +135,26 @@
       "nodes": {
         "Main": {
           "id": "B_Main",
-          "original_id": "B",
           "class": "edge_middleware",
           "population": "1",
-          "type": "anchor"
+          "type": "anchor",
+          "location": "/home/guatamap/analysis-labs-website/website/edge/python_edge.py",
+          "venv": "/home/guatamap/analysis-labs-website/web-venv"
         },
         "Negative": {
           "id": "B_Neg",
-          "original_id": "B_Neg",
           "class": "NegativeCom",
           "population": "1",
           "type": "aux"
         },
         "Positive": {
           "id": "B_Pos",
-          "original_id": "B_Pos",
           "class": "PositiveCom",
           "population": "1",
           "type": "aux"
         },
         "Positive_WS": {
           "id": "B_PosWS",
-          "original_id": "B_PosWS",
           "class": "positive_sequence",
           "population": "1",
           "type": "aux"
@@ -171,21 +166,21 @@
           "to": "B_Neg",
           "type": "inheritance",
           "id": "E_B_Main__B_Neg",
-          "uuid": "ff694160-7279-4a21-9bcd-b15688d3485a"
+          "uuid": "75ce2cf5-d580-48fe-9f78-858d1fa4d0d3"
         },
         {
           "from": "B_Main",
           "to": "B_Pos",
           "type": "inheritance",
           "id": "E_B_Main__B_Pos",
-          "uuid": "707abb58-7137-4782-80f3-a4393b081b15"
+          "uuid": "fb971397-8302-45e5-8c6f-a88bb32bf32b"
         },
         {
           "from": "B_Pos",
           "to": "B_PosWS",
           "type": "unix_socket",
           "id": "E_B_Pos__B_PosWS",
-          "uuid": "1dd4a626-0b72-4d28-9c9a-9bfe02ebe35d"
+          "uuid": "66ce7aaa-b024-4ca3-aaea-fe93b31ded06"
         }
       ]
     },
@@ -194,14 +189,14 @@
       "nodes": {
         "Main": {
           "id": "BA_Main",
-          "original_id": "BA",
           "class": "Application",
           "population": "auto",
-          "type": "anchor"
+          "type": "anchor",
+          "location": "/home/guatamap/analysis-labs-website/website/app_backend/backend.py",
+          "venv": "/home/guatamap/analysis-labs-website/web-venv"
         },
         "Positive": {
           "id": "BA_Pos",
-          "original_id": "BA_Pos",
           "class": "PositiveCom",
           "population": "auto",
           "type": "aux"
@@ -213,7 +208,7 @@
           "to": "BA_Pos",
           "type": "inheritance",
           "id": "E_BA_Main__BA_Pos",
-          "uuid": "d17153a0-7018-4e98-9307-184cb883502e"
+          "uuid": "d0512654-723a-4ecd-a33c-4ebfc6d26991"
         }
       ]
     }
@@ -224,28 +219,28 @@
       "to": "O_Pos",
       "type": "unix_socket",
       "id": "E_F_Neg__O_Pos",
-      "uuid": "5177f79d-2821-444d-9cad-5503500b9c65"
+      "uuid": "710e4521-244b-49eb-86c0-df04f5c554d9"
     },
     {
       "from": "O_Neg",
       "to": "U_Pos",
       "type": "unix_socket",
       "id": "E_O_Neg__U_Pos",
-      "uuid": "19ea380d-98b9-4873-b348-0fd1175ba2e4"
+      "uuid": "bb99d44d-ab14-4df0-8091-7e5788585bcc"
     },
     {
       "from": "U_NegWS",
       "to": "BUS_Pos",
       "type": "ws_socket",
       "id": "E_U_NegWS__BUS_Pos",
-      "uuid": "5a7c9f11-d2fb-4fe4-996e-5461c0b235fa"
+      "uuid": "259013bc-3c87-4873-b1ab-1a481a1313d8"
     },
     {
       "from": "B_Neg",
       "to": "BA_Pos",
       "type": "unix_socket",
       "id": "E_B_Neg__BA_Pos",
-      "uuid": "106f7ed7-faf5-4bd9-857b-2a2d75f32bff"
+      "uuid": "aabf0cc6-64d7-4e7c-8267-824e85f2f458"
     }
   ],
   "abstract_edges": [
@@ -254,28 +249,28 @@
       "to": "O",
       "type": "unix_socket",
       "id": "E_F__O_abstract",
-      "uuid": "5ffce91d-b802-451b-82bd-3a8e28b3e8f8"
+      "uuid": "fe55d4f7-033a-4812-99fd-0509ae6e24b2"
     },
     {
       "from": "O",
       "to": "U",
       "type": "unix_socket",
       "id": "E_O__U_abstract",
-      "uuid": "563c3eb2-b20f-454d-a2b2-89ad33fe6370"
+      "uuid": "173fcd3f-c19a-4edd-9a03-60de1d788c3d"
     },
     {
       "from": "U",
       "to": "B",
       "type": "ws_socket",
       "id": "E_U__B_abstract",
-      "uuid": "0ea2aec1-afaa-4895-8e93-ceacfbfdca19"
+      "uuid": "c531166c-9653-4d76-b9ca-18947c983acb"
     },
     {
       "from": "B",
       "to": "BA",
       "type": "unix_socket",
       "id": "E_B__BA_abstract",
-      "uuid": "88c21914-8963-4d52-b36f-15c29c3ce281"
+      "uuid": "37bce999-3d8e-48ee-8e21-7b05cdf674b5"
     }
   ],
   "uuid_summary": {

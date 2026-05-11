@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-generate_topology_json.py
+python3 generate_topology_json.py mermaid_code.mmd
 
 Reads a Mermaid communicator topology diagram (.mmd) and produces a rich,
 nested JSON representation using Semantic + Role-Based naming:
@@ -15,6 +15,30 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Any, Tuple
 
+def parse_ideal_yaml(ideal_path: Path) -> Dict[str, Dict[str, str]]:
+    lines = ideal_path.read_text().splitlines()
+    ideal_map = {}
+    i = 0
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if stripped.startswith('communicator:'):
+            name = stripped.split(':', 1)[1].strip()
+            ideal_map[name] = {'location': None, 'class': None, 'population': None}
+            i += 1
+            while i < len(lines) and lines[i].strip():
+                ln = lines[i].strip()
+                if ln.startswith('location:'):
+                    ideal_map[name]['location'] = ln.split(':', 1)[1].strip()
+                elif ln.startswith('class:'):
+                    ideal_map[name]['class'] = ln.split(':', 1)[1].strip()
+                elif ln.startswith('population:'):
+                    ideal_map[name]['population'] = ln.split(':', 1)[1].strip()
+                elif ln.startswith('venv:'):
+                    ideal_map[name]['venv'] = ln.split(':', 1)[1].strip()
+                i += 1
+            continue
+        i += 1
+    return ideal_map
 
 def parse_mermaid(mermaid_path: Path) -> Dict[str, Any]:
     """Parse the Mermaid file into structured data."""
@@ -225,6 +249,18 @@ def build_final_json(parsed: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     for comm in parsed["communicators"]:
+        comm_name = comm['name']
+        ideal_map = parsed.get('ideal_map', {})
+        if comm_name in ideal_map and 'Main' in comm['nodes']:
+            main_node = comm['nodes']['Main']
+            if 'location' in ideal_map[comm_name] and ideal_map[comm_name]['location']:
+                main_node['location'] = ideal_map[comm_name]['location']
+            if 'class' in ideal_map[comm_name] and ideal_map[comm_name]['class']:
+                main_node['class'] = ideal_map[comm_name]['class']
+            if 'venv' in ideal_map[comm_name] and ideal_map[comm_name]['venv']:
+                main_node['venv'] = ideal_map[comm_name]['venv']
+        for role, data in comm['nodes'].items():
+            data.pop('original_id', None)  # Removes safely if present
         final["communicators"][comm["name"]] = {
             "short": comm["short"],
             "nodes": comm["nodes"],
@@ -239,14 +275,13 @@ def build_final_json(parsed: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def main():
-    if len(sys.argv) < 2:
-        # print("Usage: python3 generate_topology_json.py "/home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators/mermaid_code.mmd"", file=sys.stderr)
-        sys.exit(1)
-    mermaid_file = Path(sys.argv[1])
+    mermaid_file = Path("/home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators/state-methods/mermaid_code.mmd")
     output_file = mermaid_file.parent / "topology.json"
 
     print(f"Parsing {mermaid_file}...")
     parsed = parse_mermaid(mermaid_file)
+    ideal_path = Path('/home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators/state-methods/ideal.yaml')
+    parsed['ideal_map'] = parse_ideal_yaml(ideal_path)
 
     print("Assigning UUIDs to non-WS edges and verifying uniqueness...")
     parsed_with_uuids = assign_uuids(parsed)
