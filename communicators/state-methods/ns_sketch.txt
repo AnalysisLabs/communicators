@@ -1,0 +1,18 @@
+# ns_sketch
+
+lesson: my confusion was due to having multiple mutually exclusive ways of moving forward, without clearly understanding this. hense the proel was locally undecidable and therefore exhausing.
+
+the proto-namespace(object) vs namespace distinction is not clear:
+    [OR]
+    one could draw the line at disk vs ram
+    one could draw the line at the nameing convetion of namespace has to have namespace in its title
+    I could merge the concepts of object_program and from_namespace
+        Well is there any valid distinction between them
+            Better yet is there any possible circumstance were I would need to draw a distinction?
+            if NO
+            ∴ Merge
+            else
+            ∴ Define the difference
+
+
+object program like mermaid | with program like generate topology (which transforms the proto-namespace) |

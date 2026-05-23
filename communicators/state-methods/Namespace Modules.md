@@ -167,6 +167,10 @@ Avoid it for:
 - Pure functional pipelines with no shared state at all
 - Situations where you need strict per-request isolation (use context vars instead)
 
+
+## API
+
+
 ## Open Questions / Future Extensions
 
 - Should the namespace support **predicted future state** simulation before applying changes?
