@@ -29,6 +29,9 @@ def build(object_program: str, with_program: str, in_namespace: dict, from_names
     if not populated:
         raise ValueError(f'{object_program} still empty after running {with_program}')
 
+def activate(with_program):
+    threading.Thread(target=subprocess.run, args=(['python3', with_program],), daemon=True).start()
+
 def final_byte_cleanup(dirty_line: str) -> str:
     """Final byte literal pass: remove all " (only ' matter for f-strings)."""
     b = dirty_line.encode('utf-8')
@@ -81,9 +84,11 @@ def transpile(md_file):
     generated_code = '\n'.join(code)
     imports_str = "import os, subprocess, argparse, re, ast, inspect \nfrom collections import Counter\nbase_dir = os.path.dirname(os.path.abspath(" + f'"{md_file}"' + "))\n\n"
     # Copy load/build verbatim dynamically
+    activate_line = f"activate(with_program=f'{{base_dir}}/namespace.py')"
+    activate_src = inspect.getsource(activate)
     load_src = inspect.getsource(load)
     build_src = inspect.getsource(build)
-    generated_code = imports_str + load_src + '\n' + build_src + '\n' + generated_code
+    generated_code = imports_str + activate_src + "\n" + load_src + '\n' + build_src + '\n' + activate_line + '\n' + generated_code
     # Minimal addition: process code to check object_program='to' uniqueness
     # generated_code = 'import os\nbase_dir = os.path.dirname(os.path.abspath(r"' + md_file + '"))\n' + generated_code
     tree = ast.parse(generated_code)
@@ -109,7 +114,7 @@ if __name__ == '__main__':
     parser.add_argument('md_file', help='Assembly line script path')
     args = parser.parse_args()
     # print(transpile(args.md_file))
-    with open('catapilar_transpiler.py', 'w') as f:
+    with open('caterpillar_transpiler.py', 'w') as f:
         f.write(transpile(args.md_file))
-    # os.execvp('python3', ['python3', 'catapilar_transpiler.py'])
+    os.execvp('python3', ['python3', 'caterpillar_transpiler.py'])
 # Imported: transpile('file') returns code str

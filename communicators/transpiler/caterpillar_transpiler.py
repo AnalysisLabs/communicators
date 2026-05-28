@@ -1,6 +1,13 @@
 import os, subprocess, argparse, re, ast, inspect 
 from collections import Counter
+
+from prelude.standard import*
+from prelude.internal_lib import*
+
 base_dir = os.path.dirname(os.path.abspath("/home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators/state-methods/panel.md"))
+
+def activate(with_program):
+    threading.Thread(target=subprocess.run, args=(['python3', with_program],), daemon=True).start()
 
 def load(object_program: str = None, with_program: str = None, in_namespace: dict = None, from_namespace: dict = None, to_namespace: dict = None):
     if in_namespace is not None: to_namespace = in_namespace
@@ -25,6 +32,7 @@ def build(object_program: str, with_program: str, in_namespace: dict, from_names
     if not populated:
         raise ValueError(f'{object_program} still empty after running {with_program}')
 
+activate(with_program=f'{base_dir}/namespace.py')
 code_block_1 = load(object_program=f'{base_dir}/ideal.yaml', in_namespace=f'{base_dir}/state_namespace')
 code_block_2 = build(object_program=f'{base_dir}/mermaid_code.mmd', with_program=f'{base_dir}/generate_mermaid.py', in_namespace=f'{base_dir}/state_namespace')
 code_block_3 = build(object_program=f'{base_dir}/topology.json', with_program=f'{base_dir}/generate_topology_json.py', in_namespace=f'{base_dir}/state_namespace')

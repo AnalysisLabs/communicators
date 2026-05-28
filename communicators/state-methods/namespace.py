@@ -64,11 +64,8 @@ class BaseNamespace:
         print('🧠 Namespace contains:', sorted(keys))
 
     def snapshot_namespace(self, path: str) -> None:
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-        sock.bind('/tmp/ns_snapshot.sock')
         data = json.dumps({k: getattr(self._data, k) for k in dir(self._data) if not k.startswith('_')}).encode()
-        sock.sendto(data, '/tmp/ns_snapshot.sock')
-        with open(path, 'wb') as f: f.write(data)
+        with open(path, 'ab') as f: f.write(data)
 
 def _start_ns_server():
     class NSHandler(BaseHTTPRequestHandler):
@@ -82,4 +79,11 @@ def _start_ns_server():
                 self.wfile.write(f"namespace saved to {data['substance']}".encode())
     server = HTTPServer(('localhost', 8765), NSHandler)
     server.serve_forever()
-threading.Thread(target=_start_ns_server, daemon=True).start()
+
+subprocess.Popen(
+    [sys.executable, os.path.abspath(__file__)],
+    start_new_session=True,
+    stdout=open("/home/guatamap/Analysis Labs/working/ns_server.log", "a"),
+    stderr=subprocess.STDOUT,
+    close_fds=True,
+)
