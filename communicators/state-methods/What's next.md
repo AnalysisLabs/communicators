@@ -8,4 +8,6 @@ I want:
 - test run
 
 ##Next Task: try to successfully load stuff to a namespace and snapshot the result.
-- 
+
+code can be as code:, filename/extension, code here
+- Make venv

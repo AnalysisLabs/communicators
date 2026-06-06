@@ -1,9 +1,5 @@
-import os, subprocess, argparse, re, ast, inspect 
+import os, subprocess, argparse, re, ast, inspect
 from collections import Counter
-
-from prelude.standard import*
-from prelude.internal_lib import*
-
 base_dir = os.path.dirname(os.path.abspath("/home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators/state-methods/panel.md"))
 
 def activate(with_program):

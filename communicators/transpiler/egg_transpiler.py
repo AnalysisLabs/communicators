@@ -1,10 +1,11 @@
-import os
-import subprocess
-import argparse
-import re
-import ast
-import inspect
-from collections import Counter
+import sys
+from pathlib import Path
+
+# Local package bootstrap - keeps "from .prelude import*" semantic without GitHub/pip
+root = Path(__file__).resolve().parent.parent
+if str(root) not in sys.path:
+    sys.path.insert(0, str(root))
+from prelude import*
 
 def load(object_program: str = None, with_program: str = None, in_namespace: dict = None, from_namespace: dict = None, to_namespace: dict = None):
     if in_namespace is not None: to_namespace = in_namespace
@@ -82,7 +83,7 @@ def transpile(md_file):
     # return '\n'.join(code)
 
     generated_code = '\n'.join(code)
-    imports_str = "import os, subprocess, argparse, re, ast, inspect \nfrom collections import Counter\nbase_dir = os.path.dirname(os.path.abspath(" + f'"{md_file}"' + "))\n\n"
+    imports_str = "from prelude.standard import* \nfrom prelude.internal_lib import*\nbase_dir = os.path.dirname(os.path.abspath(" + f'"{md_file}"' + "))\n\n"
     # Copy load/build verbatim dynamically
     activate_line = f"activate(with_program=f'{{base_dir}}/namespace.py')"
     activate_src = inspect.getsource(activate)

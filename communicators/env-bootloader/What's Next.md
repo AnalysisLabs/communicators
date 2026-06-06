@@ -1,0 +1,1 @@
+for the run script hide the stuff from the env insurance unless there is an error the user needs to see.
