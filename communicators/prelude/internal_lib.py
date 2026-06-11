@@ -5,7 +5,13 @@ while p.name != 'communicators':
     p = p.parent
 project_dir = p
 import sys
-sys.path.insert(0, str(project_dir / 'state-methods'))
-from namespace import BaseNamespace, populate_namespace
+sys.path.insert(0, str(project_dir / 'env-bootloader'))
+import execution_harness
+import types
 
-__all__ = ['BaseNamespace', 'populate_namespace']
+manifest_code, temp_file = execution_harness.load_module('internal', 'state-methods/manifest.py')
+manifest = types.ModuleType('manifest')
+exec(manifest_code, manifest.__dict__)
+Manifest = manifest.manifest
+
+__all__ = ['Manifest']

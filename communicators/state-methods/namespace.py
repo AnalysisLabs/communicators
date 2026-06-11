@@ -1,6 +1,3 @@
-from prelude.standard import*
-from prelude.internal_lib import*
-
 class BaseNamespace:
     _instance = None
     _lock = threading.Lock()
@@ -73,17 +70,24 @@ def _start_ns_server():
             data = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
             if data.get('action') == 'populate_namespace':
                 populate_namespace(data['substance'], data.get('namespace'))
-                self.wfile.write(b'populated \u2713')
+                self.wfile.write('populated ✓'.encode('utf-8'))
             elif data.get('action') == 'snapshot_namespace':
                 snapshot_namespace(data['substance'])
                 self.wfile.write(f"namespace saved to {data['substance']}".encode())
     server = HTTPServer(('localhost', 8765), NSHandler)
     server.serve_forever()
 
-subprocess.Popen(
-    [sys.executable, os.path.abspath(__file__)],
-    start_new_session=True,
-    stdout=open("/home/guatamap/Analysis Labs/working/ns_server.log", "a"),
-    stderr=subprocess.STDOUT,
-    close_fds=True,
-)
+def port_in_use(host, port):
+    return True
+    try:
+        httpx.head(f'http://{host}:{port}', timeout=0.2)
+        return True
+    except httpx.RequestError:
+        return False
+
+if port_in_use('localhost', 8765):
+    os.system('kill -9 $(lsof -t -i:8765) 2>/dev/null || true')
+
+_start_ns_server()
+
+

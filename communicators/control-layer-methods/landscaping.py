@@ -1,4 +1,5 @@
 # /home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators/control-layer-methods/landscaping.py
+#This program but the exxecuter of the state-methods panel. However it is getting superseeded by the
 
 from prelude.standard import*
 from prelude.internal_lib import*

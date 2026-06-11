@@ -5,6 +5,7 @@
 #   pip install -r requirements.txt
 
 aiohttp
+httpx
 numpy
 PyYAML
 scipy

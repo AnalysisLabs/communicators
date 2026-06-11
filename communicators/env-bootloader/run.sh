@@ -71,11 +71,23 @@ install_if_needed() {
     echo "→ Installation complete."
 }
 
-function resolve_path() {
+find_communicators_root_resolve() {
+    local dir="$PROJECT_ROOT"
+    while [[ "$dir" != "/" ]]; do
+        if [[ -d "$dir/communicators" ]]; then
+            echo "$dir/communicators"
+            return 0
+        fi
+        dir="$(dirname "$dir")"
+    done
+    echo "$PROJECT_ROOT"
+}
+
+resolve_path() {
     local scope="$1"
     local target="$2"
     local comm_root
-    comm_root="$(find_communicators_root)"
+    comm_root="$(find_communicators_root_resolve)"
 
     case "$scope" in
         internal|""|comm|communicators)
@@ -91,12 +103,11 @@ function resolve_path() {
     esac
 }
 
-function run() {
+run() {
     local scope="$1"
     local path="$2"
 
     if [[ -z "$path" ]]; then
-        # Old usage: run <path> (treat as internal)
         path="$scope"
         scope="internal"
     fi
@@ -105,22 +116,12 @@ function run() {
     full_path=$(resolve_path "$scope" "$path") || return 1
 
     echo "→ Running ($scope): $full_path"
+
+    local harness
+    harness=$(resolve_path "internal" "env-bootloader/bootloader.py")
+
     set +e
-    python3 -c '
-import sys, os
-from pathlib import Path
-def _find_communicators_root(p):
-    d=os.path.abspath(p)
-    while d != "/":
-        if os.path.basename(d)=='communicators': return d
-        d=os.path.dirname(d)
-    return None
-if 'COMMUNICATORS_ROOT' not in os.environ:
-    os.environ['COMMUNICATORS_ROOT']=_find_communicators_root(os.getcwd())
-sys.path.insert(0, os.environ["COMMUNICATORS_ROOT"])
-from prelude import*
-exec(open(sys.argv[1]).read())
-    ' "$full_path" || true
+    python3 "$harness" "$full_path"
     set -e
 }
 
@@ -135,7 +136,7 @@ main() {
     create_venv_if_needed
     activate_venv
     install_if_needed
-    run "$2" "$3"
+    run "${2:-internal}" "${3:-state-methods/namespace.py}"
 }
 
-main "${1:-}" "${2:-}" "${3:-}"
+main "${1:-}"
