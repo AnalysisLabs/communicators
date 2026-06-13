@@ -1,3 +1,11 @@
+import sys, os
+from pathlib import Path
+COMMUNICATORS_ROOT = "/home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators"
+sys.path.insert(0, COMMUNICATORS_ROOT)
+from prelude import*
+
+
+# ==================== USER PROGRAM ====================
 class BaseNamespace:
     _instance = None
     _lock = threading.Lock()
@@ -7,7 +15,7 @@ class BaseNamespace:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
-                    cls._instance._data = {}
+                    cls._instance._data = SimpleNamespace()
                     cls._instance._lock = threading.RLock()
                     cls._instance.initialize_states()
         return cls._instance
@@ -18,14 +26,14 @@ class BaseNamespace:
 
     def __getattr__(self, name: str) -> Any:
         with self._lock:
-            return self._data.get(name)
+            return getattr(self._data, name)
 
     def __setattr__(self, name: str, value: Any) -> None:
         if name in ('_data', '_lock', '_instance'):
             super().__setattr__(name, value)
             return
         with self._lock:
-            self._data[name] = value
+            setattr(self._data, name, value)
 
     def __contains__(self, name: str) -> bool:
         with self._lock:
@@ -51,7 +59,7 @@ def initialize_namespace(*names: str) -> None:
         if name not in _namespaces:
             ns = BaseNamespace()
             for p in name.split('/'):
-                if not hasattr(ns, p): setattr(ns, p, {})
+                if not hasattr(ns, p): setattr(ns, p, SimpleNamespace())
             _namespaces[name] = getattr(ns, name.split('/')[-1])
 
 def populate_namespace(name: str, data: dict[str, Any]) -> None:
@@ -59,8 +67,10 @@ def populate_namespace(name: str, data: dict[str, Any]) -> None:
         ns = _namespaces[name]
         if ns is None:
             initialize_namespace(name)
+        def _rec_set(d: dict[str, Any]) -> SimpleNamespace:
+            return SimpleNamespace(**{k: _rec_set(v) if isinstance(v, dict) else v for k, v in d.items()})
         for k, v in data.items():
-            ns[k] = v
+            setattr(ns, k, _rec_set(v) if isinstance(v, dict) else v)
 
 def _start_ns_server():
     class NSHandler(BaseHTTPRequestHandler):

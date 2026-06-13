@@ -57,7 +57,7 @@ def main():
         comm_root = find_communicators_root()
         ns_path = str(comm_root / 'state-methods/namespace.py')
         subprocess.Popen(
-            [sys.executable, ns_path],
+            [sys.executable, '-c', code_obj],
             start_new_session=True,
             stdout=open(str(comm_root / 'ns_server.log'), 'a'),
             stderr=subprocess.STDOUT,

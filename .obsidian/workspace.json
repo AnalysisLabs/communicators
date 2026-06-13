@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "communicators/env-bootloader/bootloader.md",
+                "file": "communicators/env-bootloader/Namespace Connection Dilemma.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "bootloader"
+              "title": "Namespace Connection Dilemma"
             }
           },
           {
@@ -214,12 +214,15 @@
   },
   "active": "0fa86d570e17b082",
   "lastOpenFiles": [
+    "communicators/transpiler/transcriber.md",
+    "communicators/env-bootloader/Namespace Connection Dilemma.md",
+    "communicators/env-bootloader/bootloader.md",
+    "communicators/temp/f60e738bac9349d0ae9a2834ba81cd63.py",
+    "communicators/temp/ecd96e469644470293ddafda4fbc6083.py",
     "communicators/env-bootloader/bootloader.py",
     "communicators/ns_server.log",
     "communicators/temp/6889f15746b545749711ec9e1b9b3fcd.py",
     "communicators/temp/3d8d8d09b84a41adbd40ed0876b09117.py",
-    "communicators/transpiler/transcriber.md",
-    "communicators/env-bootloader/bootloader.md",
     "communicators/transpiler/What's next.md",
     "communicators/control-script/control_script.md",
     "communicators/state-methods/panel.md",
@@ -229,7 +232,6 @@
     "communicators/state-methods/subprocess.Popen.md",
     "communicators/state-methods/Namespace Modules.md",
     "communicators/prelude/panel.md",
-    "communicators/env-bootloader/What's Next.md",
     "communicators/env-bootloader/execution_harness.md",
     "2026-05-21.md",
     "path-resolution-philosophy.md",
@@ -241,11 +243,8 @@
     "Communicators.md",
     "communicators/state-methods/What's next.md",
     "Untitled 1.md",
-    "communicators/transpiler/caterpillar_transpiler.py",
     "plot1.png",
     "communicators.png",
-    "communicators/working",
-    "communicators/working...",
     "communicators/state-methods/state-methods.md",
     "Untitled.md",
     "2026-05-13.md",
