@@ -13,7 +13,7 @@ def is_complete(response):
     if isinstance(response, dict): response = json.dumps(response).encode()
     return response.endswith(b'\n') or b'ACK' in response
 
-
+666
 # Utils:
 
 def create_listener(ip, port):
