@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-import sys
-import uuid
+import subprocess, sys, uuid, traceback, marshal
 from pathlib import Path
 
 def find_communicators_root(start=None):
@@ -46,34 +45,35 @@ def load_module(scope, path):
 
     return compile(combined, str(program_path), 'exec'), temp_file
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: bootloader.py <full_path>")
-        sys.exit(1)
-
-    code_obj, temp_file = load_module('internal', 'state-methods/namespace.py')
-
+def execution_harness(target_path, wait=False):
+    comm_root = find_communicators_root()
+    code_obj, _ = load_module('internal', target_path)
     try:
-        comm_root = find_communicators_root()
-        ns_path = str(comm_root / 'state-methods/namespace.py')
-        subprocess.Popen(
-            [sys.executable, '-c', code_obj],
+        old = False
+        proc = subprocess.Popen([sys.executable, '-c', f"import marshal;exec(marshal.loads({marshal.dumps(code_obj)!r}))"],
             start_new_session=True,
             stdout=open(str(comm_root / 'ns_server.log'), 'a'),
             stderr=subprocess.STDOUT,
-            close_fds=True,
-        )
-    except:
-        print('subprocess.Popen failure')
+            close_fds=True)
 
-    # Run original code generated in RAM (never the temp file)
-    try:
-        exec(code_obj, {"__file__": str(temp_file), "__name__": "__main__"})
-    finally:
-        # Uncomment if you want automatic cleanup
-        # temp_file.unlink(missing_ok=True)
-        pass
+        if old is True:
+            proc = subprocess.Popen([sys.executable, '-c', code_obj],
+                start_new_session=True,
+                stdout=open(str(comm_root / 'ns_server.log'), 'a'),
+                stderr=subprocess.STDOUT,
+                close_fds=True)
+        if wait:
+            proc.wait()
+    except Exception as e:
+        print(f'execution_harness failure on: {target_path}')
+        print(e)
+        traceback.print_exception(type(e), e, e.__traceback__)
 
+def main():
+    execution_harness('state-methods/namespace.py', wait=False)
+    execution_harness('transpiler/egg_transpiler.py', wait=True)
+
+    print('bootloader sequence complete')
 
 if __name__ == "__main__":
     main()

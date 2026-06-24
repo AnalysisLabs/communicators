@@ -8,45 +8,31 @@
         "type": "tabs",
         "children": [
           {
-            "id": "9665e2f01fe3c94f",
+            "id": "87de53e96f37db93",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "communicators/transpiler/transcriber.md",
+                "file": "2026-06-21.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "transcriber"
+              "title": "2026-06-21"
             }
           },
           {
-            "id": "0fa86d570e17b082",
+            "id": "c89ea8f53ce4023b",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "communicators/env-bootloader/Namespace Connection Dilemma.md",
+                "file": "path-resolution-philosophy.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Namespace Connection Dilemma"
-            }
-          },
-          {
-            "id": "6d2c89d13a5a86e3",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "communicators/state-methods/panel.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "panel"
+              "title": "path-resolution-philosophy"
             }
           }
         ],
@@ -212,44 +198,44 @@
       "bases:Create new base": false
     }
   },
-  "active": "0fa86d570e17b082",
+  "active": "c89ea8f53ce4023b",
   "lastOpenFiles": [
-    "communicators/transpiler/transcriber.md",
-    "communicators/env-bootloader/Namespace Connection Dilemma.md",
-    "communicators/env-bootloader/bootloader.md",
-    "communicators/temp/f60e738bac9349d0ae9a2834ba81cd63.py",
-    "communicators/temp/ecd96e469644470293ddafda4fbc6083.py",
-    "communicators/env-bootloader/bootloader.py",
-    "communicators/ns_server.log",
-    "communicators/temp/6889f15746b545749711ec9e1b9b3fcd.py",
-    "communicators/temp/3d8d8d09b84a41adbd40ed0876b09117.py",
+    "communicators.png",
+    "communicators/state-methods/Namespace Modules.md",
+    "communicators/state-methods/Communicators-Graph.md",
+    "Communicators.md",
     "communicators/transpiler/What's next.md",
-    "communicators/control-script/control_script.md",
+    "communicators/state-methods/What's next.md",
+    "communicators/env-bootloader/Environment Setup.md",
+    "communicators/env-bootloader/execution_harness.md",
+    "communicators/env-bootloader/bootloader.md",
+    "communicators/env-bootloader/Namespace Connection Dilemma.md",
+    "Ram Programs.md",
+    "communicators/prelude/Internal Lib.md",
+    "Unconfirmed 287855.crdownload",
+    "communicators/edge-methods/connections/ws_tamer.py",
+    "communicators/edge-methods/connections/unix_socket.py",
+    "communicators/edge-methods/connections/transponder_module.py",
+    "communicators/edge-methods/connections/transponder.md",
+    "communicators/edge-methods/connections/__init__.py",
+    "communicators/edge-methods/connections",
+    "2026-06-21.md",
+    "communicators/temp/56947fe3bb4e4a6fa235ca15338020fa.py",
+    "communicators/temp/8254ef859ce24f54afb874396ca8b8c8.py",
+    "communicators/temp/964b74ebccef4bc5aa8ac229585b9400.py",
+    "communicators/temp/6b898015070544dc9a3262adf8b2d1cd.py",
+    "2026-06-20.md",
+    "communicators/edge-methods/conections/transponder.md",
+    "2026-06-18.md",
     "communicators/state-methods/panel.md",
+    "communicators/transpiler/transcriber.md",
+    "communicators/control-script/control_script.md",
     "communicators/control-layer-methods/Landscaping.md",
-    "communicators/state-methods/ns_calls.py",
     "communicators/control-layer-methods/control-layer-methods.md",
     "communicators/state-methods/subprocess.Popen.md",
-    "communicators/state-methods/Namespace Modules.md",
     "communicators/prelude/panel.md",
-    "communicators/env-bootloader/execution_harness.md",
     "2026-05-21.md",
     "path-resolution-philosophy.md",
-    "Unconfirmed 570591.crdownload",
-    "communicators/env-bootloader/Environment Setup.md",
-    "communicators/state-methods/namespace_copy.py",
-    "communicators/state-methods/namespace copy.py",
-    "communicators/prelude/prelude.md",
-    "Communicators.md",
-    "communicators/state-methods/What's next.md",
-    "Untitled 1.md",
-    "plot1.png",
-    "communicators.png",
-    "communicators/state-methods/state-methods.md",
-    "Untitled.md",
-    "2026-05-13.md",
-    "2026-05-14.md",
-    "2026-05-18.md",
-    "2026-05-19.md"
+    "plot1.png"
   ]
 }

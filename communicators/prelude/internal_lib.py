@@ -14,4 +14,9 @@ manifest = types.ModuleType('manifest')
 exec(manifest_code, manifest.__dict__)
 Manifest = manifest.manifest
 
-__all__ = ['Manifest']
+transponder_code, _ = execution_harness.load_module('internal', 'edge-methods/connections/transponder_module.py')
+transponder = types.ModuleType('transponder')
+exec(transponder_code, transponder.__dict__)
+transponder.__dict__.update({k:v for k,v in Manifest.__dict__.items() if not k.startswith('__')})
+
+__all__ = ['Manifest', 'transponder']

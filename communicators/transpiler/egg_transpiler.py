@@ -1,37 +1,20 @@
-import sys
-from pathlib import Path
-
-# Local package bootstrap - keeps "from .prelude import*" semantic without GitHub/pip
-root = Path(__file__).resolve().parent.parent
-if str(root) not in sys.path:
-    sys.path.insert(0, str(root))
-from prelude import*
+localhost = "localhost"
 
 def load(object_program: str = None, with_program: str = None, in_namespace: dict = None, from_namespace: dict = None, to_namespace: dict = None):
-    if in_namespace is not None: to_namespace = in_namespace
-    if with_program:
-        subprocess.run(['python3', with_program, object_program, in_namespace, from_namespace, to_namespace], check=True)
+    if os.path.exists(str(object_program)):
+        contents = open(object_program).read()
     else:
-        with open(object_program, 'r') as f:
-            namespace[object_program, to_namespace] = f.read()
-    populated = (object_program in to_namespace and namespace[object_program, to_namespace]) or \
-                (os.path.exists(object_program) and os.path.getsize(object_program) > 0)
-    if not populated:
-        raise ValueError(f'{object_program} still empty after load')
+        contents = object_program
+    if with_program:
+        contents = subprocess.run(['python3', with_program, object_program], capture_output=True, text=True).stdout
+    r = transponder.request_response(localhost, 8765, {(in_namespace or to_namespace): contents})
+    # wait for simple 200 response as green light (detailed pseudocode placeholder)
+    return
 
 def build(object_program: str, with_program: str, in_namespace: dict, from_namespace: dict = None, to_namespace: dict = None):
-    if in_namespace is not None: to_namespace = in_namespace
-    subprocess.run(['python3', with_program, object_program, in_namespace, from_namespace, to_namespace], check=True)
-    populated = False
-    if object_program in namespace[object_program, to_namespace] and len([object_program, to_namespace]) > 0:
-        populated = True
-    elif os.path.exists(object_program) and os.path.getsize(object_program) > 0:
-        populated = True
-    if not populated:
-        raise ValueError(f'{object_program} still empty after running {with_program}')
-
-def activate(with_program):
-    threading.Thread(target=subprocess.run, args=(['python3', with_program],), daemon=True).start()
+    contents = transponder.request_response(localhost, 8765, (in_namespace or from_namespace))
+    result = subprocess.run(['python3', with_program, object_program], capture_output=True, text=True).stdout
+    transponder.send_and_close(localhost, 8765, {(in_namespace or to_namespace): result})
 
 def final_byte_cleanup(dirty_line: str) -> str:
     """Final byte literal pass: remove all " (only ' matter for f-strings)."""
@@ -83,13 +66,11 @@ def transpile(md_file):
     # return '\n'.join(code)
 
     generated_code = '\n'.join(code)
-    imports_str = "from prelude.standard import* \nfrom prelude.internal_lib import*\nbase_dir = os.path.dirname(os.path.abspath(" + f'"{md_file}"' + "))\n\n"
+    imports_str = "base_dir = os.path.dirname(os.path.abspath(" + f'"{md_file}"' + "))\n\n"
     # Copy load/build verbatim dynamically
-    activate_line = f"activate(with_program=f'{{base_dir}}/namespace.py')"
-    activate_src = inspect.getsource(activate)
     load_src = inspect.getsource(load)
     build_src = inspect.getsource(build)
-    generated_code = imports_str + activate_src + "\n" + load_src + '\n' + build_src + '\n' + activate_line + '\n' + generated_code
+    generated_code = imports_str + "\n" + load_src + '\n' + build_src + '\n' + generated_code
     # Minimal addition: process code to check object_program='to' uniqueness
     # generated_code = 'import os\nbase_dir = os.path.dirname(os.path.abspath(r"' + md_file + '"))\n' + generated_code
     tree = ast.parse(generated_code)
@@ -111,11 +92,9 @@ def transpile(md_file):
     return generated_code
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='DSL transpiler step 1')
-    parser.add_argument('md_file', help='Assembly line script path')
-    args = parser.parse_args()
-    # print(transpile(args.md_file))
+    md_file = f'{COMMUNICATORS_ROOT}/state-methods/panel.md'
+    cat = transpile(md_file)
+    load(object_program=cat, in_namespace='metamorphosis')
     with open('caterpillar_transpiler.py', 'w') as f:
-        f.write(transpile(args.md_file))
+        f.write(cat)
     os.execvp('python3', ['python3', 'caterpillar_transpiler.py'])
-# Imported: transpile('file') returns code str

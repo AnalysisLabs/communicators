@@ -8,6 +8,7 @@ aiohttp
 httpx
 numpy
 PyYAML
+requests
 scipy
 websockets
 pygments

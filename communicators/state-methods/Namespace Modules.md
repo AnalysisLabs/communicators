@@ -1,4 +1,18 @@
+# TODO
+harmonize the egg and namespace's expectations for the namespace server.
+# Goals ranked from most abstract to most concrete:
 
+1. have a place to put persistent stuff and call it fast on demand
+2. Use (ultimately) Numpy and unix_socket for database and connection type respectively
+3. Try whatever alternative methods come to mind to ease the path to that ultimate goal.
+4. Constraints:
+	1. The transponder need to take some form of ID (as key) and reference (as value).
+	2. (Lightweight) transformer needs to convert that into the appropriate DB friendly format
+	3. Date format and DB geometry go hand in hand.
+5. when it comes to exact DB geometry each alternative will get it's own Markdown.
+6. Figure out what is currently lacking
+	1. What is currently lacking is a test article for calling and (possibly) retrieval of data
+	2. ∴ the next step is building these test articles.
 
 # Namespace Modules — The Shared State Layer
 

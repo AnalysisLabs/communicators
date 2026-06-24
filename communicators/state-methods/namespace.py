@@ -63,29 +63,40 @@ def populate_namespace(name: str, data: dict[str, Any]) -> None:
             ns[k] = v
 
 def _start_ns_server():
-    class NSHandler(BaseHTTPRequestHandler):
-        def do_POST(self):
-            data = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
-            if data.get('action') == 'populate_namespace':
-                populate_namespace(data['substance'], data.get('namespace'))
-                self.wfile.write('populated ✓'.encode('utf-8'))
-            elif data.get('action') == 'snapshot_namespace':
-                snapshot_namespace(data['substance'])
-                self.wfile.write(f"namespace saved to {data['substance']}".encode())
-    server = HTTPServer(('localhost', 8765), NSHandler)
-    server.serve_forever()
-
-def port_in_use(host, port):
-    return True
+    """Start the namespace server using transponder instead of HTTPServer."""
     try:
-        httpx.head(f'http://{host}:{port}', timeout=0.2)
-        return True
-    except httpx.RequestError:
+        # Import here or at top: import transponder
+        transponder.persistent_server('localhost', 8765)
+    except Exception as e:
+        Manifest.error(f"Failed to start namespace server: {e}")
+
+def port_in_use(host: str, port: int, timeout: float = 0.3) -> bool:
+    """Check if something is listening on (host, port) using a raw TCP connect."""
+    if host == 'localhost':
+        host = '127.0.0.1'
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+
+    try:
+        result = sock.connect_ex((host, port))
+        return result == 0  # 0 means connection succeeded → something is listening
+    except Exception:
         return False
+    finally:
+        sock.close()
+
+
+def kill_port(host: str = 'localhost', port: int = 8765) -> None:
+    """Aggressively kill anything listening on the port (Linux/macOS)."""
+    if host == 'localhost':
+        host = '127.0.0.1'
+
+    print(f"🔪 Checking/killing port {port}...")
+    os.system(f'lsof -t -i:{port} | xargs kill -9 2>/dev/null || true')
+    time.sleep(0.4)  # give OS time to release the socket
 
 if port_in_use('localhost', 8765):
-    os.system('kill -9 $(lsof -t -i:8765) 2>/dev/null || true')
+    kill_port('localhost', 8765)
 
 _start_ns_server()
-
-

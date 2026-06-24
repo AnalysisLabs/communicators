@@ -104,24 +104,10 @@ resolve_path() {
 }
 
 run() {
-    local scope="$1"
-    local path="$2"
-
-    if [[ -z "$path" ]]; then
-        path="$scope"
-        scope="internal"
-    fi
-
-    local full_path
-    full_path=$(resolve_path "$scope" "$path") || return 1
-
-    echo "→ Running ($scope): $full_path"
-
     local harness
     harness=$(resolve_path "internal" "env-bootloader/bootloader.py")
-
     set +e
-    python3 "$harness" "$full_path"
+    python3 "$harness"
     set -e
 }
 
@@ -136,7 +122,7 @@ main() {
     create_venv_if_needed
     activate_venv
     install_if_needed
-    run "${2:-internal}" "${3:-state-methods/namespace.py}"
+    run
 }
 
 main "${1:-}"
