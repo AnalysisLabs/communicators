@@ -62,10 +62,22 @@ install_if_needed() {
         return 0
     fi
 
-    # Optional: also handle requirements.txt if it exists
-    if [[ -f "$PROJECT_ROOT/requirements.txt" ]]; then
-        echo "→ Installing dependencies from requirements.txt..."
-        pip install -r "$PROJECT_ROOT/requirements.txt"
+    # Locate pyproject.toml: it lives in the same directory as the communicators root
+    local comm_root
+    comm_root="$(find_communicators_root_resolve)"
+    local project_dir
+    project_dir="$(dirname "$comm_root")"
+    local pyproject="${project_dir}/pyproject.toml"
+
+    if [[ -f "$pyproject" ]]; then
+        echo "→ Syncing package and dependencies from pyproject.toml (editable)..."
+        # relative path is mandatory — cd into the project dir and use "."
+        (
+            cd "$project_dir"
+            pip install -e .
+        )
+    else
+        echo "→ Warning: pyproject.toml not found next to communicators root." >&2
     fi
 
     echo "→ Installation complete."
