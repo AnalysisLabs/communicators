@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "path-resolution-philosophy.md",
+                "file": "communicators/edge-methods/graph-methods.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "path-resolution-philosophy"
+              "title": "graph-methods"
             }
           }
         ],
@@ -93,7 +93,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 233.5
   },
   "right": {
     "id": "8ecd9c22d6df09c5",
@@ -198,19 +198,31 @@
       "bases:Create new base": false
     }
   },
-  "active": "c89ea8f53ce4023b",
+  "active": "3d0cad3532dd6ea5",
   "lastOpenFiles": [
+    "tags-backup.txt",
+    "communicators/control-script/control-description.md",
+    "communicators/control-script/control_script.md",
+    "communicators/control-layer-methods/Landscaping.md",
+    "communicators/control-layer-methods/control-layer-methods.md",
+    "Untitled.md",
+    "README.md",
+    "Ram Programs.md",
+    "2026-06-21.md",
+    "com_versions.md",
     "communicators.png",
-    "communicators/state-methods/Namespace Modules.md",
-    "communicators/state-methods/Communicators-Graph.md",
     "Communicators.md",
     "communicators/transpiler/What's next.md",
-    "communicators/state-methods/What's next.md",
+    "communicators/transpiler/transcriber.md",
+    "communicators/transpiler/Orchestration Script - Communicators.md",
+    "communicators/state-methods/Namespace Modules.md",
     "communicators/env-bootloader/Environment Setup.md",
+    "communicators/state-methods/Communicators-Graph.md",
     "communicators/env-bootloader/execution_harness.md",
+    "path-resolution-philosophy.md",
+    "communicators/state-methods/What's next.md",
     "communicators/env-bootloader/bootloader.md",
     "communicators/env-bootloader/Namespace Connection Dilemma.md",
-    "Ram Programs.md",
     "communicators/prelude/Internal Lib.md",
     "Unconfirmed 287855.crdownload",
     "communicators/edge-methods/connections/ws_tamer.py",
@@ -219,23 +231,12 @@
     "communicators/edge-methods/connections/transponder.md",
     "communicators/edge-methods/connections/__init__.py",
     "communicators/edge-methods/connections",
-    "2026-06-21.md",
     "communicators/temp/56947fe3bb4e4a6fa235ca15338020fa.py",
     "communicators/temp/8254ef859ce24f54afb874396ca8b8c8.py",
     "communicators/temp/964b74ebccef4bc5aa8ac229585b9400.py",
     "communicators/temp/6b898015070544dc9a3262adf8b2d1cd.py",
     "2026-06-20.md",
     "communicators/edge-methods/conections/transponder.md",
-    "2026-06-18.md",
-    "communicators/state-methods/panel.md",
-    "communicators/transpiler/transcriber.md",
-    "communicators/control-script/control_script.md",
-    "communicators/control-layer-methods/Landscaping.md",
-    "communicators/control-layer-methods/control-layer-methods.md",
-    "communicators/state-methods/subprocess.Popen.md",
-    "communicators/prelude/panel.md",
-    "2026-05-21.md",
-    "path-resolution-philosophy.md",
     "plot1.png"
   ]
 }
