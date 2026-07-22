@@ -9,11 +9,13 @@ sys.path.insert(0, str(project_dir / 'env-bootloader'))
 import execution_harness
 import types
 
+#Tier 1:
 manifest_code, temp_file = execution_harness.load_module('internal', 'state-methods/manifest.py')
 manifest = types.ModuleType('manifest')
 exec(manifest_code, manifest.__dict__)
 Manifest = manifest.manifest
 
+#Tier 2:
 transponder_code, _ = execution_harness.load_module('internal', 'edge-methods/connections/transponder_module.py')
 transponder = types.ModuleType('transponder')
 exec(transponder_code, transponder.__dict__)
