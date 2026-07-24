@@ -1,0 +1,48 @@
+nix --extra-experimental-features "nix-command flakes" develop .
+
+
+You are now inside the Nix shell (Python is available). `sqlite3` CLI is still not installed, so use Python:
+
+```bash
+python3 -c '
+import sqlite3
+conn = sqlite3.connect("runtime_fs.db")
+for row in conn.execute("SELECT id, parent_id, name, type, content_id, access_tier FROM file_graph ORDER BY id"):
+    print(row)
+'
+```
+
+Or the VirtualFS helpers:
+
+```bash
+python3 -c '
+from vfs_writer import list_dir, read_file
+print("Root:", list_dir())
+print("\nRuntime:", list_dir("Runtime"))
+print("\nRuntime/generated:", list_dir("Runtime/generated"))
+'
+```
+
+
+
+
+```bash
+python3 -c '
+import sqlite3
+conn = sqlite3.connect("runtime_fs.db")
+for row in conn.execute("SELECT id, hash, size, length(data) FROM file_contents ORDER BY id"):
+    print(row)
+'
+```
+
+That shows the metadata. To dump the actual source of a specific content (e.g. content_id 2):
+
+```bash
+python3 -c '
+import sqlite3
+conn = sqlite3.connect("runtime_fs.db")
+print(conn.execute("SELECT data FROM file_contents WHERE id = 2").fetchone()[0])
+'
+```
+
+(Replace `2` with `1` or `3` as needed.)

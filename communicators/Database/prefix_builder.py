@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
-prefix_builder.py – assemble the runtime prefix for Communicators programs.
+prefix_builder.py – assemble tiered runtime prefixes for Communicators programs.
 
-Order of operations inside the generated prefix:
+Tier structure (see Communicators_Prefix_Tiers.md):
 
-1. find_communicators_root() + COMMUNICATORS_ROOT = ...
-2. Temporary ModuleType load of manifest.py
-3. Temporary ModuleType load of transponder_module.py
-   (with Manifest injected so it can use Manifest.info / Manifest.error)
-4. Only public names are left in the namespace
+  Tier 0  – standard.py + COMMUNICATORS_ROOT (resolved at build time)
+  Tier 1  – Tier 0 + Manifest   (temporary ModuleType)
+  Tier 2  – Tier 1 + transponder (temporary ModuleType, Manifest injected)
+  Tier Z  – final prefix that is actually prepended to user programs
+            (currently identical to Tier 2)
 
-The resulting prefix is a single self-contained string that can be
-prepended to any program.
+Each tier is built as a self-contained string.  Higher tiers are constructed
+by taking the text of the previous tier and appending the next ModuleType
+block.  Only public names (Manifest, transponder, …) remain after each tier.
 """
 
 from __future__ import annotations
@@ -36,6 +37,7 @@ def find_communicators_root(start=None) -> Path:
         d = d.parent
     return Path.cwd()  # fallback
 
+root = find_communicators_root()
 
 def _load_source_from_disk(relative: str, fallback_name: str) -> str:
     """
@@ -60,29 +62,16 @@ def _load_source_from_disk(relative: str, fallback_name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Core builder
+# Tier builders
 # ---------------------------------------------------------------------------
 
-def build_prefix() -> str:
-    """
-    Assemble and return the complete prefix as a single string.
-    """
+def build_prefix0() -> str:
+    """Tier 0: standard library collection + concrete COMMUNICATORS_ROOT."""
     standard_src = _load_source_from_disk(
         "prelude/standard.py",
         "standard.py",
     )
-    manifest_src = _load_source_from_disk(
-        "state-methods/manifest.py",
-        "manifest.py",
-    )
-    transponder_src = _load_source_from_disk(
-        "edge-methods/connections/transponder_module.py",
-        "transponder_module.py",
-    )
 
-    # ------------------------------------------------------------------
-    # Assemble the prefix text
-    # ------------------------------------------------------------------
     parts: list[str] = []
 
     # --- standard library collection ---
@@ -90,19 +79,24 @@ def build_prefix() -> str:
     parts.append(standard_src.rstrip())
     parts.append("")
 
-    # --- COMMUNICATORS_ROOT ---
-    parts.append("# === COMMUNICATORS_ROOT ===")
-    parts.append(dedent("""\
-        def find_communicators_root(start=None):
-            d = Path(start or Path.cwd()).absolute()
-            while d != Path("/"):
-                if d.name == "communicators":
-                    return d
-                d = d.parent
-            return Path.cwd()  # fallback
+    # --- COMMUNICATORS_ROOT (resolved once at prefix-build time) ---
+    parts.append("# === COMMUNICATORS_ROOT (resolved at prefix-build time) ===")
+    parts.append("from pathlib import Path")
+    parts.append(f"COMMUNICATORS_ROOT = Path({str(root)!r})")
+    parts.append("")
 
-        COMMUNICATORS_ROOT = find_communicators_root()
-    """).rstrip())
+    return "\n".join(parts)
+
+
+def build_prefix1() -> str:
+    """Tier 1: Tier 0 + Manifest (temporary ModuleType)."""
+    manifest_src = _load_source_from_disk(
+        "state-methods/manifest.py",
+        "manifest.py",
+    )
+
+    parts: list[str] = []
+    parts.append(build_prefix0().rstrip())
     parts.append("")
 
     # --- Manifest via temporary ModuleType ---
@@ -117,39 +111,90 @@ def build_prefix() -> str:
     """).rstrip())
     parts.append("")
 
-    # --- transponder via temporary ModuleType (Manifest already available) ---
+    return "\n".join(parts)
+
+
+def build_prefix2() -> str:
+    """Tier 2: Tier 1 + transponder (temporary ModuleType, Manifest injected)."""
+    transponder_src = _load_source_from_disk(
+        "edge-methods/connections/transponder_module.py",
+        "transponder_module.py",
+    )
+
+    parts: list[str] = []
+    parts.append(build_prefix1().rstrip())
+    parts.append("")
+
+    # --- transponder via temporary ModuleType ---
     parts.append("# === transponder (temporary ModuleType) ===")
     parts.append("_transponder_src = " + repr(transponder_src))
     parts.append(dedent("""\
         _transponder_mod = types.ModuleType("_temp_transponder")
         _transponder_mod.Manifest = Manifest       # inject so the module can use it
         exec(_transponder_src, _transponder_mod.__dict__)
-
-        # Export every public (non-private) name.  No hard-coded assumptions
-        # about which names exist inside the module.
-        for _name in list(_transponder_mod.__dict__):
-            if not _name.startswith("_"):
-                globals()[_name] = getattr(_transponder_mod, _name)
-
+        transponder = _transponder_mod
         del _transponder_mod
     """).rstrip())
-    parts.append("")
-
-    parts.append("# === end of auto-generated prefix ===")
     parts.append("")
 
     return "\n".join(parts)
 
 
-def write_prefix_to_vfs(virtual_path: str = "Database/prefix.py") -> int:
+def build_prefixZ() -> str:
     """
-    Build the prefix and store it in the VirtualFS.
-    Returns the node id.
+    Tier Z: the final prefix that is prepended to user programs
+    (namespace.py, egg_transpiler.py, …).
+
+    Currently identical to Tier 2.  Future tiers will be inserted here.
     """
-    prefix = build_prefix()
-    return write_file(virtual_path, prefix, access_tier="agent_user")
+    return build_prefix2()
+
+def write_prefix_to_vfs(
+    tier: str = "Z",
+    virtual_path: str | None = None,
+) -> int:
+    """
+    Build the requested tier and store it in the VirtualFS.
+
+    tier: "0" | "1" | "2" | "Z"
+    virtual_path: override the default path for that tier.
+                  If None, sensible defaults are used.
+    """
+    builders = {
+        "0": build_prefix0,
+        "1": build_prefix1,
+        "2": build_prefix2,
+        "Z": build_prefixZ,
+    }
+    if tier not in builders:
+        raise ValueError(f"Unknown tier {tier!r}")
+
+    default_paths = {
+        "0": "Database/prefix_tier0.py",
+        "1": "Database/prefix_tier1.py",
+        "2": "Database/prefix_tier2.py",
+        "Z": "Database/prefix.py",          # classic name kept for compatibility
+    }
+
+    path = virtual_path or default_paths[tier]
+    prefix = builders[tier]()
+    return write_file(path, prefix, access_tier="agent_user")
 
 
+def write_all_prefixes() -> dict[str, int]:
+    """
+    Write every tier (including the redundant prefix.py == prefixZ).
+    Returns a mapping {tier: node_id}.
+    """
+    ids = {}
+    for tier in ("0", "1", "2", "Z"):
+        ids[tier] = write_prefix_to_vfs(tier=tier)
+    # explicit redundancy the user requested
+    ids["prefixZ"] = write_prefix_to_vfs(
+        tier="Z",
+        virtual_path="Database/prefix_tierZ.py",
+    )
+    return ids
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -157,11 +202,11 @@ def write_prefix_to_vfs(virtual_path: str = "Database/prefix.py") -> int:
 if __name__ == "__main__":
     import sys
 
-    prefix = build_prefix()
+    prefix = build_prefixZ()
 
     if "--write" in sys.argv:
-        node_id = write_prefix_to_vfs()
-        print(f"Wrote prefix → Database/prefix.py  (node id {node_id})")
+        ids = write_all_prefixes()
+        print(f"Wrote prefix → Database/prefix.py  (node id {ids})")
         print(f"Length: {len(prefix)} characters")
     else:
         # Just print it so you can inspect

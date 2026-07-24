@@ -56,7 +56,9 @@
             python-dateutil
 
             # misc
+            requests
             packaging
+            pyyaml
             six
             pytz
             zope-interface
