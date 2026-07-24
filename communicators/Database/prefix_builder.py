@@ -4,12 +4,11 @@ prefix_builder.py – assemble the runtime prefix for Communicators programs.
 
 Order of operations inside the generated prefix:
 
-1. Contents of Internal_Lib/standard.py  (pulled from VirtualFS)
-2. find_communicators_root() + COMMUNICATORS_ROOT = ...
-3. Temporary ModuleType load of manifest.py
-4. Temporary ModuleType load of transponder_module.py
+1. find_communicators_root() + COMMUNICATORS_ROOT = ...
+2. Temporary ModuleType load of manifest.py
+3. Temporary ModuleType load of transponder_module.py
    (with Manifest injected so it can use Manifest.info / Manifest.error)
-5. Only public names are left in the namespace
+4. Only public names are left in the namespace
 
 The resulting prefix is a single self-contained string that can be
 prepended to any program.
@@ -68,10 +67,10 @@ def build_prefix() -> str:
     """
     Assemble and return the complete prefix as a single string.
     """
-    # 1. standard.py from VirtualFS
-    standard_src = read_file("Internal_Lib/standard.py")
-
-    # 2. Disk sources for the two Internal_Lib components
+    standard_src = _load_source_from_disk(
+        "prelude/standard.py",
+        "standard.py",
+    )
     manifest_src = _load_source_from_disk(
         "state-methods/manifest.py",
         "manifest.py",
@@ -142,7 +141,7 @@ def build_prefix() -> str:
     return "\n".join(parts)
 
 
-def write_prefix_to_vfs(virtual_path: str = "Internal_Lib/prefix.py") -> int:
+def write_prefix_to_vfs(virtual_path: str = "Database/prefix.py") -> int:
     """
     Build the prefix and store it in the VirtualFS.
     Returns the node id.
@@ -162,7 +161,7 @@ if __name__ == "__main__":
 
     if "--write" in sys.argv:
         node_id = write_prefix_to_vfs()
-        print(f"Wrote prefix → Internal_Lib/prefix.py  (node id {node_id})")
+        print(f"Wrote prefix → Database/prefix.py  (node id {node_id})")
         print(f"Length: {len(prefix)} characters")
     else:
         # Just print it so you can inspect

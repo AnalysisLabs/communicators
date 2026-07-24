@@ -17,7 +17,6 @@ DB_FILE = Path(__file__).resolve().parent / "runtime_fs.db"
 LAYOUT = [
     "Bootloader",
     "Database",
-    "Internal_Lib",
     "Namespace",
     "Metamorphosis",
     "Runtime",

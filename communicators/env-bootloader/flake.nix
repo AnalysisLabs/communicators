@@ -31,6 +31,14 @@
             propcache
             idna
 
+            # HTTP client used by namespace / egg_transpiler / prefix
+            httpx
+            httpcore
+            anyio
+            sniffio
+            certifi
+            h11
+
             # websockets + typing
             websockets
             typing-extensions

@@ -1,9 +1,19 @@
-# Runtime Generated Files → SQLite VirtualFS
+# [[RGP|Runtime Generated Files]] → SQLite VirtualFS
 
 Design capture for replacing `temp/` writes with an ephemeral SQLite-backed virtual filesystem.
 
----
+```mermaid
+flowchart TD
+    %% High-level conceptual chain
+    A[Bootloader] --> B[Database] --> D[Namespace] --> E[Metamorphosis] --> F[Runtime] --> G[Homeostasis]
 
+    %% Concrete sequence from DB_bootloader.py
+    V[VirtualFS.py] --> L[DB_layout.py] --> P[prefix_builder.py]
+    %% Cross-link 
+    B --> V
+```
+
+---
 ## Goal
 
 All programs written by the author require an execution harness (dozens to hundreds of lines).  
