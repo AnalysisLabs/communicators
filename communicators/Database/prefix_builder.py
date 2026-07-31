@@ -7,7 +7,7 @@ Tier structure (see Communicators_Prefix_Tiers.md):
   Tier 0  – standard.py + COMMUNICATORS_ROOT (resolved at build time)
   Tier 1  – Tier 0 + Manifest   (temporary ModuleType)
   Tier 2  – Tier 1 + transponder (temporary ModuleType, Manifest injected)
-  Tier Z  – final prefix that is actually prepended to user programs
+  Tier A  – final prefix that is actually prepended to user programs
             (currently identical to Tier 2)
 
 Each tier is built as a self-contained string.  Higher tiers are constructed
@@ -21,7 +21,9 @@ import types
 from pathlib import Path
 from textwrap import dedent
 
+#local imports
 from vfs_writer import read_file, write_file
+from prefix_transpiler import transpile_to_tier_c
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +91,7 @@ def build_prefix0() -> str:
 
 
 def build_prefix1() -> str:
-    """Tier 1: Tier 0 + Manifest (temporary ModuleType)."""
+    """Tier 1: Tier 0 + Manifest class."""
     manifest_src = _load_source_from_disk(
         "state-methods/manifest.py",
         "manifest.py",
@@ -99,23 +101,20 @@ def build_prefix1() -> str:
     parts.append(build_prefix0().rstrip())
     parts.append("")
 
-    # --- Manifest via temporary ModuleType ---
-    parts.append("# === Manifest (temporary ModuleType) ===")
-    parts.append("import types")
-    parts.append("_manifest_src = " + repr(manifest_src))
-    parts.append(dedent("""\
-        _manifest_mod = types.ModuleType("_temp_manifest")
-        exec(_manifest_src, _manifest_mod.__dict__)
-        Manifest = _manifest_mod.manifest          # public name expected by the rest of the system
-        del _manifest_mod
-    """).rstrip())
+    # --- Manifest (class) ---
+    parts.append("# === Manifest (class) ===")
+    parts.append(manifest_src.rstrip())
+    parts.append("")
+    # The source itself is expected to end with the class definition.
+    # We only need to make sure the public name is bound.
+    # (If the class is already named Manifest inside the file, this line is a no-op.)
     parts.append("")
 
     return "\n".join(parts)
 
 
 def build_prefix2() -> str:
-    """Tier 2: Tier 1 + transponder (temporary ModuleType, Manifest injected)."""
+    """Tier 2: Tier 1 + Transponder class."""
     transponder_src = _load_source_from_disk(
         "edge-methods/connections/transponder_module.py",
         "transponder_module.py",
@@ -125,38 +124,30 @@ def build_prefix2() -> str:
     parts.append(build_prefix1().rstrip())
     parts.append("")
 
-    # --- transponder via temporary ModuleType ---
-    parts.append("# === transponder (temporary ModuleType) ===")
-    parts.append("_transponder_src = " + repr(transponder_src))
-    parts.append(dedent("""\
-        _transponder_mod = types.ModuleType("_temp_transponder")
-        _transponder_mod.Manifest = Manifest       # inject so the module can use it
-        exec(_transponder_src, _transponder_mod.__dict__)
-        transponder = _transponder_mod
-        del _transponder_mod
-    """).rstrip())
+    # --- Transponder (class) ---
+    parts.append("# === Transponder (class) ===")
+    parts.append(transponder_src.rstrip())
+    parts.append("")
+    # Same assumption: the source defines class Transponder.
+    # We bind the conventional lowercase instance/name that the rest of the
+    # system already expects.
     parts.append("")
 
     return "\n".join(parts)
 
 
-def build_prefixZ() -> str:
-    """
-    Tier Z: the final prefix that is prepended to user programs
-    (namespace.py, egg_transpiler.py, …).
-
-    Currently identical to Tier 2.  Future tiers will be inserted here.
-    """
-    return build_prefix2()
+def build_prefixA() -> str:
+    raw = build_prefix2()          # today’s tier A
+    return transpile_to_tier_c(raw)
 
 def write_prefix_to_vfs(
-    tier: str = "Z",
+    tier: str = "A",
     virtual_path: str | None = None,
 ) -> int:
     """
     Build the requested tier and store it in the VirtualFS.
 
-    tier: "0" | "1" | "2" | "Z"
+    tier: "0" | "1" | "2" | "A"
     virtual_path: override the default path for that tier.
                   If None, sensible defaults are used.
     """
@@ -164,7 +155,7 @@ def write_prefix_to_vfs(
         "0": build_prefix0,
         "1": build_prefix1,
         "2": build_prefix2,
-        "Z": build_prefixZ,
+        "A": build_prefixA,
     }
     if tier not in builders:
         raise ValueError(f"Unknown tier {tier!r}")
@@ -173,7 +164,7 @@ def write_prefix_to_vfs(
         "0": "Database/prefix_tier0.py",
         "1": "Database/prefix_tier1.py",
         "2": "Database/prefix_tier2.py",
-        "Z": "Database/prefix.py",          # classic name kept for compatibility
+        "A": "Database/prefix.py",          # classic name kept for compatibility
     }
 
     path = virtual_path or default_paths[tier]
@@ -183,16 +174,16 @@ def write_prefix_to_vfs(
 
 def write_all_prefixes() -> dict[str, int]:
     """
-    Write every tier (including the redundant prefix.py == prefixZ).
+    Write every tier (including the redundant prefix.py == prefixA).
     Returns a mapping {tier: node_id}.
     """
     ids = {}
-    for tier in ("0", "1", "2", "Z"):
+    for tier in ("0", "1", "2", "A"):
         ids[tier] = write_prefix_to_vfs(tier=tier)
     # explicit redundancy the user requested
-    ids["prefixZ"] = write_prefix_to_vfs(
-        tier="Z",
-        virtual_path="Database/prefix_tierZ.py",
+    ids["prefixA"] = write_prefix_to_vfs(
+        tier="A",
+        virtual_path="Database/prefix_tierA.py",
     )
     return ids
 # ---------------------------------------------------------------------------
@@ -202,7 +193,7 @@ def write_all_prefixes() -> dict[str, int]:
 if __name__ == "__main__":
     import sys
 
-    prefix = build_prefixZ()
+    prefix = build_prefixA()
 
     if "--write" in sys.argv:
         ids = write_all_prefixes()

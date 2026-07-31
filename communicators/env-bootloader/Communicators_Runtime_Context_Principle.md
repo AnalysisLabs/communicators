@@ -26,7 +26,7 @@ Therefore:
    User modules (`namespace.py`, `egg_transpiler.py`, …) are only the final fragment. The assembled prefix + user source is the unit that must be coherent.
 
 3. **Isolation is intentional but incomplete.**  
-   Temporary `ModuleType`s create deliberate boundaries, yet those boundaries are crossed by explicit injection. The resulting graph is only visible at boot time.
+   Each tier class creates a deliberate boundary (only its public name is visible). The resulting dependency graph is only fully visible once the whole prefix has been assembled.
 
 4. **Bugs often live in the seams.**  
    Most failures are not inside a module but in the contract between tiers or between the prefix and the program that follows it.

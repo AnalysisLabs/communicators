@@ -1,5 +1,6 @@
-class ManifestC:
+class Manifest:
 
+    @internalmethod
     def _get_internal_files(self):
         parent_dir = Path(__file__).parent
         files = set()
@@ -8,6 +9,7 @@ class ManifestC:
                 files.add(f.name)
         return files
 
+    @internalmethod
     def _find_external_caller(self, internal_files):
         frame = inspect.currentframe()
         while frame:
@@ -17,6 +19,7 @@ class ManifestC:
             frame = frame.f_back
         return None
 
+    @internalmethod
     def _log(self, level, message):
         frame = inspect.currentframe().f_back.f_back
         filename = frame.f_code.co_filename.rsplit('/', 1)[-1]
@@ -40,31 +43,38 @@ class ManifestC:
         else:
             print(f'{utc_ts} {process_path} {message}')
 
-    def debug(self, *args):
+    @externalmethod
+    def debug(*args):
         message = ' '.join(str(arg) for arg in args)
-        self._log('DEBUG', message)
+        _log('DEBUG', message)
 
-    def info(self, *args):
+    @externalmethod
+    def info(*args):
         message = ' '.join(str(arg) for arg in args)
-        self._log('INFO', message)
+        _log('INFO', message)
 
-    def warning(self, *args):
+    @externalmethod
+    def warning(*args):
         message = ' '.join(str(arg) for arg in args)
-        self._log('WARNING', message)
+        _log('WARNING', message)
 
-    def error(self, *args):
+    @externalmethod
+    def error(*args):
         message = ' '.join(str(arg) for arg in args)
-        self._log('ERROR', message)
+        _log('ERROR', message)
 
-    def critical(self, *args):
+    @externalmethod
+    def critical(*args):
         message = ' '.join(str(arg) for arg in args)
-        self._log('CRITICAL', message)
+        _log('CRITICAL', message)
 
-    def printer(self, *args):
+    @externalmethod
+    def printer(*args):
         message = ' '.join(str(arg) for arg in args)
-        self._log('PRINTER', message)
+        _log('PRINTER', message)
 
-    def json(self, *args):
+    @externalmethod
+    def json(*args):
         messages = []
         for arg in args:
             try:
@@ -73,9 +83,10 @@ class ManifestC:
                 messages.append(json.dumps(arg))
             except:
                 messages.append('{invalid json}')
-        self._log('JSON', ' '.join(messages))
+        _log('JSON', ' '.join(messages))
 
-    def freight(self, *args):
+    @externalmethod
+    def freight(*args):
         messages = []
         for arg in args:
             if isinstance(arg, freight) and hasattr(arg):
@@ -86,6 +97,4 @@ class ManifestC:
                     messages.append(f)
                 except:
                     messages.append('{invalid freight}')
-        self._log('FREIGHT', ' '.join(messages))
-
-manifest = ManifestC()
+        _log('FREIGHT', ' '.join(messages))

@@ -5,10 +5,10 @@ Design capture for replacing `temp/` writes with an ephemeral SQLite-backed virt
 ```mermaid
 flowchart TD
     %% High-level conceptual chain
-    A[Bootloader] --> B[Database] --> D[Namespace] --> E[Metamorphosis] --> F[Runtime] --> G[Homeostasis]
+    A[Bootloader ✓] --> B[Database ✓] --> D[Namespace] --> E[Metamorphosis] --> F[Runtime] --> G[Homeostasis]
 
     %% Concrete sequence from DB_bootloader.py
-    V[VirtualFS.py] --> L[DB_layout.py] --> P[prefix_builder.py]
+    V[VirtualFS ✓] --> L[DB_layout ✓] --> P[prefix_builder]
     %% Cross-link 
     B --> V
 ```

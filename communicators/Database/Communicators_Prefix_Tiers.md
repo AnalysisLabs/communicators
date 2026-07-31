@@ -4,8 +4,6 @@
 
 The runtime prefix is built in strict dependency tiers so that interdependent modules can be loaded safely and in the correct order without circular imports or missing names.
 
-Each tier is realized as a temporary `types.ModuleType` that is executed in isolation and then bound under a stable public name. Later tiers may see earlier tiers only through explicit injection; they never inherit the global namespace automatically.
-
 ## Tier Rules
 
 | Tier | Contents | May depend on | Current members |
@@ -22,31 +20,6 @@ Each tier is realized as a temporary `types.ModuleType` that is executed in isol
 3. After a tier has finished loading, only its **public** name(s) remain in the prefix namespace. Temporary module objects are deleted.
 4. Injection of lower-tier names into a higher-tier module is explicit and happens before `exec`.
 5. The final public interface that user programs see is always the tier’s public name (`Manifest`, `transponder`, …), never a flat dump of individual functions.
-
-## Loading Pattern (ideal)
-
-```python
-# Tier 0 – already present as ordinary source
-# (imports, Path, inspect, datetime, …)
-
-# Tier 1
-_mod = types.ModuleType("_temp_tier1")
-# inject everything from Tier 0 that this module needs
-_mod.inspect = inspect
-_mod.Path = Path
-# …
-exec(tier1_source, _mod.__dict__)
-Manifest = _mod.manifest          # public name only
-del _mod
-
-# Tier 2
-_mod = types.ModuleType("_temp_tier2")
-_mod.Manifest = Manifest          # explicit injection from Tier 1
-# + any Tier 0 names still required
-exec(tier2_source, _mod.__dict__)
-transponder = _mod                # public name only
-del _mod
-```
 
 ## Why Tiers Exist
 

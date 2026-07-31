@@ -3,6 +3,8 @@ nix --extra-experimental-features "nix-command flakes" develop .
 
 You are now inside the Nix shell (Python is available). `sqlite3` CLI is still not installed, so use Python:
 
+This looks good:
+
 ```bash
 python3 -c '
 import sqlite3
