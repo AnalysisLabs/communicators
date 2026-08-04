@@ -1,8 +1,7 @@
-import sqlite3
-conn = sqlite3.connect("runtime_fs.db")
-print(conn.execute("SELECT data FROM file_contents WHERE id = 4").fetchone()[0])
-'
-# === standard py (from VirtualFS) ===
+
+# === Tier 0 (imports) ===
+
+# === standard.py (from VirtualFS) ===
 from __future__ import annotations
 import argparse, ast, asyncio, httpx, inspect, json, math, numpy, os, random, re, requests, secrets, shutil, signal, socket, struct, subprocess, sys, threading, time, traceback, tracemalloc, uuid, websockets, yaml
 from aiohttp import web
@@ -20,8 +19,10 @@ from websockets.sync.server import serve
 from pathlib import Path
 COMMUNICATORS_ROOT = Path('/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-3/communicators')
 
+# === Tier 1 (imports) ===
+
 # === Manifest (class) ===
-class Manifest:
+class manifest_internal:
 
     def _get_internal_files(self):
         parent_dir = Path(__file__).parent
@@ -30,6 +31,7 @@ class Manifest:
             for f in parent_dir.iterdir():
                 files.add(f.name)
         return files
+
 
     def _find_external_caller(self, internal_files):
         frame = inspect.currentframe()
@@ -40,61 +42,79 @@ class Manifest:
             frame = frame.f_back
         return None
 
-    def _log(self, level, message):
-        frame = inspect.currentframe().f_back.f_back
-        filename = frame.f_code.co_filename.rsplit('/', 1)[-1]
-        # func_name = frame.f_code.co_name
-        class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
-        func_name = frame.f_code.co_qualname
-        if class_name and func_name.startswith(class_name + '.'):
-            func_name = func_name[len(class_name) + 1:]
-        func_name = func_name.replace('.<locals>', '.')
-        class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
-        process_path = f'[{filename}.{class_name}.{func_name}]' if class_name else f'[{filename}.{func_name}]'
-        internal_files = self._get_internal_files()
-        if filename in internal_files:
-            external_caller = self._find_external_caller(internal_files)
-            if external_caller:
-                process_path = f'[{process_path[1:-1]} from {external_caller}]'
-        process_path = process_path.replace('..', '.')
+
+    def _log(self, level, message, process_path=None):
+        if process_path is None:
+            frame = inspect.currentframe().f_back.f_back
+            filename = frame.f_code.co_filename.rsplit('/', 1)[-1]
+            # func_name = frame.f_code.co_name
+            class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
+            func_name = frame.f_code.co_qualname
+            if class_name and func_name.startswith(class_name + '.'):
+                func_name = func_name[len(class_name) + 1:]
+            func_name = func_name.replace('.<locals>', '.')
+            class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
+            process_path = f'[{filename}.{class_name}.{func_name}]' if class_name else f'[{filename}.{func_name}]'
+            internal_files = self._get_internal_files()
+            if filename in internal_files:
+                external_caller = self._find_external_caller(internal_files)
+                if external_caller:
+                    process_path = f'[{process_path[1:-1]} from {external_caller}]'
+            process_path = process_path.replace('..', '.')
         utc_ts = datetime.now(timezone.utc).isoformat()
         if level:
             print(f'{utc_ts} {level} {process_path} {message}')
         else:
             print(f'{utc_ts} {process_path} {message}')
 
-    @staticmethod
-    def debug(self, *args):
-        message = ' '.join(str(arg) for arg in args)
-        self._log('DEBUG', message)
+_manifest_internal = manifest_internal()
+
+class manifest:
 
     @staticmethod
-    def info(self, *args):
+    def debug(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        self._log('INFO', message)
+        _manifest_internal._log('DEBUG', message)
+
+
 
     @staticmethod
-    def warning(self, *args):
+    def info(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        self._log('WARNING', message)
+        _manifest_internal._log('INFO', message)
+
+
 
     @staticmethod
-    def error(self, *args):
+    def warning(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        self._log('ERROR', message)
+        _manifest_internal._log('WARNING', message)
+
+
 
     @staticmethod
-    def critical(self, *args):
+    def error(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        self._log('CRITICAL', message)
+        _manifest_internal._log('ERROR', message)
+
+
 
     @staticmethod
-    def printer(self, *args):
+    def critical(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        self._log('PRINTER', message)
+        _manifest_internal._log('CRITICAL', message)
+
+
 
     @staticmethod
-    def json(self, *args):
+    def printer(*args, process_path=None):
+        message = ' '.join(str(arg) for arg in args)
+        _manifest_internal._log('PRINTER', message)
+
+
+
+    @staticmethod
+    def json(*args, process_path=None):
         messages = []
         for arg in args:
             try:
@@ -103,10 +123,12 @@ class Manifest:
                 messages.append(json.dumps(arg))
             except:
                 messages.append('{invalid json}')
-        self._log('JSON', ' '.join(messages))
+        _manifest_internal._log('JSON', ' '.join(messages))
+
+
 
     @staticmethod
-    def freight(self, *args):
+    def freight(*args, process_path=None):
         messages = []
         for arg in args:
             if isinstance(arg, freight) and hasattr(arg):
@@ -117,22 +139,25 @@ class Manifest:
                     messages.append(f)
                 except:
                     messages.append('{invalid freight}')
-        self._log('FREIGHT', ' '.join(messages))
+        _manifest_internal._log('FREIGHT', ' '.join(messages))
+
+
+
+# === Tier 2 (imports) ===
 
 # === Transponder (class) ===
-class transponder:
+class transponder_internal:
     # Terms:
 
-    @staticmethod
     def is_complete(response):
         """Simple delimiter check for the current placeholder protocol."""
         if isinstance(response, dict): response = json.dumps(response).encode()
         return response.endswith(b'\n') or b'ACK' in response
 
 
+
     # Utils:
 
-    @staticmethod
     def create_listener(ip, port):
         l = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         l.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -140,7 +165,7 @@ class transponder:
         l.listen(5)
         return l
 
-    @staticmethod
+
     def accept_connection(listener):
         """
         Accepts an incoming connection on the listening endpoint.
@@ -150,7 +175,7 @@ class transponder:
         conn, addr = listener.accept()
         return conn
 
-    @staticmethod
+
     def connect_to(host, port):
         """
         Actively connects to a remote listening endpoint (host, port).
@@ -160,7 +185,7 @@ class transponder:
         conn.connect((host, port))
         return conn
 
-    @staticmethod
+
     def sendall(conn, data):
         """
         Send all bytes on the given connected endpoint.
@@ -168,7 +193,7 @@ class transponder:
         """
         conn.sendall(data)
 
-    @staticmethod
+
     def recv(conn, size):
         """
         Receive up to `size` bytes from the given connected endpoint.
@@ -176,7 +201,7 @@ class transponder:
         """
         return conn.recv(size)
 
-    @staticmethod
+
     def handle_connection(conn):
         """
         Minimal proof-of-concept handler.
@@ -202,64 +227,54 @@ class transponder:
         except Exception as e:
             Manifest.error(f"Connection error: {e}")
 
+_transponder_internal = transponder_internal()
+
+class transponder:
+
     # High level:
 
     @staticmethod
     def persistent_server(host, port):
         if host == 'localhost': host = '127.0.0.1'
-        listener = create_listener(host, port)
+        listener = _transponder_internal.create_listener(host, port)
         Manifest.info("Transponder active")
 
         while True:
-            conn = accept_connection(listener)
+            conn = _transponder_internal.accept_connection(listener)
             # Hand off or handle directly
-            handle_connection(conn)
+            _transponder_internal.handle_connection(conn)
+
+
 
     @staticmethod
     def send_and_close(host, port, data):
         if host == 'localhost': host = '127.0.0.1'
-        conn = connect_to(host, port)
-        conn.sendall(data)           # fire-and-forget style
+        conn = _transponder_internal.connect_to(host, port)
+        conn._transponder_internal.sendall(data)           # fire-and-forget style
         conn.close()
+
+
 
     @staticmethod
     def request_response(host, port, data):
         if host == 'localhost': host = '127.0.0.1'
-        conn = connect_to(host, port)
-        conn.sendall(data)
+        conn = _transponder_internal.connect_to(host, port)
+        conn._transponder_internal.sendall(data)
 
         response = b""
         while True:
-            chunk = conn.recv(4096)
+            chunk = conn._transponder_internal.recv(4096)
             if not chunk:
                 break
             response += chunk
-            if is_complete(response):   # your simple check
+            if _transponder_internal.is_complete(response):   # your simple check
                 break
 
         conn.close()
         return response
 
-    """
-    # We do not need this yet. It is important not is not needed for getting the namespace server working.
-    def persistent_client(host="127.0.0.1", port=12345):
-        if host == 'localhost': host = '127.0.0.1'
-        conn = connect_to(host, port)
 
-        while True:
-            # send when needed
-            data = get_next_message()
-            if data:
-                conn.sendall(data)
-
-            # receive when available
-            response = conn.recv(4096)
-            if response:
-                handle_connection(response)
-    """
-
-
-# ==================== USER PROGRAM ====================
+# ==================== (USER PROGRAM) ====================
 class BaseNamespace:
     _instance = None
     _lock = threading.Lock()
@@ -330,7 +345,7 @@ def _start_ns_server():
         # Import here or at top: import transponder
         transponder.persistent_server('localhost', 8765)
     except Exception as e:
-        Manifest.error(f"Failed to start namespace server: {e}")
+        manifest.error(f"Failed to start namespace server: {e}")
 
 def port_in_use(host: str, port: int, timeout: float = 0.3) -> bool:
     """Check if something is listening on (host, port) using a raw TCP connect."""

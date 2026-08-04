@@ -103,3 +103,7 @@ function _log(level, message):
 
 The heart of Manifest is the process path.  
 The body that computes it must now live comfortably in a hybrid execution world.
+
+## Discussion 
+
+Use standard comments to locate [[Communicators Internal “Import” Principle|"imported"]] modules. and also include the tier of the prefixed module.

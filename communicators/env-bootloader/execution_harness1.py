@@ -97,6 +97,22 @@ def load_module(scope: str, src: str, dst: str):
     )
     print(f"→ Combined script stored in VirtualFS → {dst}")
 
+    # after inject_process_paths and write_file, before compile
+
+    bootstrap = f'''\
+import linecache
+_src = {combined!r}
+linecache.cache[{dst!r}] = (
+    len(_src),
+    None,
+    _src.splitlines(True),
+    {dst!r},
+)
+del _src
+    '''
+
+    combined = bootstrap + combined
+
     # Compile with the original user path so tracebacks stay meaningful
     code_obj = compile(combined, dst, "exec")
     return code_obj, dst

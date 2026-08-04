@@ -1,4 +1,4 @@
-class Manifest:
+class manifest:
 
     @internalmethod
     def _get_internal_files(self):
@@ -20,23 +20,24 @@ class Manifest:
         return None
 
     @internalmethod
-    def _log(self, level, message):
-        frame = inspect.currentframe().f_back.f_back
-        filename = frame.f_code.co_filename.rsplit('/', 1)[-1]
-        # func_name = frame.f_code.co_name
-        class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
-        func_name = frame.f_code.co_qualname
-        if class_name and func_name.startswith(class_name + '.'):
-            func_name = func_name[len(class_name) + 1:]
-        func_name = func_name.replace('.<locals>', '.')
-        class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
-        process_path = f'[{filename}.{class_name}.{func_name}]' if class_name else f'[{filename}.{func_name}]'
-        internal_files = self._get_internal_files()
-        if filename in internal_files:
-            external_caller = self._find_external_caller(internal_files)
-            if external_caller:
-                process_path = f'[{process_path[1:-1]} from {external_caller}]'
-        process_path = process_path.replace('..', '.')
+    def _log(self, level, message, process_path=None):
+        if process_path is None:
+            frame = inspect.currentframe().f_back.f_back
+            filename = frame.f_code.co_filename.rsplit('/', 1)[-1]
+            # func_name = frame.f_code.co_name
+            class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
+            func_name = frame.f_code.co_qualname
+            if class_name and func_name.startswith(class_name + '.'):
+                func_name = func_name[len(class_name) + 1:]
+            func_name = func_name.replace('.<locals>', '.')
+            class_name = frame.f_locals.get('self').__class__.__name__ if 'self' in frame.f_locals else ''
+            process_path = f'[{filename}.{class_name}.{func_name}]' if class_name else f'[{filename}.{func_name}]'
+            internal_files = self._get_internal_files()
+            if filename in internal_files:
+                external_caller = self._find_external_caller(internal_files)
+                if external_caller:
+                    process_path = f'[{process_path[1:-1]} from {external_caller}]'
+            process_path = process_path.replace('..', '.')
         utc_ts = datetime.now(timezone.utc).isoformat()
         if level:
             print(f'{utc_ts} {level} {process_path} {message}')
@@ -44,37 +45,37 @@ class Manifest:
             print(f'{utc_ts} {process_path} {message}')
 
     @externalmethod
-    def debug(*args):
+    def debug(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
         _log('DEBUG', message)
 
     @externalmethod
-    def info(*args):
+    def info(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
         _log('INFO', message)
 
     @externalmethod
-    def warning(*args):
+    def warning(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
         _log('WARNING', message)
 
     @externalmethod
-    def error(*args):
+    def error(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
         _log('ERROR', message)
 
     @externalmethod
-    def critical(*args):
+    def critical(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
         _log('CRITICAL', message)
 
     @externalmethod
-    def printer(*args):
+    def printer(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
         _log('PRINTER', message)
 
     @externalmethod
-    def json(*args):
+    def json(*args, process_path=None):
         messages = []
         for arg in args:
             try:
@@ -86,7 +87,7 @@ class Manifest:
         _log('JSON', ' '.join(messages))
 
     @externalmethod
-    def freight(*args):
+    def freight(*args, process_path=None):
         messages = []
         for arg in args:
             if isinstance(arg, freight) and hasattr(arg):

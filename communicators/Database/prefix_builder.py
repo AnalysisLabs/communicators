@@ -77,6 +77,9 @@ def build_prefix0() -> str:
     parts: list[str] = []
 
     # --- standard library collection ---
+    parts.append("")
+    parts.append("# === Tier 0 (imports) ===")
+    parts.append("")
     parts.append("# === standard.py (from VirtualFS) ===")
     parts.append(standard_src.rstrip())
     parts.append("")
@@ -100,6 +103,8 @@ def build_prefix1() -> str:
     parts: list[str] = []
     parts.append(build_prefix0().rstrip())
     parts.append("")
+    parts.append("# === Tier 1 (imports) ===")
+    parts.append("")
 
     # --- Manifest (class) ---
     parts.append("# === Manifest (class) ===")
@@ -122,6 +127,8 @@ def build_prefix2() -> str:
 
     parts: list[str] = []
     parts.append(build_prefix1().rstrip())
+    parts.append("")
+    parts.append("# === Tier 2 (imports) ===")
     parts.append("")
 
     # --- Transponder (class) ---

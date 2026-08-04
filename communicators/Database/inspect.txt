@@ -43,7 +43,7 @@ That shows the metadata. To dump the actual source of a specific content (e.g. c
 python3 -c '
 import sqlite3
 conn = sqlite3.connect("runtime_fs.db")
-print(conn.execute("SELECT data FROM file_contents WHERE id = 2").fetchone()[0])
+print(conn.execute("SELECT data FROM file_contents WHERE id = 6").fetchone()[0])
 '
 ```
 

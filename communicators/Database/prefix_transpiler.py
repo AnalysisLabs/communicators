@@ -1,276 +1,378 @@
 #!/usr/bin/env python3
 """
-prefix_transpiler.py – A → B → C metamorphosis for Communicators prefixes.
+prefix_transpiler.py – Stage B + Stage C for Communicators prefixes.
 
-Stage B (structural split)
-  - Every class that uses the markers is split:
-      OriginalName          – only @externalmethod methods (decorator → @staticmethod)
-      OriginalName_internal – only @internalmethod methods (decorator stripped)
-  - Undecorated methods raise:
-      UndecoratedFunctionError: undecorated function: {name} in class: {cls}
-  - Result is written to Database/prefix_tierB.py
+Pipeline
+--------
+prefix_tierA / prefix_tier2
+        │
+        ▼  stage_b_split   (structural split by markers)
+prefix_tierB   ← written to VirtualFS
+        │
+        ▼  stage_c_rewrite (call-site repair)
+prefix_tierC   ← written to VirtualFS and returned
 
-Stage C (call-site rewrite)
-  - For each split class a private instance is emitted:
-      _OriginalName_internal = OriginalName_internal()
-  - Bare calls to names that now live on the internal class are rewritten
-    to go through that private instance (Option C1).
-  - Cross-class public calls (Manifest.info, etc.) are left untouched.
-  - Result is written to Database/prefix_tierC.py
+Emission order for each original class (Stage B):
+    class Name_internal: ...
+    _Name_internal = Name_internal()
+    class Name: ...               # public façade
 
-The markers @externalmethod / @internalmethod are recognised only by this
-transpiler; they never appear in the emitted source.
-
-Side effect: transpile_to_tier_c always persists both B and C via vfs_writer
-so the intermediate and final forms are inspectable in the VirtualFS.
+Rules enforced
+--------------
+- Only @externalmethod and @internalmethod are legal on methods of
+  "imported" classes.  Any undecorated def raises TranspileError.
+- @externalmethod  →  stays on the public class, decorator becomes @staticmethod
+- @internalmethod  →  moves to {Name}_internal, decorator is stripped
+- Call sites that refer to internal methods are rewritten to the private
+  instance (Option C1):  _Name_internal.method(...)
+- AST is used solely to discover line ranges.  All mutation is performed
+  on the original source lines so that comments and formatting outside
+  the transformed classes are preserved exactly.
 """
 
 from __future__ import annotations
 
 import ast
-import sys
-from typing import Dict, List, Optional, Set, Tuple
+import re
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 
 from vfs_writer import write_file
 
 
-class UndecoratedFunctionError(Exception):
+class TranspileError(Exception):
     pass
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Line-range helpers (the only place AST is used)
 # ---------------------------------------------------------------------------
 
-def _marker(decorator_list: list) -> Optional[str]:
-    """Return 'externalmethod' or 'internalmethod' if present, else None."""
-    for dec in decorator_list:
-        if isinstance(dec, ast.Name) and dec.id in ("externalmethod", "internalmethod"):
-            return dec.id
-        # tolerate @something.externalmethod style if it ever appears
-        if isinstance(dec, ast.Attribute) and dec.attr in ("externalmethod", "internalmethod"):
-            return dec.attr
-    return None
+@dataclass
+class FunctionRange:
+    name: str
+    start: int          # 1-based inclusive
+    end: int            # 1-based inclusive
+    raw_lines: List[str]  # the exact source lines belonging to this function
 
 
-def _has_self(args: ast.arguments) -> bool:
-    return bool(args.args) and args.args[0].arg == "self"
-
-
-def _strip_internalmethod_only(decorator_list: list) -> list:
-    """Remove only @internalmethod markers; keep every other decorator."""
-    kept = []
-    for dec in decorator_list:
-        if isinstance(dec, ast.Name) and dec.id == "internalmethod":
-            continue
-        if isinstance(dec, ast.Attribute) and dec.attr == "internalmethod":
-            continue
-        kept.append(dec)
-    return kept
-
-
-def _prepare_internal_method(func: ast.FunctionDef) -> ast.FunctionDef:
-    """
-    Prepare a method for the *_internal class:
-      - strip only @internalmethod (leave any other decorators intact)
-      - guarantee a leading 'self' parameter
-    """
-    new_decorators = _strip_internalmethod_only(func.decorator_list)
-
-    if _has_self(func.args):
-        new_args = func.args
-    else:
-        new_args = ast.arguments(
-            posonlyargs=list(func.args.posonlyargs),
-            args=[ast.arg(arg="self")] + list(func.args.args),
-            vararg=func.args.vararg,
-            kwonlyargs=list(func.args.kwonlyargs),
-            kw_defaults=list(func.args.kw_defaults),
-            kwarg=func.args.kwarg,
-            defaults=list(func.args.defaults),
-        )
-
-    return ast.FunctionDef(
-        name=func.name,
-        args=new_args,
-        body=func.body,
-        decorator_list=new_decorators,
-        returns=func.returns,
-        type_comment=func.type_comment,
-    )
-
-
-def _make_staticmethod(func: ast.FunctionDef) -> ast.FunctionDef:
-    """Return func with @staticmethod as its only decorator."""
-    return ast.FunctionDef(
-        name=func.name,
-        args=func.args,
-        body=func.body,
-        decorator_list=[ast.Name(id="staticmethod", ctx=ast.Load())],
-        returns=func.returns,
-        type_comment=func.type_comment,
-    )
-
-
-# ---------------------------------------------------------------------------
-# Stage B – structural split
-# ---------------------------------------------------------------------------
-
-def stage_b_split(source: str) -> str:
+def _parse_class_ranges(source: str) -> List[Tuple[str, int, int]]:
+    """Return [(class_name, start_lineno, end_lineno), ...] (1-based, inclusive)."""
     tree = ast.parse(source)
-    new_body: List[ast.stmt] = []
+    result = []
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef):
+            end = getattr(node, "end_lineno", node.lineno)
+            result.append((node.name, node.lineno, end))
+    return result
 
+
+def _parse_raw_function_ranges(
+    source: str, class_start: int, class_end: int
+) -> List[Tuple[str, int, int]]:
+    """
+    Use AST only to discover the *core* line range of each def inside the class.
+    Returns list of (func_name, core_start, core_end).
+    """
+    tree = ast.parse(source)
+    raw = []
     for node in tree.body:
         if not isinstance(node, ast.ClassDef):
-            new_body.append(node)
             continue
-
-        external_methods: List[ast.FunctionDef] = []
-        internal_methods: List[ast.FunctionDef] = []
-
+        if node.lineno != class_start:
+            continue
         for item in node.body:
-            if not isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                # keep non-method statements (docstrings, assignments, …)
-                # in the public class for now
-                external_methods.append(item)  # type: ignore[arg-type]
-                continue
+            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                deco_start = item.lineno
+                if item.decorator_list:
+                    deco_start = min(d.lineno for d in item.decorator_list)
+                end = getattr(item, "end_lineno", item.lineno)
+                raw.append((item.name, deco_start, end))
+    return raw
 
-            marker = _marker(item.decorator_list)
-            if marker is None:
-                raise UndecoratedFunctionError(
-                    f"undecorated function: {item.name} in class: {node.name}"
-                )
-            if marker == "externalmethod":
-                # strip marker, force @staticmethod, keep signature as-is
-                external_methods.append(_make_staticmethod(item))
-            else:  # internalmethod
-                # strip only @internalmethod, guarantee real 'self'
-                internal_methods.append(_prepare_internal_method(item))
 
-        # Private instance
-        if internal_methods:
-            internal_class = ast.ClassDef(
-                name=f"{node.name}_internal",
-                bases=[],
-                keywords=[],
-                body=internal_methods,
-                decorator_list=[],
+def _expand_function_ranges(
+    source_lines: List[str],
+    class_start: int,
+    class_end: int,
+    raw_funcs: List[Tuple[str, int, int]],
+) -> List[FunctionRange]:
+    """
+    Expand function ranges according to the rule:
+
+    - Lines after the class header and before the first function
+      belong to the first function.
+    - Lines between function N and function N+1 belong to function N+1.
+
+    This helper does *not* decide external vs internal; that is the
+    responsibility of the stage that calls it.
+    """
+    if not raw_funcs:
+        return []
+
+    raw_funcs = sorted(raw_funcs, key=lambda t: t[1])
+
+    expanded: List[FunctionRange] = []
+    prev_end = class_start  # class line itself is not part of any function
+
+    for idx, (name, core_start, core_end) in enumerate(raw_funcs):
+        if idx == 0:
+            block_start = class_start + 1
+        else:
+            block_start = prev_end + 1
+
+        block_end = core_end
+        prev_end = core_end
+
+        lines = source_lines[block_start - 1 : block_end]
+
+        expanded.append(
+            FunctionRange(
+                name=name,
+                start=block_start,
+                end=block_end,
+                raw_lines=lines,
             )
-            new_body.append(internal_class)
-
-            # Private instance (Option C1) – emitted right after the pair
-            # _Name_internal = Name_internal()
-            assign = ast.Assign(
-                targets=[ast.Name(id=f"_{node.name}_internal", ctx=ast.Store())],
-                value=ast.Call(
-                    func=ast.Name(id=f"{node.name}_internal", ctx=ast.Load()),
-                    args=[],
-                    keywords=[],
-                ),
-            )
-            new_body.append(assign)
-
-        # Public façade class (original name) – emitted after its
-        # internal companion so definition order is safe.
-        public_class = ast.ClassDef(
-            name=node.name,
-            bases=node.bases,
-            keywords=node.keywords,
-            body=external_methods or [ast.Pass()],
-            decorator_list=node.decorator_list,
         )
-        new_body.append(public_class)
+
+    return expanded
 
 
-    new_tree = ast.Module(body=new_body, type_ignores=[])
-    ast.fix_missing_locations(new_tree)
-    return ast.unparse(new_tree) + "\n"
+# ---------------------------------------------------------------------------
+# Stage B – structural split + marker classification
+# ---------------------------------------------------------------------------
+
+def _strip_marker_and_make_static(lines: List[str]) -> List[str]:
+    """Turn an @externalmethod function into a clean @staticmethod function."""
+    out = []
+    for line in lines:
+        if re.search(r"@externalmethod\b", line):
+            indent = re.match(r"[ \t]*", line).group(0)
+            out.append(f"{indent}@staticmethod")
+        else:
+            out.append(line)
+    return out
+
+
+def _strip_marker_only(lines: List[str]) -> List[str]:
+    """Remove @internalmethod lines; keep everything else."""
+    out = []
+    for line in lines:
+        if re.search(r"@internalmethod\b", line):
+            continue
+        out.append(line)
+    return out
+
+
+def stage_b_split(prefix_a: str) -> str:
+    """
+    Split every class that contains the markers into
+
+        class Name_internal: ...
+        _Name_internal = Name_internal()
+        class Name: ...               # public façade
+
+    Classification (external / internal / undecorated) happens here.
+    Everything outside the original class ranges is left untouched.
+    """
+    source_lines = prefix_a.splitlines(keepends=True)
+    plain_lines = [ln.rstrip("\n\r") for ln in source_lines]
+
+    class_ranges = _parse_class_ranges(prefix_a)
+    if not class_ranges:
+        return prefix_a
+
+    pieces: List[str] = []
+    last_end = 0  # 0-based exclusive
+
+    for class_name, cls_start, cls_end in class_ranges:
+        pieces.extend(source_lines[last_end : cls_start - 1])
+
+        raw = _parse_raw_function_ranges(prefix_a, cls_start, cls_end)
+        func_ranges = _expand_function_ranges(
+            plain_lines, cls_start, cls_end, raw
+        )
+
+        external_funcs: List[FunctionRange] = []
+        internal_funcs: List[FunctionRange] = []
+
+        for fn in func_ranges:
+            text = "\n".join(fn.raw_lines)
+            is_external = bool(re.search(r"@externalmethod\b", text))
+            is_internal = bool(re.search(r"@internalmethod\b", text))
+
+            if not is_external and not is_internal:
+                raise TranspileError(
+                    f"undecorated function: {fn.name} in class: {class_name} "
+                    f"(see lines {fn.start}-{fn.end})"
+                )
+            if is_external and is_internal:
+                raise TranspileError(
+                    f"function {fn.name} in class {class_name} has both "
+                    f"@externalmethod and @internalmethod"
+                )
+
+            if is_external:
+                external_funcs.append(fn)
+            else:
+                internal_funcs.append(fn)
+
+        # ---- internal class (emitted first) ----
+        internal_lines = [f"class {class_name}_internal:\n"]
+        if not internal_funcs:
+            internal_lines.append("    pass\n")
+        else:
+            for fn in internal_funcs:
+                transformed = _strip_marker_only(fn.raw_lines)
+                for ln in transformed:
+                    internal_lines.append(ln + "\n")
+                internal_lines.append("\n")
+
+        pieces.extend(internal_lines)
+
+        # ---- private instance (immediately after the internal class) ----
+        pieces.append(f"_{class_name}_internal = {class_name}_internal()\n")
+        pieces.append("\n")
+
+        # ---- public class ----
+        public_lines = [f"class {class_name}:\n"]
+        if not external_funcs:
+            public_lines.append("    pass\n")
+        else:
+            for fn in external_funcs:
+                transformed = _strip_marker_and_make_static(fn.raw_lines)
+                for ln in transformed:
+                    public_lines.append(ln + "\n")
+                public_lines.append("\n")
+
+        pieces.extend(public_lines)
+
+        last_end = cls_end
+
+    pieces.extend(source_lines[last_end:])
+    return "".join(pieces)
 
 
 # ---------------------------------------------------------------------------
 # Stage C – call-site rewrite
 # ---------------------------------------------------------------------------
 
-class CallRewriter(ast.NodeTransformer):
+def _rewrite_calls_in_body(
+    body_lines: List[str],
+    internal_names: set[str],
+    class_name: str,
+    *,
+    as_instance: bool,
+) -> List[str]:
     """
-    Rewrite bare Name calls that refer to internal methods of the current class
-    so they go through the private instance _ClassName_internal.
+    Conservative text rewrite of calls to internal methods.
+
+    as_instance=True  →  rewrite to  self.name(
+    as_instance=False →  rewrite to  _Class_internal.name(
     """
+    if not internal_names:
+        return body_lines
 
-    def __init__(self, class_name: str, internal_names: Set[str]):
-        self.class_name = class_name
-        self.internal_names = internal_names
-        self.impl_name = f"_{class_name}_internal"
-
-    def visit_Call(self, node: ast.Call) -> ast.Call:
-        self.generic_visit(node)
-        # bare name call:  foo(...)
-        if isinstance(node.func, ast.Name) and node.func.id in self.internal_names:
-            node.func = ast.Attribute(
-                value=ast.Name(id=self.impl_name, ctx=ast.Load()),
-                attr=node.func.id,
-                ctx=ast.Load(),
+    prefix = "self." if as_instance else f"_{class_name}_internal."
+    out = []
+    for line in body_lines:
+        new = line
+        for name in internal_names:
+            new = re.sub(
+                rf"\b{re.escape(name)}\s*\(",
+                f"{prefix}{name}(",
+                new,
             )
-        return node
+        out.append(new)
+    return out
 
 
-def stage_c_rewrite(source: str) -> str:
-    tree = ast.parse(source)
+def stage_c_rewrite(prefix_b: str) -> str:
+    """
+    1. Discover every public / _internal pair.
+    2. Rewrite call sites inside external methods (the only methods left
+       on the public class) to go through the private instance.
 
-    # Collect, for every public class, the set of names that live on its _internal
-    internal_map: Dict[str, Set[str]] = {}  # public_name -> {method names}
-    for node in tree.body:
-        if isinstance(node, ast.ClassDef) and node.name.endswith("_internal"):
-            public = node.name[: -len("_internal")]
-            names = {
-                item.name
-                for item in node.body
-                if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
-            }
-            internal_map[public] = names
+    Stage C does not re-classify methods and does not re-emit the private
+    instances (they already sit immediately after each _internal class).
+    """
+    source_lines = prefix_b.splitlines(keepends=True)
+    plain_lines = [ln.rstrip("\n\r") for ln in source_lines]
 
-    new_body: List[ast.stmt] = []
-    for node in tree.body:
-        if not isinstance(node, ast.ClassDef):
-            new_body.append(node)
+    class_ranges = _parse_class_ranges(prefix_b)
+
+    # public_name → set of internal method names
+    internal_map: Dict[str, set[str]] = {}
+    for class_name, cls_start, cls_end in class_ranges:
+        if class_name.endswith("_internal"):
+            continue
+        internal_name = f"{class_name}_internal"
+        internal_cls = next(
+            ((n, s, e) for n, s, e in class_ranges if n == internal_name), None
+        )
+        if internal_cls is None:
+            internal_map[class_name] = set()
+            continue
+        _, i_start, i_end = internal_cls
+        i_raw = _parse_raw_function_ranges(prefix_b, i_start, i_end)
+        names = {name for name, _, _ in i_raw}
+        internal_map[class_name] = names
+
+    pieces: List[str] = []
+    last_end = 0
+
+    for class_name, cls_start, cls_end in class_ranges:
+        pieces.extend(source_lines[last_end : cls_start - 1])
+
+        if class_name.endswith("_internal"):
+            # Leave internal classes (and the instance line that follows them)
+            # exactly as Stage B produced them.
+            pieces.extend(source_lines[cls_start - 1 : cls_end])
+            last_end = cls_end
             continue
 
-        # Only rewrite bodies of the public classes that have an internal twin
-        if node.name in internal_map:
-            rewriter = CallRewriter(node.name, internal_map[node.name])
-            new_body.append(rewriter.visit(node))
+        # Public class – every method here is an external method
+        internal_names = internal_map.get(class_name, set())
+        raw = _parse_raw_function_ranges(prefix_b, cls_start, cls_end)
+        func_ranges = _expand_function_ranges(
+            plain_lines, cls_start, cls_end, raw
+        )
+
+        new_class_lines = [f"class {class_name}:\n"]
+        if not func_ranges:
+            new_class_lines.append("    pass\n")
         else:
-            # also rewrite inside the _internal classes themselves
-            # (in case one internal method calls another)
-            if node.name.endswith("_internal"):
-                public = node.name[: -len("_internal")]
-                if public in internal_map:
-                    rewriter = CallRewriter(public, internal_map[public])
-                    new_body.append(rewriter.visit(node))
-                else:
-                    new_body.append(node)
-            else:
-                new_body.append(node)
+            for fn in func_ranges:
+                body = _rewrite_calls_in_body(
+                    fn.raw_lines,
+                    internal_names,
+                    class_name,
+                    as_instance=False,
+                )
+                for ln in body:
+                    new_class_lines.append(ln + "\n")
+                new_class_lines.append("\n")
 
-    new_tree = ast.Module(body=new_body, type_ignores=[])
-    ast.fix_missing_locations(new_tree)
-    return ast.unparse(new_tree) + "\n"
+        pieces.extend(new_class_lines)
+        last_end = cls_end
+
+    pieces.extend(source_lines[last_end:])
+    return "".join(pieces)
 
 
 # ---------------------------------------------------------------------------
-# Public entry point
+# Public entry point (writes B and C to the VirtualFS)
 # ---------------------------------------------------------------------------
 
-def transpile_to_tier_c(source: str) -> str:
+def transpile_to_tier_c(prefix_a: str) -> str:
     """
-    Full A → B → C transformation.
+    Full A → B → C pipeline.
 
-    - Writes the intermediate result to Database/prefix_tierB.py
-    - Writes the final result to Database/prefix_tierC.py
-    - Returns the tier-C source so callers (prefix_builder) can still use it
-      as the live prefix.
+    - Writes prefix_tierB.py into the VirtualFS after Stage B.
+    - Writes prefix_tierC.py into the VirtualFS after Stage C.
+    - Returns the Stage-C text (so prefix_builder.build_prefixA still works).
     """
-    tier_b = stage_b_split(source)
+    tier_b = stage_b_split(prefix_a)
     write_file(
         "Database/prefix_tierB.py",
         tier_b,
@@ -287,36 +389,23 @@ def transpile_to_tier_c(source: str) -> str:
     return tier_c
 
 
-# ---------------------------------------------------------------------------
-# CLI helper (optional)
-# ---------------------------------------------------------------------------
+def transpile_and_return(prefix_a: str) -> str:
+    """Alias used by prefix_builder.build_prefixA()."""
+    return transpile_to_tier_c(prefix_a)
+
 
 if __name__ == "__main__":
-    import argparse
+    import sys
     from pathlib import Path
 
-    parser = argparse.ArgumentParser(description="Transpile a prefix from tier A to tier C")
-    parser.add_argument("input", type=Path, help="Path to prefix_tierA.py (or any A-source)")
-    parser.add_argument("-o", "--output", type=Path, help="Write result here instead of stdout")
-    parser.add_argument("--stage", choices=("b", "c", "full"), default="full",
-                        help="Stop after stage B, run only C, or full A→C")
-    args = parser.parse_args()
-
-    src = args.input.read_text(encoding="utf-8")
-
-    try:
-        if args.stage == "b":
-            result = stage_b_split(src)
-        elif args.stage == "c":
-            result = stage_c_rewrite(src)
-        else:
-            result = transpile_to_tier_c(src)
-    except UndecoratedFunctionError as e:
-        print(f"error: {e}", file=sys.stderr)
+    if len(sys.argv) < 2:
+        print("Usage: prefix_transpiler.py <prefix_tierA.py>", file=sys.stderr)
         sys.exit(1)
 
-    if args.output:
-        args.output.write_text(result, encoding="utf-8")
-        print(f"Wrote {args.output} ({len(result)} bytes)")
-    else:
+    src = Path(sys.argv[1]).read_text(encoding="utf-8")
+    try:
+        result = transpile_to_tier_c(src)
         print(result)
+    except TranspileError as e:
+        print(f"TranspileError: {e}", file=sys.stderr)
+        sys.exit(1)

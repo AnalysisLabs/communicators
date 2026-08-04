@@ -68,7 +68,7 @@ def _start_ns_server():
         # Import here or at top: import transponder
         transponder.persistent_server('localhost', 8765)
     except Exception as e:
-        Manifest.error(f"Failed to start namespace server: {e}")
+        manifest.error(f"Failed to start namespace server: {e}")
 
 def port_in_use(host: str, port: int, timeout: float = 0.3) -> bool:
     """Check if something is listening on (host, port) using a raw TCP connect."""
