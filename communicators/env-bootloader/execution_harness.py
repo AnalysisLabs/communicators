@@ -2,18 +2,23 @@
 """
 Execution harness for Communicators OS.
 
-Builds self-contained code objects (VirtualFS prefix + user source) and
-launches them. Intended to be imported by the general bootloader after
-VFS initialization.
+Builds the final combined source (VirtualFS prefix + user program),
+stores it under the caller-supplied VirtualFS destination, then hands
+the text + the destination name to execution_launcher.py which runs
+inside an independent child process.
+
+The launcher is responsible for:
+  - compile(src, dst, "exec")          → correct co_filename
+  - linecache population               → inspect / source recovery
+  - installing the process_path intermediary
+  - exec under controlled globals
 """
 
 from __future__ import annotations
 
-import marshal
 import subprocess
 import sys
 import traceback
-import uuid
 from pathlib import Path
 
 from vfs_process_path import inject_process_paths
@@ -57,17 +62,24 @@ def _get_prefix() -> str:
     from vfs_writer import read_file
     return read_file("Database/prefix.py")
 
+def _launcher_path() -> Path:
+    """execution_launcher.py lives next to this file."""
+    return Path(__file__).resolve().parent / "execution_launcher.py"
+
 
 # ---------------------------------------------------------------------------
-# Execution harness
+# Source assembly
 # ---------------------------------------------------------------------------
 
-def load_module(scope: str, src: str, dst: str):
+def load_module(scope: str, src: str, dst: str) -> tuple[str, str]:
     """
-    Build a self-contained code object:
-      - prefix pulled from VirtualFS (Database/prefix.py)
-      - user program from disk (src)
-      - combined source stored at the caller-supplied VirtualFS destination (dst)
+    Assemble the final combined source and store it in the VirtualFS.
+
+    Returns
+    -------
+    (combined_source, dst)
+        The exact text that will be executed and the VirtualFS path
+        that should appear in every traceback frame.
     """
     program_path = Path(resolve_path(scope, src))
     if not program_path.exists():
@@ -97,28 +109,43 @@ def load_module(scope: str, src: str, dst: str):
     )
     print(f"→ Combined script stored in VirtualFS → {dst}")
 
-    # Compile with the original user path so tracebacks stay meaningful
-    code_obj = compile(combined, dst, "exec")
-    return code_obj, dst
+    return combined, dst
 
+
+# ---------------------------------------------------------------------------
+# Launch
+# ---------------------------------------------------------------------------
 
 def execution_harness(src: str, dst: str, wait: bool = False) -> None:
+    """
+    Assemble the program and hand it to the child-side launcher.
+
+    The child process:
+      - receives the source on stdin
+      - receives the VirtualFS destination as argv[1]
+      - compiles under that name, populates linecache, installs the
+        process_path intermediary, then execs.
+    """
     comm_root = find_communicators_root()
-    code_obj, _ = load_module("internal", src, dst)
+    combined, dst = load_module("internal", src, dst)
+
+    launcher = _launcher_path()
+    if not launcher.exists():
+        raise FileNotFoundError(f"execution_launcher.py not found at {launcher}")
 
     try:
-        # Launch via marshal so we never need a temporary .py on the real disk
         proc = subprocess.Popen(
-            [
-                sys.executable,
-                "-c",
-                f"import marshal;exec(marshal.loads({marshal.dumps(code_obj)!r}))",
-            ],
+            [sys.executable, str(launcher), dst],
+            stdin=subprocess.PIPE,
             start_new_session=True,
             stdout=open(str(comm_root / "ns_server.log"), "a"),
             stderr=subprocess.STDOUT,
             close_fds=True,
         )
+        assert proc.stdin is not None
+        proc.stdin.write(combined.encode("utf-8"))
+        proc.stdin.close()
+
         if wait:
             proc.wait()
     except Exception as e:

@@ -32,6 +32,7 @@ class manifest_internal:
         return files
 
 
+
     def _find_external_caller(self, internal_files):
         frame = inspect.currentframe()
         while frame:
@@ -40,6 +41,7 @@ class manifest_internal:
                 return f'{frame.f_code.co_filename}.{frame.f_code.co_qualname}'
             frame = frame.f_back
         return None
+
 
 
     def _log(self, level, message, process_path=None):
@@ -66,6 +68,7 @@ class manifest_internal:
         else:
             print(f'{utc_ts} {process_path} {message}')
 
+
 _manifest_internal = manifest_internal()
 
 class manifest:
@@ -73,42 +76,42 @@ class manifest:
     @staticmethod
     def debug(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        _manifest_internal._log('DEBUG', message)
+        _manifest_internal._log('DEBUG', message, process_path=process_path)
 
 
 
     @staticmethod
     def info(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        _manifest_internal._log('INFO', message)
+        _manifest_internal._log('INFO', message, process_path=process_path)
 
 
 
     @staticmethod
     def warning(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        _manifest_internal._log('WARNING', message)
+        _manifest_internal._log('WARNING', message, process_path=process_path)
 
 
 
     @staticmethod
     def error(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        _manifest_internal._log('ERROR', message)
+        _manifest_internal._log('ERROR', message, process_path=process_path)
 
 
 
     @staticmethod
     def critical(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        _manifest_internal._log('CRITICAL', message)
+        _manifest_internal._log('CRITICAL', message, process_path=process_path)
 
 
 
     @staticmethod
     def printer(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        _manifest_internal._log('PRINTER', message)
+        _manifest_internal._log('PRINTER', message, process_path=process_path)
 
 
 
@@ -122,7 +125,7 @@ class manifest:
                 messages.append(json.dumps(arg))
             except:
                 messages.append('{invalid json}')
-        _manifest_internal._log('JSON', ' '.join(messages))
+        _manifest_internal._log('JSON', ' '.join(messages), process_path=process_path)
 
 
 
@@ -138,7 +141,7 @@ class manifest:
                     messages.append(f)
                 except:
                     messages.append('{invalid freight}')
-        _manifest_internal._log('FREIGHT', ' '.join(messages))
+        _manifest_internal._log('FREIGHT', ' '.join(messages), process_path=process_path)
 
 
 
@@ -148,16 +151,17 @@ class manifest:
 class transponder_internal:
     # Terms:
 
-    def is_complete(response):
+    def is_complete(self, response):
         """Simple delimiter check for the current placeholder protocol."""
         if isinstance(response, dict): response = json.dumps(response).encode()
         return response.endswith(b'\n') or b'ACK' in response
 
 
 
+
     # Utils:
 
-    def create_listener(ip, port):
+    def create_listener(self, ip, port):
         l = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         l.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         l.bind((ip, port))
@@ -165,7 +169,8 @@ class transponder_internal:
         return l
 
 
-    def accept_connection(listener):
+
+    def accept_connection(self, listener):
         """
         Accepts an incoming connection on the listening endpoint.
         Returns the new connected endpoint (socket object) that can be used
@@ -175,7 +180,8 @@ class transponder_internal:
         return conn
 
 
-    def connect_to(host, port):
+
+    def connect_to(self, host, port):
         """
         Actively connects to a remote listening endpoint (host, port).
         Returns the connected endpoint that can be used for send/recv.
@@ -185,7 +191,8 @@ class transponder_internal:
         return conn
 
 
-    def sendall(conn, data):
+
+    def sendall(self, conn, data):
         """
         Send all bytes on the given connected endpoint.
         Blocks until all data is sent or an error occurs.
@@ -193,7 +200,8 @@ class transponder_internal:
         conn.sendall(data)
 
 
-    def recv(conn, size):
+
+    def recv(self, conn, size):
         """
         Receive up to `size` bytes from the given connected endpoint.
         Returns the bytes received (may be fewer than `size`).
@@ -201,30 +209,32 @@ class transponder_internal:
         return conn.recv(size)
 
 
-    def handle_connection(conn):
+
+    def handle_connection(self, conn):
         """
         Minimal proof-of-concept handler.
         Receives data, prints it, and optionally echoes back a simple ACK.
         Good enough to validate that connections are working and bidirectional.
         """
-        Manifest.info("New connection established", process_path="imports!tier2.transponder_internal.handle_connection")
+        manifest.info("New connection established", process_path="Metamorphosis.generated.egg_transpiler.imports!tier2.transponder_internal.handle_connection")
 
         try:
             while True:
-                data = recv(conn, 4096)
+                data = self.recv(conn, 4096)
                 if not data:
-                    Manifest.error("Connection closed by remote side", process_path="imports!tier2.transponder_internal.handle_connection")
+                    manifest.error("Connection closed by remote side", process_path="Metamorphosis.generated.egg_transpiler.imports!tier2.transponder_internal.handle_connection")
                     break
 
-                Manifest.info(f"Received: {data}", process_path="imports!tier2.transponder_internal.handle_connection")
+                manifest.info(f"Received: {data}", process_path="Metamorphosis.generated.egg_transpiler.imports!tier2.transponder_internal.handle_connection")
 
                 # Simple response to prove bidirectional flow
                 # You can change this to whatever you want for testing
                 response = b"ACK\n"
-                sendall(conn, response)
+                self.sendall(conn, response)
 
         except Exception as e:
-            Manifest.error(f"Connection error: {e}", process_path="imports!tier2.transponder_internal.handle_connection")
+            manifest.error(f"Connection error: {e}", process_path="Metamorphosis.generated.egg_transpiler.imports!tier2.transponder_internal.handle_connection")
+
 
 _transponder_internal = transponder_internal()
 
@@ -236,7 +246,7 @@ class transponder:
     def persistent_server(host, port):
         if host == 'localhost': host = '127.0.0.1'
         listener = _transponder_internal.create_listener(host, port)
-        Manifest.info("Transponder active", process_path="imports!tier2.transponder.persistent_server")
+        manifest.info("Transponder active", process_path="Metamorphosis.generated.egg_transpiler.imports!tier2.transponder.persistent_server")
 
         while True:
             conn = _transponder_internal.accept_connection(listener)
@@ -249,7 +259,7 @@ class transponder:
     def send_and_close(host, port, data):
         if host == 'localhost': host = '127.0.0.1'
         conn = _transponder_internal.connect_to(host, port)
-        conn._transponder_internal.sendall(data)           # fire-and-forget style
+        conn.sendall(data)           # fire-and-forget style
         conn.close()
 
 
@@ -258,11 +268,11 @@ class transponder:
     def request_response(host, port, data):
         if host == 'localhost': host = '127.0.0.1'
         conn = _transponder_internal.connect_to(host, port)
-        conn._transponder_internal.sendall(data)
+        conn.sendall(data)
 
         response = b""
         while True:
-            chunk = conn._transponder_internal.recv(4096)
+            chunk = conn.recv(4096)
             if not chunk:
                 break
             response += chunk
@@ -274,105 +284,103 @@ class transponder:
 
 
 # ==================== (USER PROGRAM) ====================
-class BaseNamespace:
-    _instance = None
-    _lock = threading.Lock()
+localhost = "localhost"
 
-    def __new__(cls):
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-                    cls._instance._data = {}
-                    cls._instance._lock = threading.RLock()
-                    cls._instance.initialize_states()
-        return cls._instance
+def load(object_program: str = None, with_program: str = None, in_namespace: dict = None, from_namespace: dict = None, to_namespace: dict = None):
+    if os.path.exists(str(object_program)):
+        contents = open(object_program).read()
+    else:
+        contents = object_program
+    if with_program:
+        contents = subprocess.run(['python3', with_program, object_program], capture_output=True, text=True).stdout
+    r = transponder.request_response(localhost, 8765, {(in_namespace or to_namespace): contents})
+    # wait for simple 200 response as green light (detailed pseudocode placeholder)
+    return
 
-    def initialize_states(self):
-        # Hook for subclasses to define states like ideal, real, temporary
-        pass
+def build(object_program: str, with_program: str, in_namespace: dict, from_namespace: dict = None, to_namespace: dict = None):
+    contents = transponder.request_response(localhost, 8765, (in_namespace or from_namespace))
+    result = subprocess.run(['python3', with_program, object_program], capture_output=True, text=True).stdout
+    transponder.send_and_close(localhost, 8765, {(in_namespace or to_namespace): result})
 
-    def __getattr__(self, name: str) -> Any:
-        with self._lock:
-            return self._data.get(name)
+def final_byte_cleanup(dirty_line: str) -> str:
+    """Final byte literal pass: remove all " (only ' matter for f-strings)."""
+    b = dirty_line.encode('utf-8')
+    b = b.replace(b'"', b'')
+    return b.decode('utf-8')
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name in ('_data', '_lock', '_instance'):
-            super().__setattr__(name, value)
-            return
-        with self._lock:
-            self._data[name] = value
+# Validity check
+def parse_line(line):
+    # Strip numbered prefix
+    line = line.strip()
+    words = line.split()
+    if len(words) < 3 or not words[0].rstrip('.').isdigit() or words[1] not in ['load', 'build']:
+        return None
+    num_str = words[0].rstrip('.')
+    verb, obj = words[1], words[2]
+    path = f"f'{{base_dir}}/{obj}'".encode()
+    kwargs = {'object_program': path.replace(b'"', b'').decode()}
+    for i in range(3, len(words)):
+        if words[i] == 'with' and i + 1 < len(words):
+            kwargs['with_program'] = f"f'{{base_dir}}/{words[i + 1]}'"
+        if words[i] == 'in' and i + 1 < len(words):
+            kwargs['in_namespace'] = f"f'{{base_dir}}/{words[i + 1]}'"
+        if words[i] == 'from' and i + 1 < len(words):
+            kwargs['from_namespace'] = f"f'{{base_dir}}/{words[i + 1]}'"
+        if words[i] == 'to' and i + 1 < len(words):
+            kwargs['to_namespace'] = f"f'{{base_dir}}/{words[i + 1]}'"
+    kw_str = ', '.join(f'{k}="{v}"' for k, v in kwargs.items())
+    dirty_line = f'code_block_{num_str} = {verb}({kw_str})'
+    return final_byte_cleanup(dirty_line)
 
-    def __contains__(self, name: str) -> bool:
-        with self._lock:
-            return hasattr(self._data, name)
+def transpile(md_file):
+    code = []
+    ordered_objects = []
+    has_invalid = False
+    invalid_lines = []
+    with open(md_file, 'r') as f:
+        for num, line in enumerate(f, 1):
+            parsed = parse_line(line)
+            if parsed:
+                code.append(parsed)
+            else:
+                has_invalid = True
+                invalid_lines.append(f'Line {num}: {line.rstrip()!r}')
+    if has_invalid:
+        # raise ValueError('This is not valid assembly line script')
+        raise ValueError(f'Invalid lines in {md_file}:\n' + '\n'.join(invalid_lines))
 
-    def debug(self) -> None:
-        keys = [k for k in dir(self._data) if not k.startswith('_')]
-        print('🧠 Namespace contains:', sorted(keys))
+    # return '\n'.join(code)
 
-    def snapshot_namespace(self, path: str) -> None:
-        data = json.dumps({k: getattr(self._data, k) for k in dir(self._data) if not k.startswith('_')}).encode()
-        with open(path, 'ab') as f: f.write(data)
+    generated_code = '\n'.join(code)
+    imports_str = "base_dir = f'{COMMUNICATORS_ROOT}/state-methods'\n\n"
+    # Copy load/build verbatim dynamically
+    load_src = inspect.getsource(load)
+    build_src = inspect.getsource(build)
+    generated_code = imports_str + "\n" + load_src + '\n' + build_src + '\n' + generated_code
+    # Minimal addition: process code to check object_program='to' uniqueness
+    tree = ast.parse(generated_code)
+    objects = []
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Call) and
+            isinstance(node.func, ast.Name) and
+            node.func.id in ('load', 'build')):
+            for kw in node.keywords:
+                if kw.arg == 'object_program':
+                    if isinstance(kw.value, ast.Constant):
+                        objects.append(ast.literal_eval(kw.value))
+                    else:
+                        objects.append(ast.unparse(kw.value).strip("'\""))
+                    break
+    counts = Counter(objects)
+    shared = {k: v for k, v in counts.items() if v > 1}
+    print(f"All 'to' (object_program=) values {'unique' if not shared else f'shared: {shared}'}. Ready for _to_ handling if needed (What's next.md).")
+    return generated_code
 
-_namespaces: Dict[str, BaseNamespace] = {}
-_ns_lock = threading.Lock()
+if __name__ == '__main__':
+    md_file = f'{COMMUNICATORS_ROOT}/state-methods/panel.md'
+    cat = transpile(md_file)
+    with open('caterpillar_transpiler.py', 'w') as f:
+        f.write(cat)
+    load(object_program=cat, in_namespace='metamorphosis')
+    os.execvp('python3', ['python3', 'caterpillar_transpiler.py'])
 
-# API needs these fields(action, substance, namespace)
-
-def initialize_namespace(*names: str) -> None:
-    with _ns_lock:
-        if BaseNamespace._instance is None:
-            BaseNamespace()
-        if name not in _namespaces:
-            ns = BaseNamespace()
-            for p in name.split('/'):
-                if not hasattr(ns, p): setattr(ns, p, {})
-            _namespaces[name] = getattr(ns, name.split('/')[-1])
-
-def populate_namespace(name: str, data: dict[str, Any]) -> None:
-    with _ns_lock:
-        ns = _namespaces[name]
-        if ns is None:
-            initialize_namespace(name)
-        for k, v in data.items():
-            ns[k] = v
-
-def _start_ns_server():
-    """Start the namespace server using transponder instead of HTTPServer."""
-    try:
-        # Import here or at top: import transponder
-        transponder.persistent_server('localhost', 8765)
-    except Exception as e:
-        manifest.error(f"Failed to start namespace server: {e}", process_path="user_program._start_ns_server")
-
-def port_in_use(host: str, port: int, timeout: float = 0.3) -> bool:
-    """Check if something is listening on (host, port) using a raw TCP connect."""
-    if host == 'localhost':
-        host = '127.0.0.1'
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(timeout)
-
-    try:
-        result = sock.connect_ex((host, port))
-        return result == 0  # 0 means connection succeeded → something is listening
-    except Exception:
-        return False
-    finally:
-        sock.close()
-
-
-def kill_port(host: str = 'localhost', port: int = 8765) -> None:
-    """Aggressively kill anything listening on the port (Linux/macOS)."""
-    if host == 'localhost':
-        host = '127.0.0.1'
-
-    print(f"🔪 Checking/killing port {port}...")
-    os.system(f'lsof -t -i:{port} | xargs kill -9 2>/dev/null || true')
-    time.sleep(0.4)  # give OS time to release the socket
-
-if port_in_use('localhost', 8765):
-    kill_port('localhost', 8765)
-
-_start_ns_server()

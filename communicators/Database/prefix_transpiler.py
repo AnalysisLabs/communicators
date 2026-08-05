@@ -139,6 +139,39 @@ def _expand_function_ranges(
 
 
 # ---------------------------------------------------------------------------
+# Misc. Helpers
+# ---------------------------------------------------------------------------
+
+
+def _ensure_self_parameter(lines: List[str]) -> List[str]:
+    """
+    Guarantee that the first parameter of a method is `self`.
+    Idempotent: if `self` is already present, the line is left unchanged.
+    """
+    out = []
+    for line in lines:
+        m = re.match(r'^([ \t]*)def\s+(\w+)\s*\((.*)\)\s*:', line)
+        if not m:
+            out.append(line)
+            continue
+
+        indent, name, params = m.groups()
+        params = params.strip()
+
+        if not params:
+            new_params = "self"
+        else:
+            first = params.split(",")[0].strip()
+            # already has self (with or without annotation)
+            if first == "self" or first.startswith("self:") or first.startswith("self "):
+                new_params = params
+            else:
+                new_params = f"self, {params}"
+
+        out.append(f"{indent}def {name}({new_params}):")
+    return out
+
+# ---------------------------------------------------------------------------
 # Stage B – structural split + marker classification
 # ---------------------------------------------------------------------------
 
@@ -267,6 +300,7 @@ def _rewrite_calls_in_body(
     """
     Conservative text rewrite of calls to internal methods.
 
+    Only bare names are rewritten (never attribute accesses, never def lines).
     as_instance=True  →  rewrite to  self.name(
     as_instance=False →  rewrite to  _Class_internal.name(
     """
@@ -276,25 +310,28 @@ def _rewrite_calls_in_body(
     prefix = "self." if as_instance else f"_{class_name}_internal."
     out = []
     for line in body_lines:
+        # Never rewrite the function definition itself
+        if re.match(r'^[ \t]*def\s+', line):
+            out.append(line)
+            continue
+
         new = line
         for name in internal_names:
             new = re.sub(
-                rf"\b{re.escape(name)}\s*\(",
+                rf"(?<!\.)\b{re.escape(name)}\s*\(",
                 f"{prefix}{name}(",
                 new,
             )
         out.append(new)
     return out
 
-
 def stage_c_rewrite(prefix_b: str) -> str:
     """
     1. Discover every public / _internal pair.
-    2. Rewrite call sites inside external methods (the only methods left
-       on the public class) to go through the private instance.
-
-    Stage C does not re-classify methods and does not re-emit the private
-    instances (they already sit immediately after each _internal class).
+    2. Rewrite call sites:
+         - inside external methods  →  _Name_internal.method(...)
+         - inside internal methods  →  self.method(...)
+    3. Ensure every internal method signature begins with `self`.
     """
     source_lines = prefix_b.splitlines(keepends=True)
     plain_lines = [ln.rstrip("\n\r") for ln in source_lines]
@@ -324,14 +361,43 @@ def stage_c_rewrite(prefix_b: str) -> str:
     for class_name, cls_start, cls_end in class_ranges:
         pieces.extend(source_lines[last_end : cls_start - 1])
 
+        # ----------------------------------------------------------
+        # Internal class – rewrite bodies + insure `self`
+        # ----------------------------------------------------------
         if class_name.endswith("_internal"):
-            # Leave internal classes (and the instance line that follows them)
-            # exactly as Stage B produced them.
-            pieces.extend(source_lines[cls_start - 1 : cls_end])
+            public_name = class_name[: -len("_internal")]
+            internal_names = internal_map.get(public_name, set())
+
+            raw = _parse_raw_function_ranges(prefix_b, cls_start, cls_end)
+            func_ranges = _expand_function_ranges(
+                plain_lines, cls_start, cls_end, raw
+            )
+
+            new_class_lines = [f"class {class_name}:\n"]
+            if not func_ranges:
+                new_class_lines.append("    pass\n")
+            else:
+                for fn in func_ranges:
+                    # 1. make sure the signature has self
+                    body = _ensure_self_parameter(fn.raw_lines)
+                    # 2. turn bare sibling calls into self.xxx(
+                    body = _rewrite_calls_in_body(
+                        body,
+                        internal_names,
+                        public_name,
+                        as_instance=True,
+                    )
+                    for ln in body:
+                        new_class_lines.append(ln + "\n")
+                    new_class_lines.append("\n")
+
+            pieces.extend(new_class_lines)
             last_end = cls_end
             continue
 
-        # Public class – every method here is an external method
+        # ----------------------------------------------------------
+        # Public class – existing behaviour (as_instance=False)
+        # ----------------------------------------------------------
         internal_names = internal_map.get(class_name, set())
         raw = _parse_raw_function_ranges(prefix_b, cls_start, cls_end)
         func_ranges = _expand_function_ranges(

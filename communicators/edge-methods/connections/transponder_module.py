@@ -61,16 +61,16 @@ class transponder:
         Receives data, prints it, and optionally echoes back a simple ACK.
         Good enough to validate that connections are working and bidirectional.
         """
-        Manifest.info("New connection established")
+        manifest.info("New connection established")
 
         try:
             while True:
                 data = recv(conn, 4096)
                 if not data:
-                    Manifest.error("Connection closed by remote side")
+                    manifest.error("Connection closed by remote side")
                     break
 
-                Manifest.info(f"Received: {data}")
+                manifest.info(f"Received: {data}")
 
                 # Simple response to prove bidirectional flow
                 # You can change this to whatever you want for testing
@@ -78,7 +78,7 @@ class transponder:
                 sendall(conn, response)
 
         except Exception as e:
-            Manifest.error(f"Connection error: {e}")
+            manifest.error(f"Connection error: {e}")
 
     # High level:
 
@@ -86,7 +86,7 @@ class transponder:
     def persistent_server(host, port):
         if host == 'localhost': host = '127.0.0.1'
         listener = create_listener(host, port)
-        Manifest.info("Transponder active")
+        manifest.info("Transponder active")
 
         while True:
             conn = accept_connection(listener)

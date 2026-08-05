@@ -66,13 +66,12 @@ def transpile(md_file):
     # return '\n'.join(code)
 
     generated_code = '\n'.join(code)
-    imports_str = "base_dir = os.path.dirname(os.path.abspath(" + f'"{md_file}"' + "))\n\n"
+    imports_str = "base_dir = f'{COMMUNICATORS_ROOT}/state-methods'\n\n"
     # Copy load/build verbatim dynamically
     load_src = inspect.getsource(load)
     build_src = inspect.getsource(build)
     generated_code = imports_str + "\n" + load_src + '\n' + build_src + '\n' + generated_code
     # Minimal addition: process code to check object_program='to' uniqueness
-    # generated_code = 'import os\nbase_dir = os.path.dirname(os.path.abspath(r"' + md_file + '"))\n' + generated_code
     tree = ast.parse(generated_code)
     objects = []
     for node in ast.walk(tree):
@@ -94,7 +93,7 @@ def transpile(md_file):
 if __name__ == '__main__':
     md_file = f'{COMMUNICATORS_ROOT}/state-methods/panel.md'
     cat = transpile(md_file)
-    load(object_program=cat, in_namespace='metamorphosis')
     with open('caterpillar_transpiler.py', 'w') as f:
         f.write(cat)
+    load(object_program=cat, in_namespace='metamorphosis')
     os.execvp('python3', ['python3', 'caterpillar_transpiler.py'])

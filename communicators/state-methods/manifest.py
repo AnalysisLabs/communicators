@@ -47,32 +47,32 @@ class manifest:
     @externalmethod
     def debug(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        _log('DEBUG', message)
+        _log('DEBUG', message, process_path=process_path)
 
     @externalmethod
     def info(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        _log('INFO', message)
+        _log('INFO', message, process_path=process_path)
 
     @externalmethod
     def warning(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        _log('WARNING', message)
+        _log('WARNING', message, process_path=process_path)
 
     @externalmethod
     def error(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        _log('ERROR', message)
+        _log('ERROR', message, process_path=process_path)
 
     @externalmethod
     def critical(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        _log('CRITICAL', message)
+        _log('CRITICAL', message, process_path=process_path)
 
     @externalmethod
     def printer(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
-        _log('PRINTER', message)
+        _log('PRINTER', message, process_path=process_path)
 
     @externalmethod
     def json(*args, process_path=None):
@@ -84,7 +84,7 @@ class manifest:
                 messages.append(json.dumps(arg))
             except:
                 messages.append('{invalid json}')
-        _log('JSON', ' '.join(messages))
+        _log('JSON', ' '.join(messages), process_path=process_path)
 
     @externalmethod
     def freight(*args, process_path=None):
@@ -98,4 +98,4 @@ class manifest:
                     messages.append(f)
                 except:
                     messages.append('{invalid freight}')
-        _log('FREIGHT', ' '.join(messages))
+        _log('FREIGHT', ' '.join(messages), process_path=process_path)

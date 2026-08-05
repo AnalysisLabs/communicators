@@ -1,6 +1,4 @@
-import os, subprocess, argparse, re, ast, inspect
-from collections import Counter
-base_dir = os.path.dirname(os.path.abspath("/home/guatamap/Analysis Labs/Dev Tools/com-branches/orchestrated-1/communicators/state-methods/panel.md"))
+base_dir = os.path.dirname(os.path.abspath("{COMMUNICATORS_ROOT}/state-methods"))
 
 
 def load(object_program: str = None, with_program: str = None, in_namespace: dict = None, from_namespace: dict = None, to_namespace: dict = None):
