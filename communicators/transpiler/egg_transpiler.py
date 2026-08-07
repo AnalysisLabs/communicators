@@ -93,7 +93,8 @@ def transpile(md_file):
 if __name__ == '__main__':
     md_file = f'{COMMUNICATORS_ROOT}/state-methods/panel.md'
     cat = transpile(md_file)
-    with open('caterpillar_transpiler.py', 'w') as f:
+    caterpillar_path = Path(COMMUNICATORS_ROOT) / 'transpiler' / 'caterpillar_transpiler.py'
+    with open(caterpillar_path, 'w') as f:
         f.write(cat)
-    load(object_program=cat, in_namespace='metamorphosis')
+    load(object_program=cat, in_namespace='Metamorphosis')
     os.execvp('python3', ['python3', 'caterpillar_transpiler.py'])

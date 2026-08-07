@@ -1,28 +1,21 @@
-base_dir = os.path.dirname(os.path.abspath("{COMMUNICATORS_ROOT}/state-methods"))
+base_dir = f'{COMMUNICATORS_ROOT}/state-methods'
 
 
 def load(object_program: str = None, with_program: str = None, in_namespace: dict = None, from_namespace: dict = None, to_namespace: dict = None):
-    if in_namespace is not None: to_namespace = in_namespace
-    if with_program:
-        subprocess.run(['python3', with_program, object_program, in_namespace, from_namespace, to_namespace], check=True)
+    if os.path.exists(str(object_program)):
+        contents = open(object_program).read()
     else:
-        with open(object_program, 'r') as f:
-            namespace[object_program, to_namespace] = f.read()
-    populated = (object_program in to_namespace and namespace[object_program, to_namespace]) or \
-                (os.path.exists(object_program) and os.path.getsize(object_program) > 0)
-    if not populated:
-        raise ValueError(f'{object_program} still empty after load')
+        contents = object_program
+    if with_program:
+        contents = subprocess.run(['python3', with_program, object_program], capture_output=True, text=True).stdout
+    r = transponder.request_response(localhost, 8765, {(in_namespace or to_namespace): contents})
+    # wait for simple 200 response as green light (detailed pseudocode placeholder)
+    return
 
 def build(object_program: str, with_program: str, in_namespace: dict, from_namespace: dict = None, to_namespace: dict = None):
-    if in_namespace is not None: to_namespace = in_namespace
-    subprocess.run(['python3', with_program, object_program, in_namespace, from_namespace, to_namespace], check=True)
-    populated = False
-    if object_program in namespace[object_program, to_namespace] and len([object_program, to_namespace]) > 0:
-        populated = True
-    elif os.path.exists(object_program) and os.path.getsize(object_program) > 0:
-        populated = True
-    if not populated:
-        raise ValueError(f'{object_program} still empty after running {with_program}')
+    contents = transponder.request_response(localhost, 8765, (in_namespace or from_namespace))
+    result = subprocess.run(['python3', with_program, object_program], capture_output=True, text=True).stdout
+    transponder.send_and_close(localhost, 8765, {(in_namespace or to_namespace): result})
 
 code_block_1 = load(object_program=f'{base_dir}/ideal.yaml', in_namespace=f'{base_dir}/state_namespace')
 code_block_2 = build(object_program=f'{base_dir}/mermaid_code.mmd', with_program=f'{base_dir}/generate_mermaid.py', in_namespace=f'{base_dir}/state_namespace')
