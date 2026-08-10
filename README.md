@@ -13,15 +13,15 @@ internetcuts out briefly. This is the protoype to pass tests and demo scale dema
 upgrading to version 2.
 
 Version 2:
-Intended scale: up to 20 million users (regional)
+Intended scale: Up to several thousand users (regional)
 Description: Ping system ensures connection reliability, even on spotty customer internet. 
 Negative fan out supported. Buffer count and server instance spawning to support high demand.
-The only limitations it this required only one public facing IP provider-side and thus does 
+The only limitations it this required only one public facing DB provider-side and thus does 
 not scale to geo-distributed servers.
 
 Version 3:
 Intended scale: up to Billions / unlimited users.
-Description: Supports Geo-location based routing. Supports distributing load accross a IP pool.
+Description: Supports Geo-location based routing. Supports distributing load accross a IP pool. One DB per payer customer account.
 
 Version 1 is not intended for external use. However I will iterate in public and you are free 
 to try it at your own risk. Version 2 will be started as soon as version 1 works, even unreliably.

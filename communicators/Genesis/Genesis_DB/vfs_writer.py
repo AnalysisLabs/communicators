@@ -20,7 +20,7 @@ Typical use (from any later stage or generator):
 
 You can also override the database location:
 
-    write_file(..., db_path="/path/to/runtime_fs.db")
+    write_file(..., db_path="/path/to/genesis_fs.db")
 """
 
 from __future__ import annotations
@@ -33,11 +33,11 @@ from typing import Optional
 
 # Default search order for the ephemeral DB.
 # In the real communicators tree this will normally resolve to
-# <communicators-root>/internal/runtime_fs.db or similar.
+# <communicators-root>/internal/genesis_fs.db or similar.
 _CANDIDATES = [
-    Path(__file__).resolve().parent.parent / "attachments" / "runtime_fs.db",
-    Path(__file__).resolve().parent / "runtime_fs.db",
-    Path.cwd() / "runtime_fs.db",
+    Path(__file__).resolve().parent.parent / "attachments" / "genesis_fs.db",
+    Path(__file__).resolve().parent / "genesis_fs.db",
+    Path.cwd() / "genesis_fs.db",
 ]
 
 
@@ -122,7 +122,7 @@ def write_file(
         If True, missing intermediate directories are created automatically.
         Default False – the layout seeder is expected to have made the dirs.
     db_path : optional
-        Override the location of runtime_fs.db.
+        Override the location of genesis_fs.db.
 
     Returns
     -------

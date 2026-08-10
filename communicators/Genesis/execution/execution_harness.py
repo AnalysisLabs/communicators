@@ -37,7 +37,9 @@ def resolve_path(scope: str, target: str) -> str:
     comm_root = find_communicators_root()
     if scope in ("internal", "", "comm", "communicators"):
         return str(comm_root / target)
-    if scope == "host":
+    elif scope in ("genesis")
+        return str(comm_root / "Genesis" / target)
+    elif scope == "host":
         return target
     raise ValueError(f"Unknown scope: {scope}")
 
