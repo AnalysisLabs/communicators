@@ -19,19 +19,53 @@ import subprocess
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def find_communicators_root(start=None) -> Path:
+    """Walk up until we find a directory named 'communicators'."""
+    d = Path(start or Path.cwd()).absolute()
+    while d != Path("/"):
+        if d.name == "communicators":
+            return d
+        d = d.parent
+    return Path.cwd()  # fallback
+
+root = find_communicators_root()
+
+# Guaranteed location relative to communicators root
+_path_reffs = (
+    find_communicators_root()
+    / "path_reffs.py"
+)
+sys.path.insert(0, str(_path_reffs.parent))
+from path_reffs import*
 
 
-def run(script: str, *extra_args: str) -> None:
-    cmd = [sys.executable, str(HERE / script), *extra_args]
+_virtualfs_ref = FileRef(
+    uuid="dc57ce78-e092-4caf-9016-df666f07cdd5",
+    file_path="Genesis/Genesis_DB",
+    file_name="VirtualFS.py",
+)
+
+_prefix_builder_ref = FileRef(
+    uuid="d97229e0-f3f3-46ac-9db4-a94e84b3a43c",
+    file_path="Genesis/Genesis_DB",
+    file_name="prefix_builder.py",
+)
+
+
+def run(ref: FileRef, *extra_args: str) -> None:
+    script_path = resolve_path(ref.uuid, ref.file_path, ref.file_name)
+    cmd = [sys.executable, str(script_path), *extra_args]
     print(f"→ {' '.join(cmd)}")
-    subprocess.run(cmd, cwd=HERE, check=True)
+    subprocess.run(cmd, cwd=str(script_path.parent), check=True)
 
 
 def main() -> None:
-    run("VirtualFS.py")
-    run("DB_layout.py")
-    run("prefix_builder.py", "--write")
+    run(_virtualfs_ref)
+    run(_prefix_builder_ref, "--write")
     print("\nDB boot sequence complete.")
 
 

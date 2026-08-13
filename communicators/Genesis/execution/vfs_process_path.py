@@ -56,7 +56,7 @@ def build_ownership_tree(
 
         root
         └── Runtime.generated.namespace          ← dotted program path
-            ├── imports!tier2
+            ├── imports!.tier2
             │   ├── transponder_internal
             │   │   └── handle_connection
             │   └── transponder
@@ -78,7 +78,7 @@ def build_ownership_tree(
     for i, line in enumerate(lines, 1):
         m = _TIER_RE.search(line)
         if m:
-            sections.append((f"imports!tier{m.group(1)}", i))
+            sections.append((f"imports!.tier{m.group(1)}", i))
             continue
         if _USER_RE.search(line):
             sections.append(("user_program", i))

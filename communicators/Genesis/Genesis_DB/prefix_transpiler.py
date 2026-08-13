@@ -37,7 +37,54 @@ import re
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
-from vfs_writer import write_file
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def find_communicators_root(start=None) -> Path:
+    """Walk up until we find a directory named 'communicators'."""
+    d = Path(start or Path.cwd()).absolute()
+    while d != Path("/"):
+        if d.name == "communicators":
+            return d
+        d = d.parent
+    return Path.cwd()  # fallback
+
+root = find_communicators_root()
+
+# Guaranteed location relative to communicators root
+_atomic_importer = (
+    find_communicators_root()
+    / "Genesis"
+    / "internal_imports"
+    / "atomic_importer.py"
+)
+sys.path.insert(0, str(_atomic_importer.parent))
+from atomic_importer import from_path, from_path_import, from_code, from_code_import
+_path_reffs = (
+    find_communicators_root()
+    / "path_reffs.py"
+)
+sys.path.insert(0, str(_path_reffs.parent))
+from path_reffs import*
+
+
+_vfs_writer_ref = FileRef(
+    uuid="f9284397-10ec-4856-8f1e-1bc62b9c8436",
+    file_path="Genesis/Genesis_DB",
+    file_name="vfs_writer.py",
+)
+
+read_file, write_file = from_path_import(
+    resolve_path(
+        _vfs_writer_ref.uuid,
+        _vfs_writer_ref.file_path,
+        _vfs_writer_ref.file_name,
+    ),
+    "read_file",
+    "write_file",
+)
 
 
 class TranspileError(Exception):

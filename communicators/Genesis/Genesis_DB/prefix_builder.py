@@ -21,11 +21,6 @@ import types
 from pathlib import Path
 from textwrap import dedent
 
-#local imports
-from vfs_writer import read_file, write_file
-from prefix_transpiler import transpile_to_tier_c
-
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -41,26 +36,60 @@ def find_communicators_root(start=None) -> Path:
 
 root = find_communicators_root()
 
-def _load_source_from_disk(relative: str, fallback_name: str) -> str:
-    """
-    Try the real communicators tree first, then fall back to the
-    attachments/ copies that exist in this development environment.
-    """
-    root = find_communicators_root()
-    candidate = root / relative
-    if candidate.exists():
-        return candidate.read_text(encoding="utf-8")
+# Guaranteed location relative to communicators root
+_atomic_importer = (
+    find_communicators_root()
+    / "Genesis"
+    / "internal_imports"
+    / "atomic_importer.py"
+)
+sys.path.insert(0, str(_atomic_importer.parent))
+from atomic_importer import from_path, from_path_import, from_code, from_code_import
+_path_reffs = (
+    find_communicators_root()
+    / "path_reffs.py"
+)
+sys.path.insert(0, str(_path_reffs.parent))
+from path_reffs import*
 
-    # Sandbox fallback
-    fallback = Path(__file__).resolve().parent.parent / "attachments" / fallback_name
-    if fallback.exists():
-        return fallback.read_text(encoding="utf-8")
 
-    raise FileNotFoundError(
-        f"Could not find source for {relative}\n"
-        f"  tried: {candidate}\n"
-        f"  tried: {fallback}"
-    )
+_vfs_writer_ref = FileRef(
+    uuid="f9284397-10ec-4856-8f1e-1bc62b9c8436",
+    file_path="Genesis/Genesis_DB",
+    file_name="vfs_writer.py",
+)
+
+read_file, write_file = from_path_import(
+    resolve_path(
+        _vfs_writer_ref.uuid,
+        _vfs_writer_ref.file_path,
+        _vfs_writer_ref.file_name,
+    ),
+    "read_file",
+    "write_file",
+)
+
+_prefix_transpiler_ref = FileRef(
+    uuid="c3c395ae-368a-4844-91d8-0d3d69b3eae5",
+    file_path="Genesis/Genesis_DB",
+    file_name="prefix_transpiler.py",
+)
+
+transpile_to_tier_c, = from_path_import(
+    resolve_path(
+        _prefix_transpiler_ref.uuid,
+        _prefix_transpiler_ref.file_path,
+        _prefix_transpiler_ref.file_name,
+    ),
+    "transpile_to_tier_c",
+)
+
+def _load_source(ref: FileRef) -> str:
+    """Load source text for a FileRef (strict registry lookup)."""
+    path = resolve_path(ref.uuid, ref.file_path, ref.file_name)
+    if not path.exists():
+        raise FileNotFoundError(f"Source not found for {ref}: {path}")
+    return path.read_text(encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -69,10 +98,12 @@ def _load_source_from_disk(relative: str, fallback_name: str) -> str:
 
 def build_prefix0() -> str:
     """Tier 0: standard library collection + concrete COMMUNICATORS_ROOT."""
-    standard_src = _load_source_from_disk(
-        "prelude/standard.py",
-        "standard.py",
+    _standard_ref = FileRef(
+        uuid="8090dc7b-4a91-448d-8ab0-0b5acfbb5dee",
+        file_path="Genesis/internal_imports",
+        file_name="standard.py",
     )
+    standard_src = _load_source(_standard_ref)
 
     parts: list[str] = []
 
@@ -95,10 +126,12 @@ def build_prefix0() -> str:
 
 def build_prefix1() -> str:
     """Tier 1: Tier 0 + Manifest class."""
-    manifest_src = _load_source_from_disk(
-        "state-methods/manifest.py",
-        "manifest.py",
+    _manifest_ref = FileRef(
+        uuid="64bf54d1-e607-4bfc-b6ba-73ccc2748dd4",
+        file_path="Genesis/internal_imports",
+        file_name="manifest.py",
     )
+    manifest_src = _load_source(_manifest_ref)
 
     parts: list[str] = []
     parts.append(build_prefix0().rstrip())
@@ -120,10 +153,12 @@ def build_prefix1() -> str:
 
 def build_prefix2() -> str:
     """Tier 2: Tier 1 + Transponder class."""
-    transponder_src = _load_source_from_disk(
-        "edge-methods/connections/transponder_module.py",
-        "transponder_module.py",
+    _transponder_ref = FileRef(
+        uuid="0f589da7-ebcc-4ef1-a44c-59111c1d1a9a",
+        file_path="Genesis/internal_imports",
+        file_name="transponder_module.py",
     )
+    transponder_src = _load_source(_transponder_ref)
 
     parts: list[str] = []
     parts.append(build_prefix1().rstrip())

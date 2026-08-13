@@ -88,7 +88,7 @@ def resolve_path(
             and entry["file_name"] == file_name):
             if field not in entry:
                 raise KeyError(f"Field {field!r} not present in registry entry")
-            return entry[field]
+            return Path(entry[field])
 
     raise FileNotFoundError(
         f"Broken reference: uuid={uuid!r}, file_path={file_path!r}, file_name={file_name!r}"

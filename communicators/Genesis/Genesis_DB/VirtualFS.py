@@ -71,6 +71,17 @@ def init_runtime_fs() -> Path:
             """
         )
 
+        # ------------------------------------------------------------------
+        # Root node (required by vfs_writer._get_root_id)
+        # ------------------------------------------------------------------
+        conn.execute(
+            """
+            INSERT INTO file_graph
+                (parent_id, name, type, content_id, access_tier)
+            VALUES (NULL, '', 'dir', NULL, 'human_owner')
+            """
+        )
+
         conn.commit()
     finally:
         conn.close()

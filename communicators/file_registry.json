@@ -18,12 +18,6 @@
     "file_name": "DB_bootloader.py"
   },
   {
-    "uuid": "ff4f6d93-8681-40ce-81bf-82993b6e21aa",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/Genesis_DB/DB_layout.py",
-    "file_path": "Genesis/Genesis_DB",
-    "file_name": "DB_layout.py"
-  },
-  {
     "uuid": "dc57ce78-e092-4caf-9016-df666f07cdd5",
     "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/Genesis_DB/VirtualFS.py",
     "file_path": "Genesis/Genesis_DB",

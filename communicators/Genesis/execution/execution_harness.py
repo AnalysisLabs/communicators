@@ -23,7 +23,6 @@ from pathlib import Path
 
 from vfs_process_path import inject_process_paths
 
-
 def find_communicators_root(start=None):
     d = Path(start or Path.cwd()).absolute()
     while d != Path("/"):
@@ -32,36 +31,42 @@ def find_communicators_root(start=None):
         d = d.parent
     return Path.cwd()  # fallback
 
+# Guaranteed location relative to communicators root
+_atomic_importer = (
+    find_communicators_root()
+    / "Genesis"
+    / "internal_imports"
+    / "atomic_importer.py"
+)
+sys.path.insert(0, str(_atomic_importer.parent))
+from atomic_importer import from_path, from_path_import, from_code, from_code_import
+_path_reffs = (
+    find_communicators_root()
+    / "path_reffs.py"
+)
+sys.path.insert(0, str(_path_reffs.parent))
+from path_reffs import*
 
-def resolve_path(scope: str, target: str) -> str:
-    comm_root = find_communicators_root()
-    if scope in ("internal", "", "comm", "communicators"):
-        return str(comm_root / target)
-    elif scope in ("genesis")
-        return str(comm_root / "Genesis" / target)
-    elif scope == "host":
-        return target
-    raise ValueError(f"Unknown scope: {scope}")
-
+_vfs_writer_ref = FileRef(
+    uuid="f9284397-10ec-4856-8f1e-1bc62b9c8436",
+    file_path="Genesis/Genesis_DB",
+    file_name="vfs_writer.py",
+)
 
 # ---------------------------------------------------------------------------
 # VirtualFS helpers
 # ---------------------------------------------------------------------------
 
-def _db_dir() -> Path:
-    return Path(resolve_path("internal", "Database"))
-
-
-def _ensure_vfs_on_path() -> None:
-    """Make Database/ importable so we can use vfs_writer."""
-    d = str(_db_dir())
-    if d not in sys.path:
-        sys.path.insert(0, d)
-
 
 def _get_prefix() -> str:
-    _ensure_vfs_on_path()
-    from vfs_writer import read_file
+    read_file, = from_path_import(
+        resolve_path(
+            _vfs_writer_ref.uuid,
+            _vfs_writer_ref.file_path,
+            _vfs_writer_ref.file_name,
+        ),
+        "read_file",
+    )
     return read_file("Database/prefix.py")
 
 def _launcher_path() -> Path:
@@ -73,17 +78,24 @@ def _launcher_path() -> Path:
 # Source assembly
 # ---------------------------------------------------------------------------
 
-def load_module(scope: str, src: str, dst: str) -> tuple[str, str]:
+def load_module(src: FileRef, dst: str) -> tuple[str, str]:
     """
     Assemble the final combined source and store it in the VirtualFS.
+
+    Parameters
+    ----------
+    src : FileRef
+        Identity of the real-filesystem user program.
+    dst : str
+        VirtualFS destination path (still a plain string for now).
 
     Returns
     -------
     (combined_source, dst)
-        The exact text that will be executed and the VirtualFS path
-        that should appear in every traceback frame.
     """
-    program_path = Path(resolve_path(scope, src))
+    # Strict triple lookup via path_reffs
+    program_path = resolve_path(src.uuid, src.file_path, src.file_name)
+
     if not program_path.exists():
         print(f"Error: program not found at {program_path}")
         sys.exit(1)
@@ -101,8 +113,14 @@ def load_module(scope: str, src: str, dst: str) -> tuple[str, str]:
     combined = inject_process_paths(combined, program_path=dst)
 
     # Persist the exact source that will be executed
-    _ensure_vfs_on_path()
-    from vfs_writer import write_file
+    write_file, = from_path_import(
+        resolve_path(
+            _vfs_writer_ref.uuid,
+            _vfs_writer_ref.file_path,
+            _vfs_writer_ref.file_name,
+        ),
+        "write_file",
+    )
     write_file(
         dst,
         combined,
@@ -118,7 +136,7 @@ def load_module(scope: str, src: str, dst: str) -> tuple[str, str]:
 # Launch
 # ---------------------------------------------------------------------------
 
-def execution_harness(src: str, dst: str, wait: bool = False) -> None:
+def execution_harness(src: FileRef, dst: str, wait: bool = False) -> None:
     """
     Assemble the program and hand it to the child-side launcher.
 
@@ -129,7 +147,7 @@ def execution_harness(src: str, dst: str, wait: bool = False) -> None:
         process_path intermediary, then execs.
     """
     comm_root = find_communicators_root()
-    combined, dst = load_module("internal", src, dst)
+    combined, dst = load_module(src, dst)
 
     launcher = _launcher_path()
     if not launcher.exists():

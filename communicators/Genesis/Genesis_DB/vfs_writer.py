@@ -2,7 +2,7 @@
 """
 vfs_writer.py – general-purpose middleman for writing programs into the Runtime VirtualFS.
 
-Works with the schema created by VirtualFS.py + DB_layout.py.
+Works with the schema created by VirtualFS.py.
 Uses content-addressed storage (sha256). The DB is ephemeral by design.
 
 Typical use (from any later stage or generator):
@@ -26,33 +26,52 @@ You can also override the database location:
 from __future__ import annotations
 
 import hashlib
+import sys
 import sqlite3
 from pathlib import Path
 from typing import Optional
 
 
-# Default search order for the ephemeral DB.
-# In the real communicators tree this will normally resolve to
-# <communicators-root>/internal/genesis_fs.db or similar.
-_CANDIDATES = [
-    Path(__file__).resolve().parent.parent / "attachments" / "genesis_fs.db",
-    Path(__file__).resolve().parent / "genesis_fs.db",
-    Path.cwd() / "genesis_fs.db",
-]
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
+def find_communicators_root(start=None) -> Path:
+    """Walk up until we find a directory named 'communicators'."""
+    d = Path(start or Path.cwd()).absolute()
+    while d != Path("/"):
+        if d.name == "communicators":
+            return d
+        d = d.parent
+    return Path.cwd()  # fallback
 
-def _default_db() -> Path:
-    return next((p for p in _CANDIDATES if p.exists()), _CANDIDATES[0])
+# Guaranteed location relative to communicators root
+_path_reffs = (
+    find_communicators_root()
+    / "path_reffs.py"
+)
+sys.path.insert(0, str(_path_reffs.parent))
+from path_reffs import*
 
+_db_ref = FileRef(
+    uuid="f297d474-1d81-4f4d-b111-5c4369ad153d",
+    file_path="Genesis/Genesis_DB",
+    file_name="runtime_fs.db",
+)
 
-def _connect(db_path: Optional[Path] = None) -> sqlite3.Connection:
-    path = Path(db_path) if db_path is not None else _default_db()
-    if not path.exists():
+db_path = resolve_path(
+        _db_ref.uuid,
+        _db_ref.file_path,
+        _db_ref.file_name,
+    )
+
+def _connect() -> sqlite3.Connection:
+    if not db_path.exists():
         raise FileNotFoundError(
-            f"{path} does not exist.\n"
-            "Run VirtualFS.py then DB_layout.py first."
+            f"{db_path} does not exist.\n"
+            "Run VirtualFS.py first."
         )
-    conn = sqlite3.connect(path)
+    conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
@@ -84,7 +103,7 @@ def _get_root_id(conn: sqlite3.Connection) -> int:
     )
     row = cur.fetchone()
     if not row:
-        raise RuntimeError("Root node missing – did DB_layout.py run?")
+        raise RuntimeError("Root node missing")
     return row[0]
 
 
@@ -105,7 +124,6 @@ def write_file(
     *,
     access_tier: str = "agent_user",
     create_parents: bool = False,
-    db_path: Optional[Path | str] = None,
 ) -> int:
     """
     Write (or replace) a file in the VirtualFS.
@@ -121,8 +139,6 @@ def write_file(
     create_parents : bool
         If True, missing intermediate directories are created automatically.
         Default False – the layout seeder is expected to have made the dirs.
-    db_path : optional
-        Override the location of genesis_fs.db.
 
     Returns
     -------
@@ -136,7 +152,7 @@ def write_file(
     filename = parts[-1]
     dir_parts = parts[:-1]
 
-    conn = _connect(db_path)
+    conn = _connect()
     try:
         parent_id = _get_root_id(conn)
 
@@ -196,14 +212,13 @@ def write_file(
 def read_file(
     virtual_path: str,
     *,
-    db_path: Optional[Path | str] = None,
 ) -> str:
     """Return the text content of a virtual file (for verification / loading)."""
     parts = [p for p in virtual_path.strip("/").split("/") if p]
     if not parts:
         raise ValueError("Cannot read the root")
 
-    conn = _connect(db_path)
+    conn = _connect()
     try:
         parent_id = _get_root_id(conn)
         for name in parts:
@@ -227,60 +242,3 @@ def read_file(
         return row[0]
     finally:
         conn.close()
-
-
-def list_dir(
-    virtual_path: str = "",
-    *,
-    db_path: Optional[Path | str] = None,
-) -> list[tuple[str, str]]:
-    """
-    List immediate children of a virtual directory.
-    Returns list of (name, type) where type is 'file' or 'dir'.
-    """
-    parts = [p for p in virtual_path.strip("/").split("/") if p]
-
-    conn = _connect(db_path)
-    try:
-        parent_id = _get_root_id(conn)
-        for name in parts:
-            node_id = _find_child(conn, parent_id, name)
-            if node_id is None:
-                raise FileNotFoundError(f"No such virtual path: {virtual_path or '/'}")
-            parent_id = node_id
-
-        cur = conn.execute(
-            "SELECT name, type FROM file_graph WHERE parent_id = ? ORDER BY name",
-            (parent_id,),
-        )
-        return cur.fetchall()
-    finally:
-        conn.close()
-
-
-if __name__ == "__main__":
-    # Demo / self-test for the first real upload
-    import sys
-
-    std_path = (
-        Path(__file__).resolve().parent.parent / "attachments" / "standard.py"
-    )
-    if not std_path.exists():
-        print("standard.py not found for demo", file=sys.stderr)
-        sys.exit(1)
-
-    source = std_path.read_text(encoding="utf-8")
-    node_id = write_file(
-        "Internal_Lib/standard.py",
-        source,
-        access_tier="agent_user",
-    )
-    print(f"Wrote Internal_Lib/standard.py → node id {node_id}")
-
-    loaded = read_file("Internal_Lib/standard.py")
-    assert loaded == source, "Round-trip failed"
-    print("Round-trip OK")
-
-    print("Contents of Internal_Lib/:")
-    for name, typ in list_dir("Internal_Lib"):
-        print(f"  {name:30s} {typ}")

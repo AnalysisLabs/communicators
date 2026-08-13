@@ -19,24 +19,74 @@ import subprocess
 import sys
 from pathlib import Path
 
-from execution_harness import execution_harness, _db_dir
+
+def find_communicators_root(start=None):
+    d = Path(start or Path.cwd()).absolute()
+    while d != Path("/"):
+        if d.name == "communicators":
+            return d
+        d = d.parent
+    return Path.cwd()  # fallback
+
+# Guaranteed location relative to communicators root
+_atomic_importer = (
+    find_communicators_root()
+    / "Genesis"
+    / "internal_imports"
+    / "atomic_importer.py"
+)
+sys.path.insert(0, str(_atomic_importer.parent))
+from atomic_importer import from_path, from_path_import, from_code, from_code_import
+_path_reffs = (
+    find_communicators_root()
+    / "path_reffs.py"
+)
+sys.path.insert(0, str(_path_reffs.parent))
+from path_reffs import*
+
 
 
 def _ensure_vfs_initialized() -> None:
     """Run the specialised DB bootloader once (fresh DB + layout + prefix)."""
-    boot = _db_dir() / "DB_bootloader.py"
+    db_bootloader_ref = FileRef(
+        uuid="2d10a8e5-91e5-42c2-a4bd-395801c3e111",
+        file_path="Genesis/Genesis_DB",
+        file_name="DB_bootloader.py",
+    )
+    boot = resolve_path(
+        db_bootloader_ref.uuid,
+        db_bootloader_ref.file_path,
+        db_bootloader_ref.file_name,
+    )
+
     if not boot.exists():
         raise FileNotFoundError(f"DB bootloader not found: {boot}")
+
     print("→ Initializing Runtime VirtualFS via DB_bootloader.py …")
     subprocess.run(
         [sys.executable, str(boot)],
-        cwd=str(_db_dir()),
+        cwd=str(boot.parent),
         check=True,
     )
 
 
 def main() -> None:
     _ensure_vfs_initialized()
+
+    # Load execution_harness via the new system
+    _execution_harness_ref = FileRef(
+        uuid="1314875b-3a56-43ef-bda0-6d126042f5c1",
+        file_path="Genesis/execution",
+        file_name="execution_harness.py",
+    )
+    execution_harness, = from_path_import(
+        resolve_path(
+            _execution_harness_ref.uuid,
+            _execution_harness_ref.file_path,
+            _execution_harness_ref.file_name,
+        ),
+        "execution_harness",
+    )
 
     # Real filesystem sources → FileRef
     namespace_ref = FileRef(
