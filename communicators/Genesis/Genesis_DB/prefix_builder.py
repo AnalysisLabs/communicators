@@ -18,6 +18,7 @@ block.  Only public names (Manifest, transponder, …) remain after each tier.
 from __future__ import annotations
 
 import types
+import sys
 from pathlib import Path
 from textwrap import dedent
 
@@ -233,7 +234,6 @@ def write_all_prefixes() -> dict[str, int]:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import sys
 
     prefix = build_prefixA()
 

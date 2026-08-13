@@ -21,6 +21,7 @@ import sys
 import traceback
 from pathlib import Path
 
+# Recognized exception: allowed for now
 from vfs_process_path import inject_process_paths
 
 def find_communicators_root(start=None):

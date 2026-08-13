@@ -15,7 +15,6 @@ class FileRef:
     Immutable reference to a file tracked in file_registry.json.
 
     The three fields form the stable identity.
-    Call .resolve() when you actually need the real filesystem path.
     """
     uuid: str
     file_path: str
