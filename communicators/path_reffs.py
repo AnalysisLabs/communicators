@@ -21,14 +21,6 @@ class FileRef:
     file_path: str
     file_name: str
 
-    def resolve(self, field: str = "absolute_path") -> Path:
-        """
-        Look up this exact triple in the registry and return the requested field
-        (defaults to absolute_path).
-        """
-        from resolve_path import resolve_path   # or whatever module you put it in
-        return Path(resolve_path(self.uuid, self.file_path, self.file_name, field))
-
     def __str__(self) -> str:
         return f"{self.file_path}/{self.file_name}" if self.file_path else self.file_name
 

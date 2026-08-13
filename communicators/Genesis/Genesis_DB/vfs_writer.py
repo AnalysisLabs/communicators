@@ -123,7 +123,7 @@ def write_file(
     content: str,
     *,
     access_tier: str = "agent_user",
-    create_parents: bool = False,
+    create_parents: bool = True,
 ) -> int:
     """
     Write (or replace) a file in the VirtualFS.
