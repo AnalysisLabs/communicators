@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-kernel_structures.py – single source of truth for kernel DB table shapes.
+metamorphosis_structures.py – single source of truth for metamorphosis DB table shapes.
 
-Defines the five structure types used by the kernel / namespace store:
+Defines the five structure types used by the metamorphosis / namespace store:
 
   1. object_catalog   – top-level finder / registry of everything
   2. flat relational  – ordinary columns & rows (mappings, simple entities)
@@ -220,7 +220,7 @@ def create_log_table(
 
 def create_core_structures(conn: sqlite3.Connection) -> None:
     """
-    Create the structures that are always present after a fresh kernel DB init.
+    Create the structures that are always present after a fresh metamorphosis DB init.
 
     Currently:
       - object_catalog

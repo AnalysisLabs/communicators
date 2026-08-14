@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-kernel_writer.py – typed data-access library for the kernel / namespace store.
+metamorphosis_writer.py – typed data-access library for the metamorphosis / namespace store.
 
 Analogous to vfs_writer.py from the bootstrap stage, generalized across
-the five structure types defined in kernel_structures.py.
+the five structure types defined in metamorphosis_structures.py.
 
 Primary surface the rest of the namespace server should call:
 
@@ -27,7 +27,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Iterable, Optional, Sequence
 
-from kernel_structures import (
+from metamorphosis_structures import (
     create_document_table,
     create_flat_table,
     create_log_table,
@@ -36,14 +36,14 @@ from kernel_structures import (
 )
 
 # ---------------------------------------------------------------------------
-# Path resolution (mirrors kernel_db.py)
+# Path resolution (mirrors metamorphosis_db.py)
 # ---------------------------------------------------------------------------
 
-_DEFAULT_DB = Path(__file__).resolve().parent / "kernel.db"
+_DEFAULT_DB = Path(__file__).resolve().parent / "metamorphosis.db"
 
 _CANDIDATES = [
-    Path(__file__).resolve().parent / "kernel.db",
-    Path.cwd() / "kernel.db",
+    Path(__file__).resolve().parent / "metamorphosis.db",
+    Path.cwd() / "metamorphosis.db",
 ]
 
 
@@ -56,7 +56,7 @@ def _connect(db_path: Optional[Path | str] = None) -> sqlite3.Connection:
     if not path.exists():
         raise FileNotFoundError(
             f"{path} does not exist.\n"
-            "Run kernel_db.py (or kernel_bootloader.py) first."
+            "Run metamorphosis_db.py (or metamorphosis_bootloader.py) first."
         )
     conn = sqlite3.connect(path)
     conn.execute("PRAGMA foreign_keys = ON;")
@@ -459,7 +459,7 @@ def _get_root_id(conn: sqlite3.Connection) -> int:
         "SELECT id FROM file_graph WHERE parent_id IS NULL AND name = ''"
     ).fetchone()
     if not row:
-        # Lazy root creation so a pure kernel_db init still works
+        # Lazy root creation so a pure metamorphosis_db init still works
         cur = conn.execute(
             """
             INSERT INTO file_graph (parent_id, name, type, content_id, access_tier)
@@ -489,7 +489,7 @@ def write_file(
     create_parents: bool = True,
     db_path: Optional[Path | str] = None,
 ) -> int:
-    """Write (or replace) a file in the kernel VFS. Returns file_graph id."""
+    """Write (or replace) a file in the metamorphosis VFS. Returns file_graph id."""
     parts = [p for p in virtual_path.strip("/").split("/") if p]
     if not parts:
         raise ValueError("Cannot write to the root itself")
@@ -617,11 +617,11 @@ def list_dir(
 
 if __name__ == "__main__":
     import tempfile
-    from kernel_db import init_kernel_db
+    from metamorphosis_db import init_metamorphosis_db
 
     with tempfile.TemporaryDirectory() as tmp:
-        db = Path(tmp) / "test_kernel.db"
-        init_kernel_db(db, ephemeral=True)
+        db = Path(tmp) / "test_metamorphosis.db"
+        init_metamorphosis_db(db, ephemeral=True)
 
         # catalog
         oid = register_object("entity", "demo", owner="system", pointer="demo", db_path=db)

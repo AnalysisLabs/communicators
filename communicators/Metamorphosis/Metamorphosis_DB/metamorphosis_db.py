@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-kernel_db.py – create (or recreate) the kernel / namespace SQLite database.
+metamorphosis_db.py – create (or recreate) the metamorphosis / namespace SQLite database.
 
 Analogous to VirtualFS.py from the bootstrap stage.
 
@@ -12,7 +12,7 @@ Responsibilities
 - Install the core structures (object_catalog + VFS tables)
 
 It does not seed domain data and does not provide the read/write API.
-Those belong to later modules (kernel_layout.py, kernel_writer.py).
+Those belong to later modules (metamorphosis_layout.py, metamorphosis_writer.py).
 """
 
 from __future__ import annotations
@@ -20,14 +20,14 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from kernel_structures import create_core_structures
+from metamorphosis_structures import create_core_structures
 
 # ---------------------------------------------------------------------------
 # Path & lifetime configuration
 # ---------------------------------------------------------------------------
 
 # Default location: sibling of this script (same convention as bootstrap).
-DEFAULT_DB_FILE = Path(__file__).resolve().parent / "kernel.db"
+DEFAULT_DB_FILE = Path(__file__).resolve().parent / "metamorphosis.db"
 
 # Development default: wipe on every init so schema experiments stay cheap.
 # Flip to False when real persistent data (tokens, billing, etc.) appears.
@@ -44,13 +44,13 @@ def _resolve_path(db_path: Path | str | None = None) -> Path:
 # Public entry point
 # ---------------------------------------------------------------------------
 
-def init_kernel_db(
+def init_metamorphosis_db(
     db_path: Path | str | None = None,
     *,
     ephemeral: bool | None = None,
 ) -> Path:
     """
-    Create (or recreate) the kernel database and its core tables.
+    Create (or recreate) the metamorphosis database and its core tables.
 
     Parameters
     ----------
@@ -90,7 +90,7 @@ def init_kernel_db(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Initialize the kernel SQLite database")
+    parser = argparse.ArgumentParser(description="Initialize the metamorphosis SQLite database")
     parser.add_argument(
         "--db",
         type=Path,
@@ -104,9 +104,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    db = init_kernel_db(
+    db = init_metamorphosis_db(
         db_path=args.db,
         ephemeral=not args.persistent,
     )
     mode = "persistent" if args.persistent else "ephemeral"
-    print(f"Initialized kernel database ({mode}) at: {db}")
+    print(f"Initialized metamorphosis database ({mode}) at: {db}")

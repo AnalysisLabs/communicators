@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-kernel_bootloader.py – thin orchestrator for kernel DB initialization.
+metamorphosis_bootloader.py – thin orchestrator for metamorphosis DB initialization.
 
 Analogous to DB_bootloader.py from the bootstrap stage.
 
 Current sequence:
 
-  1. kernel_db.init_kernel_db   → create file + core structures
+  1. metamorphosis_db.init_metamorphosis_db   → create file + core structures
                                    (object_catalog + VFS tables)
-  2. (future) kernel_layout     → optional seed rows / catalog entries
+  2. (future) metamorphosis_layout     → optional seed rows / catalog entries
 
 Keeps the boot path dumb and ordered.  Domain data access lives in
-kernel_writer.py; structure definitions live in kernel_structures.py.
+metamorphosis_writer.py; structure definitions live in metamorphosis_structures.py.
 """
 
 from __future__ import annotations
@@ -20,18 +20,18 @@ import argparse
 import sys
 from pathlib import Path
 
-from kernel_db import init_kernel_db
+from metamorphosis_db import init_metamorphosis_db
 
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        description="Initialize the kernel / namespace SQLite database"
+        description="Initialize the metamorphosis / namespace SQLite database"
     )
     parser.add_argument(
         "--db",
         type=Path,
         default=None,
-        help="Override database path (default: kernel.db next to the modules)",
+        help="Override database path (default: metamorphosis.db next to the modules)",
     )
     parser.add_argument(
         "--persistent",
@@ -40,19 +40,19 @@ def main(argv: list[str] | None = None) -> None:
     )
     args = parser.parse_args(argv)
 
-    print("→ Initializing kernel database …")
-    path = init_kernel_db(
+    print("→ Initializing metamorphosis database …")
+    path = init_metamorphosis_db(
         db_path=args.db,
         ephemeral=not args.persistent,
     )
     mode = "persistent" if args.persistent else "ephemeral"
-    print(f"→ kernel database ready ({mode}) at {path}")
+    print(f"→ metamorphosis database ready ({mode}) at {path}")
 
     # Future extension point:
-    # from kernel_layout import seed_kernel_layout
-    # seed_kernel_layout(path)
+    # from metamorphosis_layout import seed_metamorphosis_layout
+    # seed_metamorphosis_layout(path)
 
-    print("kernel boot sequence complete")
+    print("metamorphosis boot sequence complete")
 
 
 if __name__ == "__main__":

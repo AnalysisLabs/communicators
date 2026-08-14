@@ -24,8 +24,8 @@ kernel_writer; nothing is kept in a process-global dict.
 
 # When this file lives inside the real communicators tree the imports will
 # resolve normally.  While it sits in artifacts/ we keep the path flexible.
-from kernel_db import init_kernel_db
-from kernel_writer import (
+from metamorphosis_db import init_kernel_db
+from metamorphosis_writer import (
     create_document,
     get_document,
     get_object,
