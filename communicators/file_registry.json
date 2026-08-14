@@ -114,6 +114,12 @@
     "file_name": ".env"
   },
   {
+    "uuid": "6c2d43c5-1a1f-4cd5-b41e-7ba2523604ff",
+    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/atomic_importer.py",
+    "file_path": "Genesis/internal_imports",
+    "file_name": "atomic_importer.py"
+  },
+  {
     "uuid": "6c9c9e7b-2fee-42c3-b441-b67b17a55b3c",
     "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/edge-methods",
     "file_path": "Genesis/internal_imports",
@@ -196,6 +202,12 @@
     "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/node-methods/to_from.py",
     "file_path": "Genesis/internal_imports/node-methods",
     "file_name": "to_from.py"
+  },
+  {
+    "uuid": "e77217a6-2fb1-4837-925b-312a70874ae5",
+    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/path_reffs.py",
+    "file_path": "Genesis/internal_imports",
+    "file_name": "path_reffs.py"
   },
   {
     "uuid": "8090dc7b-4a91-448d-8ab0-0b5acfbb5dee",

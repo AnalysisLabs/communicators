@@ -1,4 +1,0 @@
-chmod +x setup-dev.sh
-./setup-dev.sh
-./run.sh internal state-methods/namespace.py
-

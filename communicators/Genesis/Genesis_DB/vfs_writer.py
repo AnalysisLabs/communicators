@@ -48,6 +48,8 @@ def find_communicators_root(start=None) -> Path:
 # Guaranteed location relative to communicators root
 _path_reffs = (
     find_communicators_root()
+    / "Genesis"
+    / "internal_imports"
     / "path_reffs.py"
 )
 sys.path.insert(0, str(_path_reffs.parent))
