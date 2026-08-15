@@ -1,541 +1,461 @@
 [
   {
     "uuid": "63b71c88-0ee0-4555-8d11-eb26aa186390",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis",
     "file_path": "",
     "file_name": "Genesis"
   },
   {
     "uuid": "ad977e2c-e79f-4894-bdf7-00dced5e2052",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/Genesis_DB",
     "file_path": "Genesis",
     "file_name": "Genesis_DB"
   },
   {
     "uuid": "2d10a8e5-91e5-42c2-a4bd-395801c3e111",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/Genesis_DB/DB_bootloader.py",
     "file_path": "Genesis/Genesis_DB",
     "file_name": "DB_bootloader.py"
   },
   {
     "uuid": "dc57ce78-e092-4caf-9016-df666f07cdd5",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/Genesis_DB/VirtualFS.py",
     "file_path": "Genesis/Genesis_DB",
     "file_name": "VirtualFS.py"
   },
   {
     "uuid": "f7753639-d940-48e7-a517-545d875f4cd2",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/Genesis_DB/inspect.txt",
     "file_path": "Genesis/Genesis_DB",
     "file_name": "inspect.txt"
   },
   {
     "uuid": "d97229e0-f3f3-46ac-9db4-a94e84b3a43c",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/Genesis_DB/prefix_builder.py",
     "file_path": "Genesis/Genesis_DB",
     "file_name": "prefix_builder.py"
   },
   {
     "uuid": "c3c395ae-368a-4844-91d8-0d3d69b3eae5",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/Genesis_DB/prefix_transpiler.py",
     "file_path": "Genesis/Genesis_DB",
     "file_name": "prefix_transpiler.py"
   },
   {
     "uuid": "f297d474-1d81-4f4d-b111-5c4369ad153d",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/Genesis_DB/runtime_fs.db",
     "file_path": "Genesis/Genesis_DB",
     "file_name": "runtime_fs.db"
   },
   {
     "uuid": "f9284397-10ec-4856-8f1e-1bc62b9c8436",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/Genesis_DB/vfs_writer.py",
     "file_path": "Genesis/Genesis_DB",
     "file_name": "vfs_writer.py"
   },
   {
     "uuid": "c7956732-1597-467e-a57f-f893f07e6fa1",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/execution",
     "file_path": "Genesis",
     "file_name": "execution"
   },
   {
     "uuid": "8b023d16-a060-477c-88a5-e007d1193377",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/execution/bootloader.py",
     "file_path": "Genesis/execution",
     "file_name": "bootloader.py"
   },
   {
-    "uuid": "bb301a4e-1cd8-44a1-a8c4-8e604e9103fb",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/execution/con.txt",
-    "file_path": "Genesis/execution",
-    "file_name": "con.txt"
-  },
-  {
-    "uuid": "1314875b-3a56-43ef-bda0-6d126042f5c1",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/execution/execution_harness.py",
-    "file_path": "Genesis/execution",
-    "file_name": "execution_harness.py"
-  },
-  {
-    "uuid": "20c4cbf1-46c4-4d6a-88a9-e8c119fde42d",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/execution/execution_launcher.py",
-    "file_path": "Genesis/execution",
-    "file_name": "execution_launcher.py"
-  },
-  {
     "uuid": "8321132e-7a02-47db-b9a2-10fe696f37ff",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/execution/flake.lock",
     "file_path": "Genesis/execution",
     "file_name": "flake.lock"
   },
   {
     "uuid": "fbe5a069-91d9-48a0-9fb3-5ecbc05aef49",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/execution/flake.nix",
     "file_path": "Genesis/execution",
     "file_name": "flake.nix"
   },
   {
-    "uuid": "8c0a8471-559e-4bce-9789-b25f45c5b5b2",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/execution/vfs_process_path.py",
-    "file_path": "Genesis/execution",
-    "file_name": "vfs_process_path.py"
-  },
-  {
     "uuid": "d9f409d8-b3a6-4780-ae48-4e441a20a71e",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports",
     "file_path": "Genesis",
     "file_name": "internal_imports"
   },
   {
     "uuid": "6465aafb-d7a4-4805-9344-fdb61450de05",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/.env",
     "file_path": "Genesis/internal_imports",
     "file_name": ".env"
   },
   {
     "uuid": "6c2d43c5-1a1f-4cd5-b41e-7ba2523604ff",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/atomic_importer.py",
     "file_path": "Genesis/internal_imports",
     "file_name": "atomic_importer.py"
   },
   {
     "uuid": "6c9c9e7b-2fee-42c3-b441-b67b17a55b3c",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/edge-methods",
     "file_path": "Genesis/internal_imports",
     "file_name": "edge-methods"
   },
   {
     "uuid": "a5c40276-806f-4752-b0ac-2ec9a2fb4aa0",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/edge-methods/connections",
     "file_path": "Genesis/internal_imports/edge-methods",
     "file_name": "connections"
   },
   {
     "uuid": "0ef20601-7db9-45be-9fc7-494b69e6f83d",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/edge-methods/connections/__init__.py",
     "file_path": "Genesis/internal_imports/edge-methods/connections",
     "file_name": "__init__.py"
   },
   {
     "uuid": "47ec2dfe-6c69-46db-a2a3-8e8cb9d985a0",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/edge-methods/connections/unix_socket.py",
     "file_path": "Genesis/internal_imports/edge-methods/connections",
     "file_name": "unix_socket.py"
   },
   {
     "uuid": "3eb4cb77-b133-4b5f-aa69-4a6c9da93a36",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/edge-methods/connections/ws_tamer.py",
     "file_path": "Genesis/internal_imports/edge-methods/connections",
     "file_name": "ws_tamer.py"
   },
   {
     "uuid": "9c0c098f-aa73-4ced-af57-282cbf0a37ab",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/edge-methods/elementary.py",
     "file_path": "Genesis/internal_imports/edge-methods",
     "file_name": "elementary.py"
   },
   {
     "uuid": "37c06163-cefe-4117-b7d6-6819cab8a5eb",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/edge-methods/load_spreading.py",
     "file_path": "Genesis/internal_imports/edge-methods",
     "file_name": "load_spreading.py"
   },
   {
     "uuid": "64bf54d1-e607-4bfc-b6ba-73ccc2748dd4",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/manifest.py",
     "file_path": "Genesis/internal_imports",
     "file_name": "manifest.py"
   },
   {
     "uuid": "d42f9070-e38f-473d-b8f0-72cbded81cc7",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/node-methods",
     "file_path": "Genesis/internal_imports",
     "file_name": "node-methods"
   },
   {
     "uuid": "069db15a-0dee-48c9-90cf-024b0e8fb592",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/node-methods/Breathing",
     "file_path": "Genesis/internal_imports/node-methods",
     "file_name": "Breathing"
   },
   {
     "uuid": "00e97bdc-d4f7-4a97-a416-bc1c0a0b197a",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/node-methods/core.py",
     "file_path": "Genesis/internal_imports/node-methods",
     "file_name": "core.py"
   },
   {
     "uuid": "a36b8751-400a-49a3-83b8-11809502a214",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/node-methods/load_core.py",
     "file_path": "Genesis/internal_imports/node-methods",
     "file_name": "load_core.py"
   },
   {
     "uuid": "3ca01e70-f9ca-4b66-b974-8d7906f6f2e6",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/node-methods/resolution.py",
     "file_path": "Genesis/internal_imports/node-methods",
     "file_name": "resolution.py"
   },
   {
     "uuid": "26f4ce88-77bb-4902-8b23-85091adbb2ab",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/node-methods/to_from.py",
     "file_path": "Genesis/internal_imports/node-methods",
     "file_name": "to_from.py"
   },
   {
     "uuid": "e77217a6-2fb1-4837-925b-312a70874ae5",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/path_reffs.py",
     "file_path": "Genesis/internal_imports",
     "file_name": "path_reffs.py"
   },
   {
     "uuid": "8090dc7b-4a91-448d-8ab0-0b5acfbb5dee",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/standard.py",
     "file_path": "Genesis/internal_imports",
     "file_name": "standard.py"
   },
   {
     "uuid": "0f589da7-ebcc-4ef1-a44c-59111c1d1a9a",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Genesis/internal_imports/transponder_module.py",
     "file_path": "Genesis/internal_imports",
     "file_name": "transponder_module.py"
   },
   {
     "uuid": "177326b3-c376-4974-b7e2-8d75de7ba802",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Imago",
     "file_path": "",
     "file_name": "Imago"
   },
   {
     "uuid": "59ebed10-83f1-4f84-a8ae-13e302db72ac",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Imago/Homeostatis",
     "file_path": "Imago",
     "file_name": "Homeostatis"
   },
   {
     "uuid": "1a8a6517-63c9-416f-8832-8e467d1f2380",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Imago/Homeostatis/__init__.py",
     "file_path": "Imago/Homeostatis",
     "file_name": "__init__.py"
   },
   {
     "uuid": "5fda783d-0140-4a51-8f0f-a796ce0809a7",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Imago/Homeostatis/feedback.py",
     "file_path": "Imago/Homeostatis",
     "file_name": "feedback.py"
   },
   {
     "uuid": "5c2afee0-1e2c-42ba-b120-d912044211cd",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Imago/Homeostatis/healing.py",
     "file_path": "Imago/Homeostatis",
     "file_name": "healing.py"
   },
   {
     "uuid": "ded1cfd5-0463-40b5-9282-c612ce980d5e",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Imago/Homeostatis/health_check.py",
     "file_path": "Imago/Homeostatis",
     "file_name": "health_check.py"
   },
   {
     "uuid": "12028dbf-d2f2-4e7a-b640-68136f51677e",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Imago/Homeostatis/homeostasis.py",
     "file_path": "Imago/Homeostatis",
     "file_name": "homeostasis.py"
   },
   {
     "uuid": "41b30196-24ac-4e09-9d05-d7733feeb4f2",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Imago/Homeostatis/startup.py",
     "file_path": "Imago/Homeostatis",
     "file_name": "startup.py"
   },
   {
     "uuid": "47b14fed-397a-4b46-96e4-6c8319e02363",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Imago/Imago_DB",
     "file_path": "Imago",
     "file_name": "Imago_DB"
   },
   {
     "uuid": "635a4dee-63e9-4424-80f3-1d155613e216",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis",
     "file_path": "",
     "file_name": "Metamorphosis"
   },
   {
+    "uuid": "07fb170b-aab9-41f6-b97e-d2722b4f7967",
+    "file_path": "Metamorphosis",
+    "file_name": "execution"
+  },
+  {
+    "uuid": "f8dc3fbe-5167-4184-b25a-555c3753286f",
+    "file_path": "Metamorphosis/execution",
+    "file_name": "bootloader.py"
+  },
+  {
+    "uuid": "1314875b-3a56-43ef-bda0-6d126042f5c1",
+    "file_path": "Metamorphosis/execution",
+    "file_name": "execution_harness.py"
+  },
+  {
+    "uuid": "20c4cbf1-46c4-4d6a-88a9-e8c119fde42d",
+    "file_path": "Metamorphosis/execution",
+    "file_name": "execution_launcher.py"
+  },
+  {
+    "uuid": "8c0a8471-559e-4bce-9789-b25f45c5b5b2",
+    "file_path": "Metamorphosis/execution",
+    "file_name": "vfs_process_path.py"
+  },
+  {
     "uuid": "cf0f1862-5300-4090-bc7e-b0afd275e9af",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/Metamorphosis_DB",
     "file_path": "Metamorphosis",
     "file_name": "Metamorphosis_DB"
   },
   {
     "uuid": "131e8e12-a85c-4897-9348-10c7c8219b97",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/Metamorphosis_DB/metamorphosis_bootloader.py",
     "file_path": "Metamorphosis/Metamorphosis_DB",
     "file_name": "metamorphosis_bootloader.py"
   },
   {
     "uuid": "f306ba10-b72d-4cc9-9281-c75818f5b376",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/Metamorphosis_DB/metamorphosis_db.py",
     "file_path": "Metamorphosis/Metamorphosis_DB",
     "file_name": "metamorphosis_db.py"
   },
   {
     "uuid": "09126e37-7bd4-4b2d-a455-f44125ab9048",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/Metamorphosis_DB/metamorphosis_structures.py",
     "file_path": "Metamorphosis/Metamorphosis_DB",
     "file_name": "metamorphosis_structures.py"
   },
   {
     "uuid": "93752a7b-6da4-49ff-b704-e2bc2c32926a",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/Metamorphosis_DB/metamorphosis_writer.py",
     "file_path": "Metamorphosis/Metamorphosis_DB",
     "file_name": "metamorphosis_writer.py"
   },
   {
     "uuid": "37656285-737c-407d-8b3c-70fbfef23d8c",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/control-layer-methods",
     "file_path": "Metamorphosis",
     "file_name": "control-layer-methods"
   },
   {
     "uuid": "d2dcda2b-9741-490a-87cb-52da33e31c06",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/control-layer-methods/bash_wrappers.py",
     "file_path": "Metamorphosis/control-layer-methods",
     "file_name": "bash_wrappers.py"
   },
   {
     "uuid": "6197f0d3-63bb-4d49-9d47-9e5aa0b56082",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/control-layer-methods/healing_tree.py",
     "file_path": "Metamorphosis/control-layer-methods",
     "file_name": "healing_tree.py"
   },
   {
     "uuid": "4845da38-d93c-4636-bdc3-4369a251d227",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/control-layer-methods/landscaping.py",
     "file_path": "Metamorphosis/control-layer-methods",
     "file_name": "landscaping.py"
   },
   {
     "uuid": "ff56d30b-a965-4ebc-a12c-c719841b2d31",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/control-layer-methods/launcher.py",
     "file_path": "Metamorphosis/control-layer-methods",
     "file_name": "launcher.py"
   },
   {
     "uuid": "de70e62c-609d-4d11-bd97-e2a0d3cc28cb",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/control-layer-methods/manifest_integrator.py",
     "file_path": "Metamorphosis/control-layer-methods",
     "file_name": "manifest_integrator.py"
   },
   {
     "uuid": "bbbd4ddf-53ee-4a73-9e5e-7422b4be7a40",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/control-script",
     "file_path": "Metamorphosis",
     "file_name": "control-script"
   },
   {
     "uuid": "f724b255-4ba5-4bd3-9329-a7739a522fb5",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/control-script/orchestration-script.py",
     "file_path": "Metamorphosis/control-script",
     "file_name": "orchestration-script.py"
   },
   {
     "uuid": "b3970bc1-dd43-4dfa-800b-4fbaa6f8edeb",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/servers",
     "file_path": "Metamorphosis",
     "file_name": "servers"
   },
   {
     "uuid": "253a5376-dfdc-4e07-b4d1-20446bb9211f",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/servers/namespace.py",
     "file_path": "Metamorphosis/servers",
     "file_name": "namespace.py"
   },
   {
     "uuid": "f79a5606-f5aa-4908-8a96-8a866537a49d",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler",
     "file_path": "Metamorphosis",
     "file_name": "transpiler"
   },
   {
     "uuid": "8f2e3333-bed1-4c22-8581-9b98e24d2271",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler/caterpillar_transpiler.py",
     "file_path": "Metamorphosis/transpiler",
     "file_name": "caterpillar_transpiler.py"
   },
   {
     "uuid": "2d057654-b1d8-4c38-b9b1-214eb60b4acd",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler/egg_transpiler.py",
     "file_path": "Metamorphosis/transpiler",
     "file_name": "egg_transpiler.py"
   },
   {
     "uuid": "6436be95-3579-4b62-9c06-49de2dd6c595",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods",
     "file_path": "Metamorphosis",
     "file_name": "transpiler-methods"
   },
   {
     "uuid": "7328741f-5735-4065-bec9-f75255314566",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/build_ir.py",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "build_ir.py"
   },
   {
     "uuid": "f2ab9674-e912-48d8-bf53-31c12e9952db",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/com-graph.mmd",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "com-graph.mmd"
   },
   {
     "uuid": "a058fa08-9ec0-4e9e-b6df-8b6b7bffdbb3",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/generate_mermaid.py",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "generate_mermaid.py"
   },
   {
     "uuid": "cfe9990f-c6b7-4990-8d21-1035a91e88d8",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/generate_topology_json.py",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "generate_topology_json.py"
   },
   {
     "uuid": "5d5c6a36-415d-418b-8cb3-7b2ac303b5c6",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/ideal.yaml",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "ideal.yaml"
   },
   {
     "uuid": "2e54ae9b-390f-4da1-aa7d-e3305e6f7201",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/ideal_state.py",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "ideal_state.py"
   },
   {
     "uuid": "368c4bfc-db2e-40c7-8313-b90a98666967",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/ir-sample.json",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "ir-sample.json"
   },
   {
     "uuid": "bf7102ff-14cb-4801-b671-6a01287b907b",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/ir-sample.yaml",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "ir-sample.yaml"
   },
   {
     "uuid": "ab7be9de-2d1b-41ff-adf3-2f1a87cef893",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/mermaid_code.mmd",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "mermaid_code.mmd"
   },
   {
     "uuid": "7dfcf2b2-98c6-445e-8963-8f3e00971851",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/ns_calls.py",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "ns_calls.py"
   },
   {
     "uuid": "c2d17ac9-2899-48d1-955b-0cdea0967768",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/ns_sketch.txt",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "ns_sketch.txt"
   },
   {
     "uuid": "9c28ad51-a05b-4633-8bf9-63f637d574ef",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/process_registry.json",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "process_registry.json"
   },
   {
     "uuid": "2bf7de4f-e699-4ac5-a498-b18db1673640",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/process_registry.py",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "process_registry.py"
   },
   {
     "uuid": "152949b3-46fe-42e5-a419-7842de8d9133",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/reconciliation_loop.py",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "reconciliation_loop.py"
   },
   {
     "uuid": "bfaf466d-1f9c-4889-b512-7946b6327584",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/smart_error_handling.py",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "smart_error_handling.py"
   },
   {
     "uuid": "5ee4f48b-5fd1-4be4-a5ae-8a3106f2fe7e",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/snapshot_client.py",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "snapshot_client.py"
   },
   {
     "uuid": "4e43e882-7c1b-41ba-b8e5-98e2e4f9eced",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/state.py",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "state.py"
   },
   {
     "uuid": "872dad6b-bb8a-4959-9842-c39cc32c6bd1",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/Metamorphosis/transpiler-methods/topology.json",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "topology.json"
   },
   {
+    "uuid": "1cf3b987-6ebb-41f6-aa54-b7ce56014863",
+    "file_path": "",
+    "file_name": "Philosophy"
+  },
+  {
     "uuid": "abcedf85-01f0-4a15-b0ac-edf6f4f17d4b",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/file_registry.json",
     "file_path": "",
     "file_name": "file_registry.json"
   },
   {
     "uuid": "90e6efb6-f345-4116-ac29-4155800fc5f0",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/generate_file_registry.py",
     "file_path": "",
     "file_name": "generate_file_registry.py"
   },
   {
     "uuid": "57ebb0d4-99a4-4a99-b316-84984f3a85ad",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/ns_server.log",
     "file_path": "",
     "file_name": "ns_server.log"
   },
   {
     "uuid": "fed3677e-3c63-418d-90b8-6b3f72fbe357",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/run.sh",
     "file_path": "",
     "file_name": "run.sh"
   },
   {
     "uuid": "f6513f60-461e-4a02-9224-014a3e4618b2",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/temp",
     "file_path": "",
     "file_name": "temp"
   },
   {
     "uuid": "7f7c4d8b-e434-469b-8137-6c31afcc0fb4",
-    "absolute_path": "/home/prometheusd/Analysis Labs/Dev Tools/com-branches/orchestrated-4/communicators/temp/7:38.py",
     "file_path": "temp",
     "file_name": "7:38.py"
   }

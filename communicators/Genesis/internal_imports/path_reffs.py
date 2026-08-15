@@ -58,28 +58,26 @@ def resolve_path(
     uuid: str,
     file_path: str,
     file_name: str,
-    field: str = "absolute_path",
-) -> str:
+) -> Path:
     """
     Strict lookup by the full identity triple.
-    Raises FileNotFoundError on any mismatch (broken reference).
+    Returns the absolute Path computed from the current communicators root
+    + the relative file_path + file_name stored in the registry.
 
-    Typical use:
-        program_path = Path(resolve_path(
-            "8b023d16-a060-477c-88a5-e007d1193377",
-            "Genesis/execution",
-            "bootloader.py"
-        ))
+    Raises FileNotFoundError on any mismatch (broken reference).
     """
     registry = _load_registry()
+    root = find_communicators_root()
 
     for entry in registry:
         if (entry["uuid"] == uuid
             and entry["file_path"] == file_path
             and entry["file_name"] == file_name):
-            if field not in entry:
-                raise KeyError(f"Field {field!r} not present in registry entry")
-            return Path(entry[field])
+
+            if file_path:
+                return root / file_path / file_name
+            else:
+                return Path(root / file_name)
 
     raise FileNotFoundError(
         f"Broken reference: uuid={uuid!r}, file_path={file_path!r}, file_name={file_name!r}"

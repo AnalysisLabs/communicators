@@ -13,6 +13,7 @@ Must be executed inside the Nix flake shell:
     nix develop ./env-bootloader
 """
 
+
 from __future__ import annotations
 
 import subprocess
@@ -78,7 +79,7 @@ def main() -> None:
     # Load execution_harness via the new system
     _execution_harness_ref = FileRef(
         uuid="1314875b-3a56-43ef-bda0-6d126042f5c1",
-        file_path="Genesis/execution",
+        file_path="Metamorphosis/execution",
         file_name="execution_harness.py",
     )
     execution_harness, = from_path_import(

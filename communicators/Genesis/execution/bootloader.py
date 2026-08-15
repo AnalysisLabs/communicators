@@ -29,14 +29,6 @@ def find_communicators_root(start=None):
     return Path.cwd()  # fallback
 
 # Guaranteed location relative to communicators root
-_atomic_importer = (
-    find_communicators_root()
-    / "Genesis"
-    / "internal_imports"
-    / "atomic_importer.py"
-)
-sys.path.insert(0, str(_atomic_importer.parent))
-from atomic_importer import from_path, from_path_import, from_code, from_code_import
 _path_reffs = (
     find_communicators_root()
     / "Genesis"
