@@ -15,6 +15,11 @@
     "file_name": "DB_bootloader.py"
   },
   {
+    "uuid": "911c5803-bac5-4484-9619-9182eb7d7b3c",
+    "file_path": "Genesis/Genesis_DB",
+    "file_name": "dual_use_rectifier.py"
+  },
+  {
     "uuid": "dc57ce78-e092-4caf-9016-df666f07cdd5",
     "file_path": "Genesis/Genesis_DB",
     "file_name": "VirtualFS.py"
