@@ -211,10 +211,7 @@ def write_file(
         conn.close()
 
 
-def read_file(
-    virtual_path: str,
-    *,
-) -> str:
+def read_file(virtual_path: str) -> str:
     """Return the text content of a virtual file (for verification / loading)."""
     parts = [p for p in virtual_path.strip("/").split("/") if p]
     if not parts:

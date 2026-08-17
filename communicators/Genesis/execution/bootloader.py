@@ -46,6 +46,12 @@ _atomic_importer = (
 )
 sys.path.insert(0, str(_atomic_importer.parent))
 
+_vfs_writer_ref = FileRef(
+    uuid="f9284397-10ec-4856-8f1e-1bc62b9c8436",
+    file_path="Genesis/Genesis_DB",
+    file_name="vfs_writer.py",
+)
+
 # atomic_importer is already on sys.path in the Genesis/Metamorphosis style
 from atomic_importer import from_path_import
 read_file, = from_path_import(

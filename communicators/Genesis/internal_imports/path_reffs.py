@@ -37,6 +37,11 @@ class FileRef:
 # ---------------------------------------------------------------------------
 
 def find_communicators_root(start=None) -> Path:
+    # Prefer explicitly defined COMMUNICATORS_ROOT when present
+    root = globals().get("COMMUNICATORS_ROOT")
+    if root is not None:
+        return Path(root).absolute()
+
     d = Path(start or Path.cwd()).absolute()
     while d != Path("/"):
         if d.name == "communicators":

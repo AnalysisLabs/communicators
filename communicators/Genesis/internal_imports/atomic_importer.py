@@ -46,11 +46,12 @@ def _extract(module: ModuleType, items: tuple) -> tuple[Any, ...]:
 # ---------------------------------------------------------------------------
 
 def from_path(path: str | Path, name: str | None = None) -> ModuleType:
-    """Equivalent to: import <module>"""
+    """Equivalent to: import <module>  (from a real filesystem path)"""
     path = Path(path).resolve()
     if name is None:
         name = path.stem
-    return _load(name, None, str(path))
+    source = path.read_text(encoding="utf-8")
+    return from_code(source, name, filename=str(path))
 
 
 def from_path_import(path: str | Path, *items: str | tuple[str, str]) -> tuple[Any, ...]:
