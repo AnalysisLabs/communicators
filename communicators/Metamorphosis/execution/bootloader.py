@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
 """
-Communicators OS general bootloader.
+Communicators OS – Metamorphosis-stage bootloader.
 
-1. Runs Database/DB_bootloader.py (creates the ephemeral SQLite VirtualFS,
-   seeds the layout, and writes the assembled prefix into Database/prefix.py).
-2. For every program, pulls that prefix from the VirtualFS, concatenates it
-   with the user source, stores the combined text under Runtime/generated/,
-   then launches the result.
+Receives the fully-assembled prefix produced by Genesis, prints its byte size,
+and persists it as prefix.py in the same directory as this file.
 
-Must be executed inside the Nix flake shell:
+Invoked by Genesis/execution/bootloader.py as:
 
-    nix develop ./env-bootloader
+    python3 Metamorphosis/execution/bootloader.py <prefix>
+
+Must be executed inside the Nix flake shell that Genesis already entered.
 """
-
 
 from __future__ import annotations
 
-import subprocess
+import hashlib
 import sys
 from pathlib import Path
 
@@ -45,78 +43,29 @@ _path_reffs = (
     / "path_reffs.py"
 )
 sys.path.insert(0, str(_path_reffs.parent))
-from path_reffs import*
-
-
-
-def _ensure_vfs_initialized() -> None:
-    """Run the specialised DB bootloader once (fresh DB + layout + prefix)."""
-    db_bootloader_ref = FileRef(
-        uuid="2d10a8e5-91e5-42c2-a4bd-395801c3e111",
-        file_path="Genesis/Genesis_DB",
-        file_name="DB_bootloader.py",
-    )
-    boot = resolve_path(
-        db_bootloader_ref.uuid,
-        db_bootloader_ref.file_path,
-        db_bootloader_ref.file_name,
-    )
-
-    if not boot.exists():
-        raise FileNotFoundError(f"DB bootloader not found: {boot}")
-
-    print("→ Initializing Runtime VirtualFS via DB_bootloader.py …")
-    subprocess.run(
-        [sys.executable, str(boot)],
-        cwd=str(boot.parent),
-        check=True,
-    )
+from path_reffs import *
 
 
 def main() -> None:
-    _ensure_vfs_initialized()
+    if len(sys.argv) < 2:
+        print("error: prefix argument missing", file=sys.stderr)
+        sys.exit(1)
 
-    # Load execution_harness via the new system
-    _execution_harness_ref = FileRef(
-        uuid="1314875b-3a56-43ef-bda0-6d126042f5c1",
-        file_path="Metamorphosis/execution",
-        file_name="execution_harness.py",
-    )
-    execution_harness, = from_path_import(
-        resolve_path(
-            _execution_harness_ref.uuid,
-            _execution_harness_ref.file_path,
-            _execution_harness_ref.file_name,
-        ),
-        "execution_harness",
-    )
+    prefix = sys.argv[1]
 
-    # Real filesystem sources → FileRef
-    namespace_ref = FileRef(
-        uuid="253a5376-dfdc-4e07-b4d1-20446bb9211f",
-        file_path="Metamorphosis/servers",
-        file_name="namespace.py",
-    )
+    # byte size of the exact string that was handed over
+    data = prefix.encode("utf-8")
+    byte_size = len(data)
 
-    egg_transpiler_ref = FileRef(
-        uuid="2d057654-b1d8-4c38-b9b1-214eb60b4acd",
-        file_path="Metamorphosis/transpiler",
-        file_name="egg_transpiler.py",
-    )
+    # simple content checksum so the receiver can verify what it got
+    checksum = hashlib.sha256(data).hexdigest()[:16]
 
-    # Note: dst values are still VirtualFS paths (not in file_registry.json yet)
-    execution_harness(
-        src=namespace_ref,
-        dst="Runtime/generated/namespace.py",
-        wait=False,
-    )
-    execution_harness(
-        src=egg_transpiler_ref,
-        dst="Metamorphosis/generated/egg_transpiler",
-        wait=True,
-    )
+    print(f"prefix received – byte size: {byte_size}  checksum: {checksum}")
 
-    print("bootloader sequence complete")
+    # persist next to this bootloader
+    out = Path(__file__).resolve().parent / "prefix.py"
+    with open(out, "w", encoding="utf-8") as f: f.write(prefix)
+    print(f"prefix written → {out}")
 
 
 if __name__ == "__main__":

@@ -38,6 +38,14 @@ _path_reffs = (
 sys.path.insert(0, str(_path_reffs.parent))
 from path_reffs import*
 
+_atomic_importer = (
+    find_communicators_root()
+    / "Genesis"
+    / "internal_imports"
+    / "atomic_importer.py"
+)
+sys.path.insert(0, str(_atomic_importer.parent))
+
 # atomic_importer is already on sys.path in the Genesis/Metamorphosis style
 from atomic_importer import from_path_import
 read_file, = from_path_import(
@@ -113,12 +121,6 @@ def main() -> None:
         stderr=subprocess.STDOUT,
         close_fds=True,
     )
-    assert proc.stdin is not None
-    proc.stdin.write(combined.encode("utf-8"))
-    proc.stdin.close()
-
-    if wait:
-        proc.wait()
 
     print("Genesis sequence complete")
 
