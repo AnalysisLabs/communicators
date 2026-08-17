@@ -38,6 +38,17 @@ _path_reffs = (
 sys.path.insert(0, str(_path_reffs.parent))
 from path_reffs import*
 
+# atomic_importer is already on sys.path in the Genesis/Metamorphosis style
+from atomic_importer import from_path_import
+read_file, = from_path_import(
+    resolve_path(
+        _vfs_writer_ref.uuid,
+        _vfs_writer_ref.file_path,
+        _vfs_writer_ref.file_name,
+    ),
+    "read_file",
+)
+
 
 
 def _ensure_vfs_initialized() -> None:
@@ -66,6 +77,48 @@ def _ensure_vfs_initialized() -> None:
 
 def main() -> None:
     _ensure_vfs_initialized()
+
+    # --- conventions from prefix_builder / prefix_transpiler ---
+    _vfs_writer_ref = FileRef(
+        uuid="f9284397-10ec-4856-8f1e-1bc62b9c8436",
+        file_path="Genesis/Genesis_DB",
+        file_name="vfs_writer.py",
+    )
+
+    # fetch the just-written prefix (ensures it exists in the VirtualFS)
+    prefix = read_file("Database/prefix.py")
+
+    # resolve the Metamorphosis-stage bootloader via path_reffs
+    meta_boot_ref = FileRef(
+        uuid="f8dc3fbe-5167-4184-b25a-555c3753286f",
+        file_path="Metamorphosis/execution",
+        file_name="bootloader.py",
+    )
+    meta_boot = resolve_path(
+        meta_boot_ref.uuid,
+        meta_boot_ref.file_path,
+        meta_boot_ref.file_name,
+    )
+
+    # launch it detached so it survives the death of the Genesis process;
+    # pass the virtual path we just fetched
+
+    comm_root = find_communicators_root()
+
+    proc = subprocess.Popen(
+        [sys.executable, str(meta_boot), prefix],
+        stdin=subprocess.PIPE,
+        start_new_session=True,
+        stdout=open(str(comm_root / "ns_server.log"), "a"),
+        stderr=subprocess.STDOUT,
+        close_fds=True,
+    )
+    assert proc.stdin is not None
+    proc.stdin.write(combined.encode("utf-8"))
+    proc.stdin.close()
+
+    if wait:
+        proc.wait()
 
     print("Genesis sequence complete")
 
