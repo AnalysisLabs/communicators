@@ -141,26 +141,45 @@ def _already_has_marker(lines: List[str]) -> bool:
 
 def _insert_marker(raw_lines: List[str], marker: str) -> List[str]:
     """
-    Prepend the chosen marker to a member’s line block.
-    If a marker is already present we leave the block alone.
+    Insert the chosen marker as the outermost decorator.
+
+    - Leading blank lines and pure comment lines stay above the marker.
+    - The marker is placed before any existing decorators (so it sits at
+      the top of the decorator stack).
+    - If a marker is already present we leave the block alone.
     """
     if _already_has_marker(raw_lines):
         return list(raw_lines)
 
-    # Find the first non-blank line – that is where the decorator belongs.
-    insert_at = 0
+    # Walk past leading blank lines and pure comments.
+    # The first line that is either an existing decorator or the
+    # def/class/async-def itself becomes the insertion point.
+    insert_at = None
     for i, line in enumerate(raw_lines):
-        if line.strip():
+        stripped = line.lstrip()
+        if not stripped:                     # blank
+            continue
+        if stripped.startswith("#"):         # comment
+            continue
+        # First real syntactic line (decorator or definition)
+        if (stripped.startswith("@")
+                or stripped.startswith("def ")
+                or stripped.startswith("async def ")
+                or stripped.startswith("class ")):
             insert_at = i
             break
 
-    # Preserve the indentation of the target line.
+    if insert_at is None:
+        # Fallback: treat the whole block as opaque
+        indent = re.match(r"^[ \t]*", raw_lines[0]).group(0) if raw_lines else "    "
+        return [f"{indent}{marker}\n"] + list(raw_lines)
+
     indent = re.match(r"^[ \t]*", raw_lines[insert_at]).group(0)
     marker_line = f"{indent}{marker}\n"
+
     new_lines = list(raw_lines)
     new_lines.insert(insert_at, marker_line)
     return new_lines
-
 
 # ---------------------------------------------------------------------------
 # Main entry point
