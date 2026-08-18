@@ -128,7 +128,13 @@ def build_prefix0() -> str:
 
 
 def build_prefix1() -> str:
-    """Tier 1: Tier 0 + Manifest class."""
+    """Tier 1: Tier 0 + PathReffs + AtomicImporter + Manifest."""
+
+    # Runtime (rectified) copies live in the VirtualFS
+    path_reffs_src = read_file("Database/path_reffs.py")
+    atomic_importer_src = read_file("Database/atomic_importer.py")
+
+    # Manifest is still a normal source file
     _manifest_ref = FileRef(
         uuid="64bf54d1-e607-4bfc-b6ba-73ccc2748dd4",
         file_path="Genesis/internal_imports",
@@ -142,13 +148,19 @@ def build_prefix1() -> str:
     parts.append("# === Tier 1 (imports) ===")
     parts.append("")
 
+    # --- PathReffs (class) ---
+    parts.append("# === PathReffs (class) ===")
+    parts.append(path_reffs_src.rstrip())
+    parts.append("")
+
+    # --- AtomicImporter (class) ---
+    parts.append("# === AtomicImporter (class) ===")
+    parts.append(atomic_importer_src.rstrip())
+    parts.append("")
+
     # --- Manifest (class) ---
     parts.append("# === Manifest (class) ===")
     parts.append(manifest_src.rstrip())
-    parts.append("")
-    # The source itself is expected to end with the class definition.
-    # We only need to make sure the public name is bound.
-    # (If the class is already named Manifest inside the file, this line is a no-op.)
     parts.append("")
 
     return "\n".join(parts)

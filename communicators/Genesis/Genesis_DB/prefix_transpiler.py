@@ -100,11 +100,13 @@ class TranspileError(Exception):
 # ---------------------------------------------------------------------------
 
 @dataclass
-class FunctionRange:
+class MemberRange:
+    """A direct member of a top-level class (method or nested class)."""
+    kind: str          # "func" | "class"
     name: str
-    start: int          # 1-based inclusive
-    end: int            # 1-based inclusive
-    raw_lines: List[str]  # the exact source lines belonging to this function
+    start: int         # 1-based inclusive
+    end: int           # 1-based inclusive
+    raw_lines: List[str]
 
 
 def _parse_class_ranges(source: str) -> List[Tuple[str, int, int]]:
@@ -118,12 +120,13 @@ def _parse_class_ranges(source: str) -> List[Tuple[str, int, int]]:
     return result
 
 
-def _parse_raw_function_ranges(
+def _parse_raw_member_ranges(
     source: str, class_start: int, class_end: int
-) -> List[Tuple[str, int, int]]:
+) -> List[Tuple[str, str, int, int]]:
     """
-    Use AST only to discover the *core* line range of each def inside the class.
-    Returns list of (func_name, core_start, core_end).
+    Return [(kind, name, core_start, core_end), ...] for every direct
+    FunctionDef / AsyncFunctionDef / ClassDef inside the given top-level class.
+    AST is used only for line numbers.
     """
     tree = ast.parse(source)
     raw = []
@@ -138,53 +141,45 @@ def _parse_raw_function_ranges(
                 if item.decorator_list:
                     deco_start = min(d.lineno for d in item.decorator_list)
                 end = getattr(item, "end_lineno", item.lineno)
-                raw.append((item.name, deco_start, end))
+                raw.append(("func", item.name, deco_start, end))
+            elif isinstance(item, ast.ClassDef):
+                deco_start = item.lineno
+                if item.decorator_list:
+                    deco_start = min(d.lineno for d in item.decorator_list)
+                end = getattr(item, "end_lineno", item.lineno)
+                raw.append(("class", item.name, deco_start, end))
     return raw
 
 
-def _expand_function_ranges(
+def _expand_member_ranges(
     source_lines: List[str],
     class_start: int,
     class_end: int,
-    raw_funcs: List[Tuple[str, int, int]],
-) -> List[FunctionRange]:
-    """
-    Expand function ranges according to the rule:
-
-    - Lines after the class header and before the first function
-      belong to the first function.
-    - Lines between function N and function N+1 belong to function N+1.
-
-    This helper does *not* decide external vs internal; that is the
-    responsibility of the stage that calls it.
-    """
-    if not raw_funcs:
+    raw_members: List[Tuple[str, str, int, int]],
+) -> List[MemberRange]:
+    if not raw_members:
         return []
 
-    raw_funcs = sorted(raw_funcs, key=lambda t: t[1])
+    raw_members = sorted(raw_members, key=lambda t: t[2])
+    expanded: List[MemberRange] = []
+    prev_end = class_start
 
-    expanded: List[FunctionRange] = []
-    prev_end = class_start  # class line itself is not part of any function
-
-    for idx, (name, core_start, core_end) in enumerate(raw_funcs):
-        if idx == 0:
-            block_start = class_start + 1
-        else:
-            block_start = prev_end + 1
-
+    for kind, name, core_start, core_end in raw_members:
+        block_start = class_start + 1 if not expanded else prev_end + 1
         block_end = core_end
-        prev_end = core_end
-
+        if block_start > block_end:
+            block_start = core_start
         lines = source_lines[block_start - 1 : block_end]
-
         expanded.append(
-            FunctionRange(
+            MemberRange(
+                kind=kind,
                 name=name,
                 start=block_start,
                 end=block_end,
                 raw_lines=lines,
             )
         )
+        prev_end = core_end
 
     return expanded
 
@@ -242,7 +237,7 @@ def _strip_marker_only(lines: List[str]) -> List[str]:
     """Remove @internalmethod lines; keep everything else."""
     out = []
     for line in lines:
-        if re.search(r"@internalmethod\b", line):
+        if re.search(r"@(?:external|internal)method\b", line):
             continue
         out.append(line)
     return out
@@ -256,8 +251,12 @@ def stage_b_split(prefix_a: str) -> str:
         _Name_internal = Name_internal()
         class Name: ...               # public façade
 
-    Classification (external / internal / undecorated) happens here.
-    Everything outside the original class ranges is left untouched.
+    Nested classes that carry @externalmethod / @internalmethod are treated
+    as first-class members:
+      - the marker decides which façade they land in
+      - the marker is stripped
+      - nothing inside the nested class is modified
+      - @staticmethod is never applied to a nested class
     """
     source_lines = prefix_a.splitlines(keepends=True)
     plain_lines = [ln.rstrip("\n\r") for ln in source_lines]
@@ -267,70 +266,75 @@ def stage_b_split(prefix_a: str) -> str:
         return prefix_a
 
     pieces: List[str] = []
-    last_end = 0  # 0-based exclusive
+    last_end = 0
 
     for class_name, cls_start, cls_end in class_ranges:
         pieces.extend(source_lines[last_end : cls_start - 1])
 
-        raw = _parse_raw_function_ranges(prefix_a, cls_start, cls_end)
-        func_ranges = _expand_function_ranges(
-            plain_lines, cls_start, cls_end, raw
-        )
+        raw = _parse_raw_member_ranges(prefix_a, cls_start, cls_end)
+        members = _expand_member_ranges(plain_lines, cls_start, cls_end, raw)
 
-        external_funcs: List[FunctionRange] = []
-        internal_funcs: List[FunctionRange] = []
+        external_members: List[MemberRange] = []
+        internal_members: List[MemberRange] = []
 
-        for fn in func_ranges:
-            text = "\n".join(fn.raw_lines)
+        for mem in members:
+            text = "\n".join(mem.raw_lines)
             is_external = bool(re.search(r"@externalmethod\b", text))
             is_internal = bool(re.search(r"@internalmethod\b", text))
 
             if not is_external and not is_internal:
                 raise TranspileError(
-                    f"undecorated function: {fn.name} in class: {class_name} "
-                    f"(see lines {fn.start}-{fn.end})"
+                    f"undecorated {mem.kind}: {mem.name} in class {class_name} "
+                    f"(see lines {mem.start}-{mem.end})"
                 )
             if is_external and is_internal:
                 raise TranspileError(
-                    f"function {fn.name} in class {class_name} has both "
+                    f"{mem.kind} {mem.name} in class {class_name} has both "
                     f"@externalmethod and @internalmethod"
                 )
 
             if is_external:
-                external_funcs.append(fn)
+                external_members.append(mem)
             else:
-                internal_funcs.append(fn)
+                internal_members.append(mem)
 
         # ---- internal class (emitted first) ----
         internal_lines = [f"class {class_name}_internal:\n"]
-        if not internal_funcs:
+        if not internal_members:
             internal_lines.append("    pass\n")
         else:
-            for fn in internal_funcs:
-                transformed = _strip_marker_only(fn.raw_lines)
+            for mem in internal_members:
+                if mem.kind == "func":
+                    transformed = _strip_marker_only(mem.raw_lines)
+                else:  # nested class – strip marker only, leave interior alone
+                    transformed = _strip_marker_only(mem.raw_lines)
                 for ln in transformed:
                     internal_lines.append(ln + "\n")
                 internal_lines.append("\n")
 
         pieces.extend(internal_lines)
 
-        # ---- private instance (immediately after the internal class) ----
+        # ---- private instance ----
         pieces.append(f"_{class_name}_internal = {class_name}_internal()\n")
         pieces.append("\n")
 
         # ---- public class ----
         public_lines = [f"class {class_name}:\n"]
-        if not external_funcs:
+        if not external_members:
             public_lines.append("    pass\n")
         else:
-            for fn in external_funcs:
-                transformed = _strip_marker_and_make_static(fn.raw_lines)
+            for mem in external_members:
+                if mem.kind == "func":
+                    # ordinary method → become @staticmethod
+                    transformed = _strip_marker_and_make_static(mem.raw_lines)
+                else:
+                    # nested class → strip marker only, never make static
+                    transformed = _strip_marker_only(mem.raw_lines)
                 for ln in transformed:
                     public_lines.append(ln + "\n")
                 public_lines.append("\n")
 
         pieces.extend(public_lines)
-
         last_end = cls_end
 
     pieces.extend(source_lines[last_end:])
@@ -402,8 +406,8 @@ def stage_c_rewrite(prefix_b: str) -> str:
             internal_map[class_name] = set()
             continue
         _, i_start, i_end = internal_cls
-        i_raw = _parse_raw_function_ranges(prefix_b, i_start, i_end)
-        names = {name for name, _, _ in i_raw}
+        i_raw = _parse_raw_member_ranges(prefix_b, i_start, i_end)
+        names = {name for kind, name, _, _ in i_raw if kind == "func"}
         internal_map[class_name] = names
 
     pieces: List[str] = []
@@ -419,8 +423,8 @@ def stage_c_rewrite(prefix_b: str) -> str:
             public_name = class_name[: -len("_internal")]
             internal_names = internal_map.get(public_name, set())
 
-            raw = _parse_raw_function_ranges(prefix_b, cls_start, cls_end)
-            func_ranges = _expand_function_ranges(
+            raw = _parse_raw_member_ranges(prefix_b, cls_start, cls_end)
+            func_ranges = _expand_member_ranges(
                 plain_lines, cls_start, cls_end, raw
             )
 
@@ -450,8 +454,8 @@ def stage_c_rewrite(prefix_b: str) -> str:
         # Public class – existing behaviour (as_instance=False)
         # ----------------------------------------------------------
         internal_names = internal_map.get(class_name, set())
-        raw = _parse_raw_function_ranges(prefix_b, cls_start, cls_end)
-        func_ranges = _expand_function_ranges(
+        raw = _parse_raw_member_ranges(prefix_b, cls_start, cls_end)
+        func_ranges = _expand_member_ranges(
             plain_lines, cls_start, cls_end, raw
         )
 
