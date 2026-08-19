@@ -59,6 +59,12 @@ _harness_ref = FileRef(
     file_name="execution_harness.py",
 )
 
+_meta_boot_ref = FileRef(
+    uuid: "131e8e12-a85c-4897-9348-10c7c8219b97",
+    file_path: "Metamorphosis/Metamorphosis_DB",
+    file_name: "metamorphosis_bootloader.py"
+)
+
 _namespace_ref = FileRef(
     uuid="253a5376-dfdc-4e07-b4d1-20446bb9211f",
     file_path="Metamorphosis/servers",
