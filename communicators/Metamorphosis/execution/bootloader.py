@@ -3,7 +3,8 @@
 Communicators OS – Metamorphosis-stage bootloader.
 
 Receives the fully-assembled prefix produced by Genesis, prints its byte size,
-and persists it as prefix.py in the same directory as this file.
+persists it as prefix.py, then drives the execution harness for the programs
+owned by this stage.
 
 Invoked by Genesis/execution/bootloader.py as:
 
@@ -27,7 +28,11 @@ def find_communicators_root(start=None):
         d = d.parent
     return Path.cwd()  # fallback
 
-# Guaranteed location relative to communicators root
+
+# ---------------------------------------------------------------------------
+# path_reffs / atomic_importer (Genesis-style)
+# ---------------------------------------------------------------------------
+
 _atomic_importer = (
     find_communicators_root()
     / "Genesis"
@@ -35,7 +40,8 @@ _atomic_importer = (
     / "atomic_importer.py"
 )
 sys.path.insert(0, str(_atomic_importer.parent))
-from atomic_importer import from_path, from_path_import, from_code, from_code_import
+from atomic_importer import from_path_import
+
 _path_reffs = (
     find_communicators_root()
     / "Genesis"
@@ -44,6 +50,20 @@ _path_reffs = (
 )
 sys.path.insert(0, str(_path_reffs.parent))
 from path_reffs import *
+
+
+# FileRefs we need
+_harness_ref = FileRef(
+    uuid="1314875b-3a56-43ef-bda0-6d126042f5c1",
+    file_path="Metamorphosis/execution",
+    file_name="execution_harness.py",
+)
+
+_namespace_ref = FileRef(
+    uuid="253a5376-dfdc-4e07-b4d1-20446bb9211f",
+    file_path="Metamorphosis/servers",
+    file_name="namespace.py",
+)
 
 
 def main() -> None:
@@ -64,8 +84,33 @@ def main() -> None:
 
     # persist next to this bootloader
     out = Path(__file__).resolve().parent / "prefix.py"
-    with open(out, "w", encoding="utf-8") as f: f.write(prefix)
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(prefix)
     print(f"prefix written → {out}")
+
+    # ------------------------------------------------------------------
+    # Drive the execution harness (assembly only for now)
+    # ------------------------------------------------------------------
+    execution_harness, = from_path_import(
+        resolve_path(
+            _harness_ref.uuid,
+            _harness_ref.file_path,
+            _harness_ref.file_name,
+        ),
+        "execution_harness",
+    )
+
+    # namespace.py – assemble only (launch=False) so we can validate the
+    # combined artifact without risking a real process launch yet
+    execution_harness(
+        src=_namespace_ref,
+        dst="Metamorphosis/generated/namespace.py",
+        prefix=prefix,
+        wait=False,
+        launch=False,          # ← flip to True when you are ready to launch
+    )
+
+    print("Metamorphosis bootloader sequence complete")
 
 
 if __name__ == "__main__":
