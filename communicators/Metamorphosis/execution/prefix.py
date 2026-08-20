@@ -3,7 +3,7 @@
 
 # === standard.py (from VirtualFS) ===
 from __future__ import annotations
-import argparse, ast, asyncio, httpx, inspect, json, math, numpy, os, random, re, requests, secrets, shutil, signal, socket, struct, subprocess, sys, threading, time, traceback, tracemalloc, uuid, websockets, yaml
+import argparse, ast, asyncio, hashlib, httpx, inspect, json, math, numpy, os, random, re, requests, secrets, shutil, signal, sqlite3, socket, struct, subprocess, sys, tempfile, threading, time, traceback, tracemalloc, uuid, websockets, yaml
 from aiohttp import web
 from collections import deque, Counter
 from dataclasses import dataclass
@@ -15,7 +15,7 @@ from importlib.abc import SourceLoader
 from pathlib import Path
 from scipy.stats import norm
 from types import SimpleNamespace, ModuleType
-from typing import Any, Dict
+from typing import Any, Dict, Iterable, Optional, Sequence
 from weakref import WeakValueDictionary
 from websockets.sync.server import serve
 
