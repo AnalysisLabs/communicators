@@ -65,6 +65,15 @@ _launcher_ref = FileRef(
     file_name="execution_launcher.py",
 )
 
+_writer_ref = FileRef(
+    uuid="93752a7b-6da4-49ff-b704-e2bc2c32926a",
+    file_path="Metamorphosis/Metamorphosis_DB",
+    file_name="metamorphosis_writer.py",
+)
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def _get_inject_process_paths():
     inject_process_paths, = from_path_import(
@@ -85,6 +94,133 @@ def _launcher_path() -> Path:
         _launcher_ref.file_name,
     )
 
+def metamorphosis_db_available() -> bool:
+    """
+    Fail-safe probe: return True only if the Metamorphosis DB exists
+    and object_catalog can be read as a properly structured table.
+    Any error (missing file, missing table, connection failure,
+    unexpected shape, import problems, etc.) returns False.
+    """
+    try:
+        import sqlite3
+        from pathlib import Path
+
+        # Same default location the Metamorphosis_DB modules use
+        db_path = (
+            find_communicators_root()
+            / "Metamorphosis"
+            / "Metamorphosis_DB"
+            / "metamorphosis.db"
+        )
+
+        if not db_path.exists():
+            return False
+
+        conn = sqlite3.connect(str(db_path))
+        try:
+            conn.row_factory = sqlite3.Row
+            cur = conn.execute(
+                "SELECT id, type, owner, name, pointer, metadata, "
+                "created_at, updated_at FROM object_catalog LIMIT 5"
+            )
+            rows = cur.fetchall()
+
+            # Accept empty table; just require that the query succeeded
+            # and each row has the expected columns.
+            expected = {
+                "id", "type", "owner", "name",
+                "pointer", "metadata", "created_at", "updated_at"
+            }
+            for row in rows:
+                if set(row.keys()) != expected:
+                    return False
+            return True
+        finally:
+            conn.close()
+
+    except Exception:
+        # Absorb every possible failure mode while the DB is still being born
+        return False
+
+# ---------------------------------------------------------------------------
+# Two-pronged persistence
+# ---------------------------------------------------------------------------
+
+_pending_artifacts: dict[str, str] = {}   # dst → combined source
+
+
+def save_combined(dst: str, combined: str) -> None:
+    """
+    Two-pronged save:
+
+      1. If Metamorphosis DB is alive, try to write into its VFS.
+      2. On any failure (or DB not ready) fall back to real-FS
+         next to the harness and also stash in _pending_artifacts.
+    """
+    if metamorphosis_db_available():
+        try:
+            write_file, = from_path_import(
+                resolve_path(
+                    _writer_ref.uuid,
+                    _writer_ref.file_path,
+                    _writer_ref.file_name,
+                ),
+                "write_file",
+            )
+            write_file(
+                dst,
+                combined,
+                access_tier="agent_user",
+                create_parents=True,
+            )
+            print(f"→ Combined script stored in Metamorphosis DB → {dst}")
+            # Successful DB write – no need to keep a pending copy
+            _pending_artifacts.pop(dst, None)
+            return
+        except Exception as e:
+            print(f"→ Metamorphosis DB write failed ({type(e).__name__}: {e}); falling back")
+
+    # Fallback: real filesystem + pending registry
+    out_name = Path(dst).name
+    out_path = find_communicators_root() / "Metamorphosis" / "execution" / out_name
+    out_path.write_text(combined, encoding="utf-8")
+    _pending_artifacts[dst] = combined
+    print(f"→ Combined script saved (pending) → {out_path}")
+
+def flush_pending_artifacts() -> None:
+    """
+    Move every artifact currently sitting in _pending_artifacts into the
+    Metamorphosis DB.
+
+    Precondition: the caller guarantees that the Metamorphosis DB is fully
+    operational (metamorphosis_db_available() would return True and the
+    writer is usable).  No fallback logic is performed here.
+    """
+    if not _pending_artifacts:
+        print("→ flush_pending_artifacts: nothing pending")
+        return
+
+    write_file, = from_path_import(
+        resolve_path(
+            _writer_ref.uuid,
+            _writer_ref.file_path,
+            _writer_ref.file_name,
+        ),
+        "write_file",
+    )
+
+    # Iterate over a copy so we can mutate the dict safely
+    for dst, combined in list(_pending_artifacts.items()):
+        write_file(
+            dst,
+            combined,
+            access_tier="agent_user",
+            create_parents=True,
+        )
+        print(f"→ flushed pending artifact → {dst}")
+        del _pending_artifacts[dst]
+
+    print("→ flush_pending_artifacts complete")
 
 # ---------------------------------------------------------------------------
 # Source assembly
@@ -121,11 +257,7 @@ def load_module(src: FileRef, dst: str, prefix: str) -> tuple[str, str]:
     inject_process_paths = _get_inject_process_paths()
     combined = inject_process_paths(combined, program_path=dst)
 
-    # Temporary real-FS write (same directory as this harness)
-    out_name = Path(dst).name
-    out_path = find_communicators_root() / "Metamorphosis" / "execution" / out_name
-    out_path.write_text(combined, encoding="utf-8")
-    print(f"→ Combined script stored in VirtualFS → {dst}")
+    save_combined(dst, combined)
 
     return combined, dst
 

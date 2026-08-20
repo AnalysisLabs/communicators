@@ -14,13 +14,20 @@ Keeps the boot path dumb and ordered.  Domain data access lives in
 metamorphosis_writer.py; structure definitions live in metamorphosis_structures.py.
 """
 
-from __future__ import annotations
+_meta_db_ref = FileRef(
+    uuid="f306ba10-b72d-4cc9-9281-c75818f5b376",
+    file_path="Metamorphosis/Metamorphosis_DB",
+    file_name="metamorphosis_db.py",
+)
 
-import argparse
-import sys
-from pathlib import Path
-
-from metamorphosis_db import init_metamorphosis_db
+init_metamorphosis_db, = from_path_import(
+    resolve_path(
+        _meta_db_ref.uuid,
+        _meta_db_ref.file_path,
+        _meta_db_ref.file_name,
+    ),
+    "init_metamorphosis_db",
+)
 
 
 def main(argv: list[str] | None = None) -> None:

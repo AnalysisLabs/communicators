@@ -60,9 +60,9 @@ _harness_ref = FileRef(
 )
 
 _meta_boot_ref = FileRef(
-    uuid: "131e8e12-a85c-4897-9348-10c7c8219b97",
-    file_path: "Metamorphosis/Metamorphosis_DB",
-    file_name: "metamorphosis_bootloader.py"
+    uuid="131e8e12-a85c-4897-9348-10c7c8219b97",
+    file_path="Metamorphosis/Metamorphosis_DB",
+    file_name="metamorphosis_bootloader.py",
 )
 
 _namespace_ref = FileRef(
@@ -104,6 +104,14 @@ def main() -> None:
             _harness_ref.file_name,
         ),
         "execution_harness",
+    )
+
+    execution_harness(
+        src=_meta_boot_ref,
+        dst="Metamorphosis/DB/metamorphosis_bootloader.py",
+        prefix=prefix,
+        wait=False,
+        launch=True,          # ← flip to True when you are ready to launch
     )
 
     # namespace.py – assemble only (launch=False) so we can validate the
