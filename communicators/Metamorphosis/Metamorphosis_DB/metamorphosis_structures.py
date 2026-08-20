@@ -15,11 +15,6 @@ decide paths, or perform business operations.  Both initialization and the
 later data-access library import from here.
 """
 
-from __future__ import annotations
-
-import sqlite3
-from typing import Iterable, Sequence
-
 
 # ---------------------------------------------------------------------------
 # 1. Object catalog (the universal finder)

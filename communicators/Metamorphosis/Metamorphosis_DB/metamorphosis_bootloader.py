@@ -14,18 +14,50 @@ Keeps the boot path dumb and ordered.  Domain data access lives in
 metamorphosis_writer.py; structure definitions live in metamorphosis_structures.py.
 """
 
+# ---------------------------------------------------------------------------
+# Bring in the execution harness so we can assemble a true prefixed source
+# ---------------------------------------------------------------------------
+_harness_ref = FileRef(
+    uuid="1314875b-3a56-43ef-bda0-6d126042f5c1",
+    file_path="Metamorphosis/execution",
+    file_name="execution_harness.py",
+)
+
+load_module, = from_path_import(
+    resolve_path(
+        _harness_ref.uuid,
+        _harness_ref.file_path,
+        _harness_ref.file_name,
+    ),
+    "load_module",
+)
+
+# The Meta execution bootloader already wrote the prefix here
+prefix = (
+    find_communicators_root()
+    / "Metamorphosis"
+    / "execution"
+    / "prefix.py"
+).read_text(encoding="utf-8")
+
+# ---------------------------------------------------------------------------
+# Assemble the real (prefix + metamorphosis_db) source, then extract the symbol
+# ---------------------------------------------------------------------------
 _meta_db_ref = FileRef(
     uuid="f306ba10-b72d-4cc9-9281-c75818f5b376",
     file_path="Metamorphosis/Metamorphosis_DB",
     file_name="metamorphosis_db.py",
 )
 
-init_metamorphosis_db, = from_path_import(
-    resolve_path(
-        _meta_db_ref.uuid,
-        _meta_db_ref.file_path,
-        _meta_db_ref.file_name,
-    ),
+combined, _ = load_module(
+    src=_meta_db_ref,
+    dst="Metamorphosis/DB/metamorphosis_db.py",
+    prefix=prefix,
+)
+
+init_metamorphosis_db, = from_code_import(
+    combined,
+    "metamorphosis_db",
     "init_metamorphosis_db",
 )
 

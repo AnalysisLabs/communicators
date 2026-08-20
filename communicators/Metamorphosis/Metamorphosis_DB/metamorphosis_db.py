@@ -15,12 +15,52 @@ It does not seed domain data and does not provide the read/write API.
 Those belong to later modules (metamorphosis_layout.py, metamorphosis_writer.py).
 """
 
-from __future__ import annotations
+# ---------------------------------------------------------------------------
+# Bring in the execution harness so we can assemble a true prefixed source
+# ---------------------------------------------------------------------------
+_harness_ref = FileRef(
+    uuid="1314875b-3a56-43ef-bda0-6d126042f5c1",
+    file_path="Metamorphosis/execution",
+    file_name="execution_harness.py",
+)
 
-import sqlite3
-from pathlib import Path
+load_module, = from_path_import(
+    resolve_path(
+        _harness_ref.uuid,
+        _harness_ref.file_path,
+        _harness_ref.file_name,
+    ),
+    "load_module",
+)
 
-from metamorphosis_structures import create_core_structures
+# The Meta execution bootloader already wrote the prefix here
+prefix = (
+    find_communicators_root()
+    / "Metamorphosis"
+    / "execution"
+    / "prefix.py"
+).read_text(encoding="utf-8")
+
+# ---------------------------------------------------------------------------
+# Assemble the real (prefix + metamorphosis_db) source, then extract the symbol
+# ---------------------------------------------------------------------------
+_meta_structures_ref = FileRef(
+    uuid="09126e37-7bd4-4b2d-a455-f44125ab9048",
+    file_path="Metamorphosis/Metamorphosis_DB",
+    file_name="metamorphosis_structures.py",
+)
+
+combined, _ = load_module(
+    src=_meta_structures_ref,
+    dst="Metamorphosis/DB/metamorphosis_structures.py",
+    prefix=prefix,
+)
+
+create_core_structures, = from_code_import(
+    combined,
+    "metamorphosis_structures",
+    "create_core_structures",
+)
 
 # ---------------------------------------------------------------------------
 # Path & lifetime configuration
