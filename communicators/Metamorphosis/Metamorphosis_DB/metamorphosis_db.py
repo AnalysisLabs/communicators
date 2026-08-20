@@ -128,7 +128,6 @@ def init_metamorphosis_db(
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import argparse
 
     parser = argparse.ArgumentParser(description="Initialize the metamorphosis SQLite database")
     parser.add_argument(

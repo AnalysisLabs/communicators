@@ -19,12 +19,69 @@ management and basic transactions live here; boot policy and seeding
 live elsewhere.
 """
 
-from metamorphosis_structures import (
+
+# ---------------------------------------------------------------------------
+# Bring in the execution harness so we can assemble a true prefixed source
+# ---------------------------------------------------------------------------
+_harness_ref = FileRef(
+    uuid="1314875b-3a56-43ef-bda0-6d126042f5c1",
+    file_path="Metamorphosis/execution",
+    file_name="execution_harness.py",
+)
+
+load_module, = from_path_import(
+    resolve_path(
+        _harness_ref.uuid,
+        _harness_ref.file_path,
+        _harness_ref.file_name,
+    ),
+    "load_module",
+)
+
+# The Meta execution bootloader already wrote the prefix here
+prefix = (
+    find_communicators_root()
+    / "Metamorphosis"
+    / "execution"
+    / "prefix.py"
+).read_text(encoding="utf-8")
+
+# ---------------------------------------------------------------------------
+# Assemble the real (prefix + metamorphosis_db) source, then extract the symbol
+# ---------------------------------------------------------------------------
+_meta_structures_ref = FileRef(
+    uuid="09126e37-7bd4-4b2d-a455-f44125ab9048",
+    file_path="Metamorphosis/Metamorphosis_DB",
+    file_name="metamorphosis_structures.py",
+)
+
+combined, _ = load_module(
+    src=_meta_structures_ref,
+    dst="Metamorphosis/DB/metamorphosis_structures.py",
+    prefix=prefix,
+)
+
+create_core_structures, = from_code_import(
+    combined,
+    "metamorphosis_structures",
+    "create_core_structures",
+)
+
+
+(
     create_document_table,
     create_flat_table,
     create_log_table,
     create_object_catalog,
     create_vfs_tables,
+) = from_code_import(
+    combined,
+    "metamorphosis_structures",
+    "create_document_table",
+    "create_flat_table",
+    "create_log_table",
+    "create_object_catalog",
+    "create_vfs_tables",
 )
 
 # ---------------------------------------------------------------------------
@@ -608,8 +665,52 @@ def list_dir(
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import tempfile
-    from metamorphosis_db import init_metamorphosis_db
+    # ---------------------------------------------------------------------------
+    # Bring in the execution harness so we can assemble a true prefixed source
+    # ---------------------------------------------------------------------------
+    _harness_ref = FileRef(
+        uuid="1314875b-3a56-43ef-bda0-6d126042f5c1",
+        file_path="Metamorphosis/execution",
+        file_name="execution_harness.py",
+    )
+
+    load_module, = from_path_import(
+        resolve_path(
+            _harness_ref.uuid,
+            _harness_ref.file_path,
+            _harness_ref.file_name,
+        ),
+        "load_module",
+    )
+
+    # The Meta execution bootloader already wrote the prefix here
+    prefix = (
+        find_communicators_root()
+        / "Metamorphosis"
+        / "execution"
+        / "prefix.py"
+    ).read_text(encoding="utf-8")
+
+    # ---------------------------------------------------------------------------
+    # Assemble the real (prefix + metamorphosis_db) source, then extract the symbol
+    # ---------------------------------------------------------------------------
+    _meta_db_ref = FileRef(
+        uuid="f306ba10-b72d-4cc9-9281-c75818f5b376",
+        file_path="Metamorphosis/Metamorphosis_DB",
+        file_name="metamorphosis_db.py",
+    )
+
+    combined, _ = load_module(
+        src=_meta_db_ref,
+        dst="Metamorphosis/DB/metamorphosis_db.py",
+        prefix=prefix,
+    )
+
+    init_metamorphosis_db, = from_code_import(
+        combined,
+        "metamorphosis_db",
+        "init_metamorphosis_db",
+    )
 
     with tempfile.TemporaryDirectory() as tmp:
         db = Path(tmp) / "test_metamorphosis.db"

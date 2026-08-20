@@ -1,5 +1,5 @@
 from __future__ import annotations
-import argparse, ast, asyncio, hashlib, httpx, inspect, json, math, numpy, os, random, re, requests, secrets, shutil, signal, sqlite3, socket, struct, subprocess, sys, threading, time, traceback, tracemalloc, uuid, websockets, yaml
+import argparse, ast, asyncio, hashlib, httpx, inspect, json, math, numpy, os, random, re, requests, secrets, shutil, signal, sqlite3, socket, struct, subprocess, sys, tempfile, threading, time, traceback, tracemalloc, uuid, websockets, yaml
 from aiohttp import web
 from collections import deque, Counter
 from dataclasses import dataclass
