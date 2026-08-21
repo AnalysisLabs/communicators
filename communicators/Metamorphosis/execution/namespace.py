@@ -33,7 +33,7 @@ class PathReffs_internal:
     # Reff Usage
     # ---------------------------------------------------------------------------
 
-    def find_communicators_root(start=None) -> Path:
+    def find_communicators_root(self, start=None) -> Path:
         # Prefer explicitly defined COMMUNICATORS_ROOT when present
         root = globals().get("COMMUNICATORS_ROOT")
         if root is not None:
@@ -51,7 +51,7 @@ class PathReffs_internal:
 
 
     @lru_cache(maxsize=1)
-    def _load_registry() -> list[dict]:
+    def _load_registry(self) -> list[dict]:
         root = self.find_communicators_root()
         registry_file = root / "file_registry.json"
         if not registry_file.exists():
@@ -63,6 +63,7 @@ class PathReffs_internal:
 
 
     def resolve_path(
+        self,
         uuid: str,
         file_path: str,
         file_name: str,
@@ -166,7 +167,7 @@ class AtomicImporter_internal:
     # Shared core
     # ---------------------------------------------------------------------------
 
-    def _load(name: str, loader, origin: str) -> ModuleType:
+    def _load(self, name: str, loader, origin: str) -> ModuleType:
         if name in sys.modules:
             return sys.modules[name]
 
@@ -184,7 +185,7 @@ class AtomicImporter_internal:
 
 
 
-    def _extract(module: ModuleType, items: tuple) -> tuple[Any, ...]:
+    def _extract(self, module: ModuleType, items: tuple) -> tuple[Any, ...]:
         """
         items may contain:
           - "name"              → returns module.name
@@ -226,7 +227,7 @@ class AtomicImporter_internal:
     # Path version
     # ---------------------------------------------------------------------------
 
-    def from_path(path: str | Path, name: str | None = None) -> ModuleType:
+    def from_path(self, path: str | Path, name: str | None = None) -> ModuleType:
         """Equivalent to: import <module>  (from a real filesystem path)"""
         path = Path(path).resolve()
         if name is None:
@@ -238,7 +239,7 @@ class AtomicImporter_internal:
 
 
 
-    def from_path_import(path: str | Path, *items: str | tuple[str, str]) -> tuple[Any, ...]:
+    def from_path_import(self, path: str | Path, *items: str | tuple[str, str]) -> tuple[Any, ...]:
         """
         Equivalent to: from <module> import a, b as c, ...
 
@@ -254,7 +255,7 @@ class AtomicImporter_internal:
 
 
 
-    def from_code(source: str, name: str, filename: str | None = None) -> ModuleType:
+    def from_code(self, source: str, name: str, filename: str | None = None) -> ModuleType:
         """Equivalent to: import <module>  (from a string)"""
         if filename is None:
             filename = f"<string:{name}>"
@@ -266,6 +267,7 @@ class AtomicImporter_internal:
 
 
     def from_code_import(
+        self,
         source: str,
         name: str,
         *items: str | tuple[str, str],

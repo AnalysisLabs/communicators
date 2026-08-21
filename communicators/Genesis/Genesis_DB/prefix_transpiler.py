@@ -195,29 +195,140 @@ def _expand_member_ranges(
 def _ensure_self_parameter(lines: List[str]) -> List[str]:
     """
     Guarantee that the first parameter of a method is `self`.
-    Idempotent: if `self` is already present, the line is left unchanged.
-    """
-    out = []
-    for line in lines:
-        m = re.match(r'^([ \t]*)def\s+(\w+)\s*\((.*)\)\s*:', line)
-        if not m:
-            out.append(line)
-            continue
+    Idempotent: if `self` is already present, the lines are left unchanged.
 
-        indent, name, params = m.groups()
+    Handles:
+      - single-line defs with or without return annotations
+      - multi-line parameter lists
+      - empty parameter lists
+    Only the parameter-list region is mutated; decorators, body, comments,
+    and formatting outside that region are preserved exactly.
+    """
+    if not lines:
+        return lines
+
+    # ------------------------------------------------------------------
+    # 1. Locate the def line and the end of the parameter list
+    # ------------------------------------------------------------------
+    def_idx = None
+    for i, line in enumerate(lines):
+        if re.match(r'^[ \t]*def\s+\w+', line):
+            def_idx = i
+            break
+    if def_idx is None:
+        return list(lines)          # no def in this slice – nothing to do
+
+    # Scan forward from the def line, balancing parentheses that belong to
+    # the parameter list, until we see the closing ) that is followed
+    # (possibly after a return annotation) by a colon.
+    depth = 0
+    sig_end_idx = None
+    started = False
+    for i in range(def_idx, len(lines)):
+        line = lines[i]
+        for ch in line:
+            if ch == '(':
+                depth += 1
+                started = True
+            elif ch == ')':
+                depth -= 1
+        if started and depth == 0 and ':' in line:
+            # Heuristic: the colon that terminates the def is the last ':'
+            # on this line that is not inside a string.  For the code that
+            # flows through this pipeline a simple "':' in line" is enough.
+            sig_end_idx = i
+            break
+
+    if sig_end_idx is None:
+        # Malformed or unexpected shape – leave alone rather than corrupt.
+        return list(lines)
+
+    # ------------------------------------------------------------------
+    # 2. Classify geometry and decide the edit
+    # ------------------------------------------------------------------
+    out = list(lines)               # work on a copy
+
+    if def_idx == sig_end_idx:
+        # ---------- single-line signature ----------
+        # Accepts:
+        #   def name(params):
+        #   def name(params) -> Annotation:
+        #   def name(params) -> Annotation:  # trailing comment
+        m = re.match(
+            r'^([ \t]*)def\s+(\w+)\s*\((.*)\)(\s*->\s*[^:#]+)?(\s*:.*)$',
+            lines[def_idx],
+        )
+        if not m:
+            return list(lines)      # unrecognised single-line shape
+
+        indent, name, params, annotation, colon_and_rest = m.groups()
+        annotation = annotation or ''
+        colon_and_rest = colon_and_rest or ':'
         params = params.strip()
 
         if not params:
-            new_params = "self"
+            new_params = 'self'
         else:
-            first = params.split(",")[0].strip()
-            # already has self (with or without annotation)
-            if first == "self" or first.startswith("self:") or first.startswith("self "):
+            first = params.split(',')[0].strip()
+            if (first == 'self'
+                    or first.startswith('self:')
+                    or first.startswith('self ')):
                 new_params = params
             else:
-                new_params = f"self, {params}"
+                new_params = f'self, {params}'
 
-        out.append(f"{indent}def {name}({new_params}):")
+        out[def_idx] = f'{indent}def {name}({new_params}){annotation}{colon_and_rest}'
+        # If the original line had no trailing newline in the list element
+        # we keep the same convention; callers that join with '\n' are fine.
+
+    else:
+        # ---------- multi-line signature ----------
+        # Shape:
+        #   def name(
+        #       a,
+        #       b,
+        #   ) -> T:
+        # Insert a dedicated `self,` line as the first parameter so the
+        # result reads:
+        #   def name(
+        #       self,
+        #       a,
+        #       b,
+        #   ) -> T:
+        # The closing ) / -> / : line and everything after stay untouched.
+
+        # Find the first line after the def that looks like a parameter
+        # (non-empty, not just whitespace or a comment-only line).
+        first_param_idx = None
+        for i in range(def_idx + 1, sig_end_idx + 1):
+            stripped = lines[i].strip()
+            if stripped and not stripped.startswith('#'):
+                first_param_idx = i
+                break
+
+        if first_param_idx is None:
+            # def name(\n):  – empty multi-line param list
+            indent_match = re.match(r'^([ \t]*)', lines[def_idx])
+            body_indent = (indent_match.group(1) if indent_match else '') + '    '
+            newline = '\n' if lines[sig_end_idx].endswith('\n') else ''
+            out.insert(sig_end_idx, f'{body_indent}self,{newline}')
+        else:
+            # Check whether the first parameter is already self.
+            first_param_line = lines[first_param_idx]
+            stripped = first_param_line.strip()
+            already = (stripped == 'self'
+                       or stripped == 'self,'
+                       or stripped.startswith('self:')
+                       or stripped.startswith('self ')
+                       or stripped.startswith('self,'))
+            if not already:
+                # Insert a new line containing only `self,` with the same
+                # indentation as the first real parameter.
+                indent_match = re.match(r'^([ \t]*)', first_param_line)
+                indent = indent_match.group(1) if indent_match else ''
+                newline = '\n' if first_param_line.endswith('\n') else ''
+                out.insert(first_param_idx, f'{indent}self,{newline}')
+
     return out
 
 # ---------------------------------------------------------------------------
