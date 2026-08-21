@@ -503,11 +503,58 @@ def _rewrite_calls_in_body(
 
 def stage_c_rewrite(prefix_b: str) -> str:
     """
-    1. Discover every public / _internal pair.
-    2. Rewrite call sites:
-         - inside external methods  →  _Name_internal.method(...)
-         - inside internal methods  →  self.method(...)
-    3. Ensure every internal method signature begins with `self`.
+    Stage C – call-site repair and internal signature normalization.
+
+    Planned structure (spiritual C.a / C.b / C.c; implementation may still be
+    a single function until the split is landed):
+
+    ------------------------------------------------------------------
+    0. Shared name index (common use)
+    ------------------------------------------------------------------
+    From the post-Stage-B text, build a small semantic map:
+
+        public_class_name -> {
+            "funcs":  set of function names on Name_internal,
+            "nested": set of nested class names on Name_internal,
+        }
+
+    Line ranges are *not* held across the whole of Stage C; each sub-stage
+    re-derives member ranges from the text it receives so insertions in a
+    later pass cannot invalidate earlier coordinates.
+
+    ------------------------------------------------------------------
+    C.a  Public qualification
+    ------------------------------------------------------------------
+    For public classes only:
+      - Rewrite bare callees that live only on the internal side
+        (funcs ∪ nested) to  _Name_internal.Name(
+      - Nested class names (e.g. StringLoader) are included here so that
+        public dual/static methods can reach them as
+        _AtomicImporter_internal.StringLoader(...)
+      - Must not emit self. and must not touch internal class bodies
+
+    ------------------------------------------------------------------
+    C.b  Internal call rewrite
+    ------------------------------------------------------------------
+    For internal classes only:
+      - Rewrite bare sibling *method* calls to  self.name(
+      - Name set is funcs only (nested class names stay bare on the
+        internal side, where they are already in scope)
+      - Must not touch signatures or public classes
+
+    ------------------------------------------------------------------
+    C.c  Signature injection
+    ------------------------------------------------------------------
+    For internal classes only:
+      - Ensure every method signature begins with self
+        (_ensure_self_parameter; multi-line aware)
+      - Must not rewrite call sites
+
+    Ordering: C.a → C.b → C.c.  C.c runs last because it may insert lines
+    (dedicated self, parameter line in multi-line signatures).
+
+    Hand-off between sub-stages is full source text (plus, optionally, the
+    shared name index).  No parallel IR required for the first split.
     """
     source_lines = prefix_b.splitlines(keepends=True)
     plain_lines = [ln.rstrip("\n\r") for ln in source_lines]
