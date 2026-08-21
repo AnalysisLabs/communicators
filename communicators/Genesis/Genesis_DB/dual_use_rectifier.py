@@ -4,8 +4,11 @@ dual_use_rectifier.py – prepare atomic_importer / path_reffs for Tier-1 insert
 
 Takes a raw module source (already containing the # === Start Here === marker),
 strips the import block, wraps the remaining body in an outer class, and
-decorates every top-level function and top-level class with either
-@externalmethod or @internalmethod according to a supplied public-name set.
+decorates every top-level function and top-level class with one of:
+
+  @externalmethod  – public only (becomes @staticmethod on the public class)
+  @internalmethod  – private only (lives on the _internal companion)
+  @dualmethod      – both (body duplicated to internal method + public staticmethod)
 
 Nested classes that already exist inside the body receive a marker but their
 *contents* are left completely untouched (the later Stage-B rule).
@@ -24,10 +27,13 @@ from typing import List, Set, Tuple
 
 
 # ---------------------------------------------------------------------------
-# Public-name tables (callers may override)
+# Name tables (callers may override)
 # ---------------------------------------------------------------------------
 
-ATOMIC_IMPORTER_PUBLIC = {
+# Pure public (nested classes or leaf APIs that do not call siblings)
+ATOMIC_IMPORTER_PUBLIC = set()          # none for now; all four are dual
+
+ATOMIC_IMPORTER_DUAL = {
     "from_path",
     "from_path_import",
     "from_code",
@@ -35,8 +41,11 @@ ATOMIC_IMPORTER_PUBLIC = {
 }
 
 PATH_REFFS_PUBLIC = {
-    "FileRef",
-    "resolve_path",
+    "FileRef",                          # nested class – stays external only
+}
+
+PATH_REFFS_DUAL = {
+    "resolve_path",                     # calls the internal helpers
 }
 
 
@@ -131,7 +140,7 @@ _DECORATOR_RE = re.compile(r"^[ \t]*@\w+")
 
 def _already_has_marker(lines: List[str]) -> bool:
     for line in lines:
-        if "@externalmethod" in line or "@internalmethod" in line:
+        if any(m in line for m in ("@externalmethod", "@internalmethod", "@dualmethod")):
             return True
         # stop at the first non-decorator, non-blank line
         if line.strip() and not _DECORATOR_RE.match(line):
@@ -189,6 +198,7 @@ def rectify(
     source: str,
     *,
     public_names: Set[str],
+    dual_names: Set[str] = frozenset(),
     outer_class_name: str,
 ) -> str:
     """
@@ -238,8 +248,14 @@ def rectify(
     outer_body: List[str] = []
 
     for mem in members:
-        is_public = mem.name in public_names
-        marker = "@externalmethod" if is_public else "@internalmethod"
+        if mem.name in dual_names:
+            marker = "@dualmethod"
+        elif mem.name in public_names:
+            marker = "@externalmethod"
+        else:
+            marker = "@internalmethod"
+
+        decorated = _insert_marker(mem.raw_lines, marker)
 
         decorated = _insert_marker(mem.raw_lines, marker)
 
@@ -272,6 +288,7 @@ def rectify_atomic_importer(source: str) -> str:
     return rectify(
         source,
         public_names=ATOMIC_IMPORTER_PUBLIC,
+        dual_names=ATOMIC_IMPORTER_DUAL,
         outer_class_name="AtomicImporter",
     )
 
@@ -280,6 +297,7 @@ def rectify_path_reffs(source: str) -> str:
     return rectify(
         source,
         public_names=PATH_REFFS_PUBLIC,
+        dual_names=PATH_REFFS_DUAL,
         outer_class_name="PathReffs",
     )
 

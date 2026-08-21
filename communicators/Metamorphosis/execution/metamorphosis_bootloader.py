@@ -59,6 +59,39 @@ class PathReffs_internal:
         return json.loads(registry_file.read_text(encoding="utf-8"))
 
 
+
+
+
+    def resolve_path(
+        uuid: str,
+        file_path: str,
+        file_name: str,
+    ) -> Path:
+        """
+        Strict lookup by the full identity triple.
+        Returns the absolute Path computed from the current communicators root
+        + the relative file_path + file_name stored in the registry.
+
+        Raises FileNotFoundError on any mismatch (broken reference).
+        """
+        registry = self._load_registry()
+        root = self.find_communicators_root()
+
+        for entry in registry:
+            if (entry["uuid"] == uuid
+                and entry["file_path"] == file_path
+                and entry["file_name"] == file_name):
+
+                if file_path:
+                    return root / file_path / file_name
+                else:
+                    return Path(root / file_name)
+
+        raise FileNotFoundError(
+            f"Broken reference: uuid={uuid!r}, file_path={file_path!r}, file_name={file_name!r}"
+        )
+
+
 _PathReffs_internal = PathReffs_internal()
 
 class PathReffs:
@@ -186,6 +219,70 @@ class AtomicImporter_internal:
             return self.filename
 
 
+
+
+
+    # ---------------------------------------------------------------------------
+    # Path version
+    # ---------------------------------------------------------------------------
+
+    def from_path(path: str | Path, name: str | None = None) -> ModuleType:
+        """Equivalent to: import <module>  (from a real filesystem path)"""
+        path = Path(path).resolve()
+        if name is None:
+            name = path.stem
+        source = path.read_text(encoding="utf-8")
+        return self.from_code(source, name, filename=str(path))
+
+
+
+
+
+    def from_path_import(path: str | Path, *items: str | tuple[str, str]) -> tuple[Any, ...]:
+        """
+        Equivalent to: from <module> import a, b as c, ...
+
+        Examples
+        --------
+        a, b = self.from_path_import("math_helpers.py", "a", "b")
+        x, y = self.from_path_import("math_helpers.py", ("a", "x"), ("b", "y"))
+        """
+        mod = self.from_path(path)
+        return self._extract(mod, items)
+
+
+
+
+
+    def from_code(source: str, name: str, filename: str | None = None) -> ModuleType:
+        """Equivalent to: import <module>  (from a string)"""
+        if filename is None:
+            filename = f"<string:{name}>"
+        loader = StringLoader(source, filename)
+        return self._load(name, loader, filename)
+
+
+
+
+
+    def from_code_import(
+        source: str,
+        name: str,
+        *items: str | tuple[str, str],
+        filename: str | None = None,
+    ) -> tuple[Any, ...]:
+        """
+        Equivalent to: from <module> import a, b as c, ...  (from a string)
+
+        Examples
+        --------
+        a, b = self.from_code_import(src, "mymod", "a", "b")
+        x, y = self.from_code_import(src, "mymod", ("a", "x"), ("b", "y"))
+        """
+        mod = self.from_code(source, name, filename=filename)
+        return self._extract(mod, items)
+
+
 _AtomicImporter_internal = AtomicImporter_internal()
 
 class AtomicImporter:
@@ -203,7 +300,7 @@ class AtomicImporter:
         if name is None:
             name = path.stem
         source = path.read_text(encoding="utf-8")
-        return from_code(source, name, filename=str(path))
+        return _AtomicImporter_internal.from_code(source, name, filename=str(path))
 
 
 
@@ -216,10 +313,10 @@ class AtomicImporter:
 
         Examples
         --------
-        a, b = from_path_import("math_helpers.py", "a", "b")
-        x, y = from_path_import("math_helpers.py", ("a", "x"), ("b", "y"))
+        a, b = _AtomicImporter_internal.from_path_import("math_helpers.py", "a", "b")
+        x, y = _AtomicImporter_internal.from_path_import("math_helpers.py", ("a", "x"), ("b", "y"))
         """
-        mod = from_path(path)
+        mod = _AtomicImporter_internal.from_path(path)
         return _AtomicImporter_internal._extract(mod, items)
 
 
@@ -250,10 +347,10 @@ class AtomicImporter:
 
         Examples
         --------
-        a, b = from_code_import(src, "mymod", "a", "b")
-        x, y = from_code_import(src, "mymod", ("a", "x"), ("b", "y"))
+        a, b = _AtomicImporter_internal.from_code_import(src, "mymod", "a", "b")
+        x, y = _AtomicImporter_internal.from_code_import(src, "mymod", ("a", "x"), ("b", "y"))
         """
-        mod = from_code(source, name, filename=filename)
+        mod = _AtomicImporter_internal.from_code(source, name, filename=filename)
         return _AtomicImporter_internal._extract(mod, items)
 
 

@@ -19,12 +19,15 @@ Emission order for each original class (Stage B):
 
 Rules enforced
 --------------
-- Only @externalmethod and @internalmethod are legal on methods of
+- Only @externalmethod, @internalmethod and @dualmethod are legal on methods of
   "imported" classes.  Any undecorated def raises TranspileError.
 - @externalmethod  →  stays on the public class, decorator becomes @staticmethod
 - @internalmethod  →  moves to {Name}_internal, decorator is stripped
-- Call sites that refer to internal methods are rewritten to the private
-  instance (Option C1):  _Name_internal.method(...)
+- @dualmethod      →  body is duplicated:
+                        • normal method on {Name}_internal  (marker stripped)
+                        • @staticmethod on the public class
+- Call sites that refer to internal or dual methods are rewritten to the private
+  instance (Option C1):  _Name_internal.method
 - AST is used solely to discover line ranges.  All mutation is performed
   on the original source lines so that comments and formatting outside
   the transformed classes are preserved exactly.
@@ -222,10 +225,10 @@ def _ensure_self_parameter(lines: List[str]) -> List[str]:
 # ---------------------------------------------------------------------------
 
 def _strip_marker_and_make_static(lines: List[str]) -> List[str]:
-    """Turn an @externalmethod function into a clean @staticmethod function."""
+    """Turn @externalmethod or @dualmethod into a clean @staticmethod."""
     out = []
     for line in lines:
-        if re.search(r"@externalmethod\b", line):
+        if re.search(r"@(?:external|dual)method\b", line):
             indent = re.match(r"[ \t]*", line).group(0)
             out.append(f"{indent}@staticmethod")
         else:
@@ -234,10 +237,10 @@ def _strip_marker_and_make_static(lines: List[str]) -> List[str]:
 
 
 def _strip_marker_only(lines: List[str]) -> List[str]:
-    """Remove @internalmethod lines; keep everything else."""
+    """Remove any of the three markers; keep everything else."""
     out = []
     for line in lines:
-        if re.search(r"@(?:external|internal)method\b", line):
+        if re.search(r"@(?:external|internal|dual)method\b", line):
             continue
         out.append(line)
     return out
@@ -276,38 +279,43 @@ def stage_b_split(prefix_a: str) -> str:
 
         external_members: List[MemberRange] = []
         internal_members: List[MemberRange] = []
+        dual_members:     List[MemberRange] = []
 
         for mem in members:
             text = "\n".join(mem.raw_lines)
             is_external = bool(re.search(r"@externalmethod\b", text))
             is_internal = bool(re.search(r"@internalmethod\b", text))
+            is_dual     = bool(re.search(r"@dualmethod\b", text))
 
-            if not is_external and not is_internal:
+            n_markers = sum([is_external, is_internal, is_dual])
+            if n_markers == 0:
                 raise TranspileError(
                     f"undecorated {mem.kind}: {mem.name} in class {class_name} "
                     f"(see lines {mem.start}-{mem.end})"
                 )
-            if is_external and is_internal:
+            if n_markers > 1:
                 raise TranspileError(
-                    f"{mem.kind} {mem.name} in class {class_name} has both "
-                    f"@externalmethod and @internalmethod"
+                    f"{mem.kind} {mem.name} in class {class_name} has multiple "
+                    f"method markers"
                 )
 
-            if is_external:
+            if is_dual:
+                dual_members.append(mem)
+            elif is_external:
                 external_members.append(mem)
             else:
                 internal_members.append(mem)
 
         # ---- internal class (emitted first) ----
+        # Receives: pure internals + every dual method
         internal_lines = [f"class {class_name}_internal:\n"]
-        if not internal_members:
+        all_internal = internal_members + dual_members
+        if not all_internal:
             internal_lines.append("    pass\n")
         else:
-            for mem in internal_members:
-                if mem.kind == "func":
-                    transformed = _strip_marker_only(mem.raw_lines)
-                else:  # nested class – strip marker only, leave interior alone
-                    transformed = _strip_marker_only(mem.raw_lines)
+            for mem in all_internal:
+                # both funcs and nested classes: just strip the marker
+                transformed = _strip_marker_only(mem.raw_lines)
                 for ln in transformed:
                     internal_lines.append(ln + "\n")
                 internal_lines.append("\n")
@@ -319,13 +327,15 @@ def stage_b_split(prefix_a: str) -> str:
         pieces.append("\n")
 
         # ---- public class ----
+        # Receives: pure externals + every dual method (as @staticmethod)
         public_lines = [f"class {class_name}:\n"]
-        if not external_members:
+        all_public = external_members + dual_members
+        if not all_public:
             public_lines.append("    pass\n")
         else:
-            for mem in external_members:
+            for mem in all_public:
                 if mem.kind == "func":
-                    # ordinary method → become @staticmethod
+                    # external or dual → become @staticmethod
                     transformed = _strip_marker_and_make_static(mem.raw_lines)
                 else:
                     # nested class → strip marker only, never make static
