@@ -551,14 +551,14 @@ metamorphosis_writer.py; structure definitions live in metamorphosis_structures.
 # ---------------------------------------------------------------------------
 # Bring in the execution harness so we can assemble a true prefixed source
 # ---------------------------------------------------------------------------
-_harness_ref = FileRef(
+_harness_ref = PathReffs.FileRef(
     uuid="1314875b-3a56-43ef-bda0-6d126042f5c1",
     file_path="Metamorphosis/execution",
     file_name="execution_harness.py",
 )
 
-load_module, = from_path_import(
-    resolve_path(
+load_module, = AtomicImporter.from_path_import(
+    PathReffs.resolve_path(
         _harness_ref.uuid,
         _harness_ref.file_path,
         _harness_ref.file_name,
@@ -568,7 +568,7 @@ load_module, = from_path_import(
 
 # The Meta execution bootloader already wrote the prefix here
 prefix = (
-    find_communicators_root()
+    COMMUNICATORS_ROOT
     / "Metamorphosis"
     / "execution"
     / "prefix.py"
@@ -577,7 +577,7 @@ prefix = (
 # ---------------------------------------------------------------------------
 # Assemble the real (prefix + metamorphosis_db) source, then extract the symbol
 # ---------------------------------------------------------------------------
-_meta_db_ref = FileRef(
+_meta_db_ref = PathReffs.FileRef(
     uuid="f306ba10-b72d-4cc9-9281-c75818f5b376",
     file_path="Metamorphosis/Metamorphosis_DB",
     file_name="metamorphosis_db.py",
@@ -589,7 +589,7 @@ combined, _ = load_module(
     prefix=prefix,
 )
 
-init_metamorphosis_db, = from_code_import(
+init_metamorphosis_db, = AtomicImporter.from_code_import(
     combined,
     "metamorphosis_db",
     "init_metamorphosis_db",

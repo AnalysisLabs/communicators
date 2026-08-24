@@ -18,14 +18,14 @@ Those belong to later modules (metamorphosis_layout.py, metamorphosis_writer.py)
 # ---------------------------------------------------------------------------
 # Bring in the execution harness so we can assemble a true prefixed source
 # ---------------------------------------------------------------------------
-_harness_ref = FileRef(
+_harness_ref = PathReffs.FileRef(
     uuid="1314875b-3a56-43ef-bda0-6d126042f5c1",
     file_path="Metamorphosis/execution",
     file_name="execution_harness.py",
 )
 
-load_module, = from_path_import(
-    resolve_path(
+load_module, = AtomicImporter.from_path_import(
+    PathReffs.resolve_path(
         _harness_ref.uuid,
         _harness_ref.file_path,
         _harness_ref.file_name,
@@ -35,7 +35,7 @@ load_module, = from_path_import(
 
 # The Meta execution bootloader already wrote the prefix here
 prefix = (
-    find_communicators_root()
+    COMMUNICATORS_ROOT
     / "Metamorphosis"
     / "execution"
     / "prefix.py"
@@ -44,7 +44,7 @@ prefix = (
 # ---------------------------------------------------------------------------
 # Assemble the real (prefix + metamorphosis_db) source, then extract the symbol
 # ---------------------------------------------------------------------------
-_meta_structures_ref = FileRef(
+_meta_structures_ref = PathReffs.FileRef(
     uuid="09126e37-7bd4-4b2d-a455-f44125ab9048",
     file_path="Metamorphosis/Metamorphosis_DB",
     file_name="metamorphosis_structures.py",
@@ -56,7 +56,7 @@ combined, _ = load_module(
     prefix=prefix,
 )
 
-create_core_structures, = from_code_import(
+create_core_structures, = AtomicImporter.from_code_import(
     combined,
     "metamorphosis_structures",
     "create_core_structures",
@@ -74,7 +74,7 @@ DEFAULT_DB_FILE = Path(__file__).resolve().parent / "metamorphosis.db"
 EPHEMERAL: bool = True
 
 
-def _resolve_path(db_path: Path | str | None = None) -> Path:
+def _PathReffs.resolve_path(db_path: Path | str | None = None) -> Path:
     if db_path is not None:
         return Path(db_path)
     return DEFAULT_DB_FILE
@@ -105,7 +105,7 @@ def init_metamorphosis_db(
     Path
         Absolute path of the database file that was created.
     """
-    path = _resolve_path(db_path)
+    path = _PathReffs.resolve_path(db_path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
     do_wipe = EPHEMERAL if ephemeral is None else ephemeral
