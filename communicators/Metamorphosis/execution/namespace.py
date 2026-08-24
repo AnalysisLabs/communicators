@@ -225,7 +225,7 @@ class AtomicImporter_internal:
         """Equivalent to: import <module>  (from a string)"""
         if filename is None:
             filename = f"<string:{name}>"
-        loader = StringLoader(source, filename)
+        loader = self.StringLoader(source, filename)
         return self._load(name, loader, filename)
 
     def from_code_import(

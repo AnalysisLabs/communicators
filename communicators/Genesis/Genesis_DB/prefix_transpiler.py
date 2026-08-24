@@ -635,8 +635,8 @@ def _pass_internal_calls(source: str) -> str:
     C.b – Internal call rewrite.
 
     In internal method bodies only, rewrite bare sibling *method* calls to
-    self.name(.  Name set is funcs only so nested class names stay bare
-    on the internal side.  Does not touch signatures or public classes.
+    self.name(.  "Methods" must include functions AND nested classes".
+    Does not touch signatures or public classes.
     """
     index = _build_internal_name_index(source)
 
@@ -646,7 +646,7 @@ def _pass_internal_calls(source: str) -> str:
     def transform(raw_lines: List[str], class_name: str) -> List[str]:
         public_name = class_name[: -len("_internal")]
         entry = index.get(public_name, {"funcs": set(), "nested": set()})
-        names = entry["funcs"]  # nested deliberately excluded
+        names = entry["funcs"] | entry["nested"]
         return _rewrite_bare_callees(raw_lines, names, "self.")
 
     return _reassemble_with_transformed_methods(
