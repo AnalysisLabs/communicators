@@ -78,13 +78,13 @@ _prefix_transpiler_ref = FileRef(
     file_name="prefix_transpiler.py",
 )
 
-transpile_to_tier_c, = from_path_import(
+transpile_to_tier_d, = from_path_import(
     resolve_path(
         _prefix_transpiler_ref.uuid,
         _prefix_transpiler_ref.file_path,
         _prefix_transpiler_ref.file_name,
     ),
-    "transpile_to_tier_c",
+    "transpile_to_tier_d",
 )
 
 def _load_source(ref: FileRef) -> str:
@@ -195,7 +195,7 @@ def build_prefix2() -> str:
 
 def build_prefixA() -> str:
     raw = build_prefix2()          # today’s tier A
-    return transpile_to_tier_c(raw)
+    return transpile_to_tier_d(raw)
 
 def write_prefix_to_vfs(
     tier: str = "A",

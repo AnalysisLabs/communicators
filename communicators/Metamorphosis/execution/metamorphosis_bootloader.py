@@ -28,7 +28,6 @@ COMMUNICATORS_ROOT = Path('/home/prometheusd/Analysis Labs/Dev Tools/com-branche
 # === PathReffs (class) ===
 class PathReffs_internal:
 
-
     # ---------------------------------------------------------------------------
     # Reff Usage
     # ---------------------------------------------------------------------------
@@ -46,11 +45,6 @@ class PathReffs_internal:
             d = d.parent
         return Path.cwd()
 
-
-
-
-
-
     @lru_cache(maxsize=1)
     def _load_registry(self) -> list[dict]:
         root = self.find_communicators_root()
@@ -58,11 +52,6 @@ class PathReffs_internal:
         if not registry_file.exists():
             raise FileNotFoundError(f"file_registry.json not found at {registry_file}")
         return json.loads(registry_file.read_text(encoding="utf-8"))
-
-
-
-
-
 
     def resolve_path(
         self,
@@ -93,7 +82,6 @@ class PathReffs_internal:
         raise FileNotFoundError(
             f"Broken reference: uuid={uuid!r}, file_path={file_path!r}, file_name={file_name!r}"
         )
-
 
 
 _PathReffs_internal = PathReffs_internal()
@@ -127,10 +115,6 @@ class PathReffs:
                 file_name=entry["file_name"],
             )
 
-
-
-
-
     @staticmethod
     def resolve_path(
         uuid: str,
@@ -162,7 +146,6 @@ class PathReffs:
         )
 
 
-
 # === AtomicImporter (class) ===
 class AtomicImporter_internal:
 
@@ -184,11 +167,6 @@ class AtomicImporter_internal:
             raise
         return module
 
-
-
-
-
-
     def _extract(self, module: ModuleType, items: tuple) -> tuple[Any, ...]:
         """
         items may contain:
@@ -203,11 +181,6 @@ class AtomicImporter_internal:
             else:
                 result.append(getattr(module, item))
         return tuple(result)
-
-
-
-
-
 
     # ---------------------------------------------------------------------------
     # Code-blob version
@@ -224,11 +197,6 @@ class AtomicImporter_internal:
         def get_filename(self, fullname: str) -> str:
             return self.filename
 
-
-
-
-
-
     # ---------------------------------------------------------------------------
     # Path version
     # ---------------------------------------------------------------------------
@@ -240,11 +208,6 @@ class AtomicImporter_internal:
             name = path.stem
         source = path.read_text(encoding="utf-8")
         return self.from_code(source, name, filename=str(path))
-
-
-
-
-
 
     def from_path_import(self, path: str | Path, *items: str | tuple[str, str]) -> tuple[Any, ...]:
         """
@@ -258,22 +221,12 @@ class AtomicImporter_internal:
         mod = self.from_path(path)
         return self._extract(mod, items)
 
-
-
-
-
-
     def from_code(self, source: str, name: str, filename: str | None = None) -> ModuleType:
         """Equivalent to: import <module>  (from a string)"""
         if filename is None:
             filename = f"<string:{name}>"
         loader = StringLoader(source, filename)
         return self._load(name, loader, filename)
-
-
-
-
-
 
     def from_code_import(
         self,
@@ -294,12 +247,9 @@ class AtomicImporter_internal:
         return self._extract(mod, items)
 
 
-
 _AtomicImporter_internal = AtomicImporter_internal()
 
 class AtomicImporter:
-
-
 
     # ---------------------------------------------------------------------------
     # Path version
@@ -314,10 +264,6 @@ class AtomicImporter:
         source = path.read_text(encoding="utf-8")
         return _AtomicImporter_internal.from_code(source, name, filename=str(path))
 
-
-
-
-
     @staticmethod
     def from_path_import(path: str | Path, *items: str | tuple[str, str]) -> tuple[Any, ...]:
         """
@@ -331,10 +277,6 @@ class AtomicImporter:
         mod = _AtomicImporter_internal.from_path(path)
         return _AtomicImporter_internal._extract(mod, items)
 
-
-
-
-
     @staticmethod
     def from_code(source: str, name: str, filename: str | None = None) -> ModuleType:
         """Equivalent to: import <module>  (from a string)"""
@@ -342,10 +284,6 @@ class AtomicImporter:
             filename = f"<string:{name}>"
         loader = _AtomicImporter_internal.StringLoader(source, filename)
         return _AtomicImporter_internal._load(name, loader, filename)
-
-
-
-
 
     @staticmethod
     def from_code_import(
@@ -366,7 +304,6 @@ class AtomicImporter:
         return _AtomicImporter_internal._extract(mod, items)
 
 
-
 # === Manifest (class) ===
 class manifest_internal:
 
@@ -378,9 +315,6 @@ class manifest_internal:
                 files.add(f.name)
         return files
 
-
-
-
     def _find_external_caller(self, internal_files):
         frame = inspect.currentframe()
         while frame:
@@ -389,9 +323,6 @@ class manifest_internal:
                 return f'{frame.f_code.co_filename}.{frame.f_code.co_qualname}'
             frame = frame.f_back
         return None
-
-
-
 
     def _log(self, level, message, process_path=None):
         if process_path is None:
@@ -418,7 +349,6 @@ class manifest_internal:
             print(f'{utc_ts} {process_path} {message}')
 
 
-
 _manifest_internal = manifest_internal()
 
 class manifest:
@@ -428,42 +358,30 @@ class manifest:
         message = ' '.join(str(arg) for arg in args)
         _manifest_internal._log('DEBUG', message, process_path=process_path)
 
-
-
     @staticmethod
     def info(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
         _manifest_internal._log('INFO', message, process_path=process_path)
-
-
 
     @staticmethod
     def warning(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
         _manifest_internal._log('WARNING', message, process_path=process_path)
 
-
-
     @staticmethod
     def error(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
         _manifest_internal._log('ERROR', message, process_path=process_path)
-
-
 
     @staticmethod
     def critical(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
         _manifest_internal._log('CRITICAL', message, process_path=process_path)
 
-
-
     @staticmethod
     def printer(*args, process_path=None):
         message = ' '.join(str(arg) for arg in args)
         _manifest_internal._log('PRINTER', message, process_path=process_path)
-
-
 
     @staticmethod
     def json(*args, process_path=None):
@@ -476,8 +394,6 @@ class manifest:
             except:
                 messages.append('{invalid json}')
         _manifest_internal._log('JSON', ' '.join(messages), process_path=process_path)
-
-
 
     @staticmethod
     def freight(*args, process_path=None):
@@ -494,7 +410,6 @@ class manifest:
         _manifest_internal._log('FREIGHT', ' '.join(messages), process_path=process_path)
 
 
-
 # === Tier 2 (imports) ===
 
 # === Transponder (class) ===
@@ -506,10 +421,6 @@ class transponder_internal:
         if isinstance(response, dict): response = json.dumps(response).encode()
         return response.endswith(b'\n') or b'ACK' in response
 
-
-
-
-
     # Utils:
 
     def create_listener(self, ip, port):
@@ -518,9 +429,6 @@ class transponder_internal:
         l.bind((ip, port))
         l.listen(5)
         return l
-
-
-
 
     def accept_connection(self, listener):
         """
@@ -531,9 +439,6 @@ class transponder_internal:
         conn, addr = listener.accept()
         return conn
 
-
-
-
     def connect_to(self, host, port):
         """
         Actively connects to a remote listening endpoint (host, port).
@@ -543,9 +448,6 @@ class transponder_internal:
         conn.connect((host, port))
         return conn
 
-
-
-
     def sendall(self, conn, data):
         """
         Send all bytes on the given connected endpoint.
@@ -553,18 +455,12 @@ class transponder_internal:
         """
         conn.sendall(data)
 
-
-
-
     def recv(self, conn, size):
         """
         Receive up to `size` bytes from the given connected endpoint.
         Returns the bytes received (may be fewer than `size`).
         """
         return conn.recv(size)
-
-
-
 
     def handle_connection(self, conn):
         """
@@ -592,7 +488,6 @@ class transponder_internal:
             manifest.error(f"Connection error: {e}", process_path="Metamorphosis.DB.metamorphosis_bootloader.imports!.tier2.transponder_internal.handle_connection")
 
 
-
 _transponder_internal = transponder_internal()
 
 class transponder:
@@ -610,16 +505,12 @@ class transponder:
             # Hand off or handle directly
             _transponder_internal.handle_connection(conn)
 
-
-
     @staticmethod
     def send_and_close(host, port, data):
         if host == 'localhost': host = '127.0.0.1'
         conn = _transponder_internal.connect_to(host, port)
         conn.sendall(data)           # fire-and-forget style
         conn.close()
-
-
 
     @staticmethod
     def request_response(host, port, data):

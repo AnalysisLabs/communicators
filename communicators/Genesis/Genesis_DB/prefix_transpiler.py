@@ -429,7 +429,7 @@ def stage_b_split(prefix_a: str) -> str:
                 transformed = _strip_marker_only(mem.raw_lines)
                 for ln in transformed:
                     internal_lines.append(ln + "\n")
-                internal_lines.append("\n")
+                # internal_lines.append("\n")
 
         pieces.extend(internal_lines)
 
@@ -464,15 +464,18 @@ def stage_b_split(prefix_a: str) -> str:
 
 # ---------------------------------------------------------------------------
 # Stage C – call-site repair and internal signature normalization
-#
-# Spiritual structure:
-#   0. Shared name index  (public → {funcs, nested})
-#   C.a  Public qualification   (funcs ∪ nested → _Name_internal.)
-#   C.b  Internal call rewrite  (funcs only → self.)
-#   C.c  Signature injection    (_ensure_self_parameter)
-# Ordering: C.a → C.b → C.c.  Each pass re-derives ranges from the text it
-# receives so line insertions in C.c cannot invalidate earlier coordinates.
 # ---------------------------------------------------------------------------
+
+
+"""
+ Spiritual structure:
+   0. Shared name index  (public → {funcs, nested})
+   C.a  Public qualification   (funcs ∪ nested → _Name_internal.)
+   C.b  Internal call rewrite  (funcs only → self.)
+   C.c  Signature injection    (_ensure_self_parameter)
+ Ordering: C.a → C.b → C.c.  Each pass re-derives ranges from the text it
+ receives so line insertions in C.c cannot invalidate earlier coordinates.
+"""
 
 def _build_internal_name_index(
     source: str,
@@ -703,13 +706,63 @@ def stage_c_rewrite(prefix_b: str) -> str:
     text = _pass_ensure_self(text)
     return text
 
+
+# ---------------------------------------------------------------------------
+# Stage D – blank-line normalization (final product only)
+#
+# Rules (v1, deliberately coarse):
+#   - A single blank line is always left alone.
+#   - Inside any top-level class: consecutive blank lines capped at 1.
+#   - Outside top-level classes: consecutive blank lines capped at 2.
+# Finer per-member rules can be added later; this only collapses excess runs.
+# ---------------------------------------------------------------------------
+
+def stage_d_normalize_spacing(prefix_c: str) -> str:
+    """
+    Collapse excess blank-line runs without touching non-blank content.
+
+    Top-level class bodies (inclusive of their line ranges from AST) use a
+    max run of 1 blank line.  Everything else uses a max run of 2.
+    """
+    if not prefix_c:
+        return prefix_c
+
+    source_lines = prefix_c.splitlines(keepends=True)
+    class_ranges = _parse_class_ranges(prefix_c)
+
+    # 1-based line numbers that fall inside any top-level class body
+    inside_class: set[int] = set()
+    for _name, start, end in class_ranges:
+        for lineno in range(start, end + 1):
+            inside_class.add(lineno)
+
+    out: List[str] = []
+    blank_run = 0
+
+    for i, line in enumerate(source_lines):
+        lineno = i + 1
+        is_blank = not line.strip()
+
+        if is_blank:
+            blank_run += 1
+            max_run = 1 if lineno in inside_class else 2
+            if blank_run <= max_run:
+                out.append(line if line.endswith("\n") else line + "\n")
+            # else: drop this blank line (collapse the run)
+        else:
+            blank_run = 0
+            out.append(line if line.endswith("\n") else line + "\n")
+
+    return "".join(out)
+
+
 # ---------------------------------------------------------------------------
 # Public entry point (writes B and C to the VirtualFS)
 # ---------------------------------------------------------------------------
 
-def transpile_to_tier_c(prefix_a: str) -> str:
+def transpile_to_tier_d(prefix_a: str) -> str:
     """
-    Full A → B → C pipeline.
+    Full A → B → C - D pipeline.
 
     - Writes prefix_tierB.py into the VirtualFS after Stage B.
     - Writes prefix_tierC.py into the VirtualFS after Stage C.
@@ -729,12 +782,14 @@ def transpile_to_tier_c(prefix_a: str) -> str:
         access_tier="agent_user",
     )
 
-    return tier_c
+    tier_d = stage_d_normalize_spacing(tier_c)
+    write_file(
+        "Database/prefix_tierD.py",
+        tier_d,
+        access_tier="agent_user",
+    )
 
-
-def transpile_and_return(prefix_a: str) -> str:
-    """Alias used by prefix_builder.build_prefixA()."""
-    return transpile_to_tier_c(prefix_a)
+    return tier_d
 
 
 if __name__ == "__main__":
@@ -747,7 +802,7 @@ if __name__ == "__main__":
 
     src = Path(sys.argv[1]).read_text(encoding="utf-8")
     try:
-        result = transpile_to_tier_c(src)
+        result = transpile_to_tier_d(src)
         print(result)
     except TranspileError as e:
         print(f"TranspileError: {e}", file=sys.stderr)
