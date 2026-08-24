@@ -463,36 +463,74 @@ def stage_b_split(prefix_a: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Stage C – call-site rewrite
+# Stage C – call-site repair and internal signature normalization
+#
+# Spiritual structure:
+#   0. Shared name index  (public → {funcs, nested})
+#   C.a  Public qualification   (funcs ∪ nested → _Name_internal.)
+#   C.b  Internal call rewrite  (funcs only → self.)
+#   C.c  Signature injection    (_ensure_self_parameter)
+# Ordering: C.a → C.b → C.c.  Each pass re-derives ranges from the text it
+# receives so line insertions in C.c cannot invalidate earlier coordinates.
 # ---------------------------------------------------------------------------
 
-def _rewrite_calls_in_body(
+def _build_internal_name_index(
+    source: str,
+) -> Dict[str, Dict[str, set[str]]]:
+    """
+    Shared semantic index (Stage C step 0).
+
+    Returns:
+        public_class_name -> {
+            "funcs":  set of function names on Name_internal,
+            "nested": set of nested class names on Name_internal,
+        }
+    """
+    class_ranges = _parse_class_ranges(source)
+    index: Dict[str, Dict[str, set[str]]] = {}
+
+    for class_name, cls_start, cls_end in class_ranges:
+        if class_name.endswith("_internal"):
+            continue
+
+        internal_name = f"{class_name}_internal"
+        internal_cls = next(
+            ((n, s, e) for n, s, e in class_ranges if n == internal_name),
+            None,
+        )
+        if internal_cls is None:
+            index[class_name] = {"funcs": set(), "nested": set()}
+            continue
+
+        _, i_start, i_end = internal_cls
+        i_raw = _parse_raw_member_ranges(source, i_start, i_end)
+        funcs = {name for kind, name, _, _ in i_raw if kind == "func"}
+        nested = {name for kind, name, _, _ in i_raw if kind == "class"}
+        index[class_name] = {"funcs": funcs, "nested": nested}
+
+    return index
+
+
+def _rewrite_bare_callees(
     body_lines: List[str],
-    internal_names: set[str],
-    class_name: str,
-    *,
-    as_instance: bool,
+    names: set[str],
+    prefix: str,
 ) -> List[str]:
     """
-    Conservative text rewrite of calls to internal methods.
-
-    Only bare names are rewritten (never attribute accesses, never def lines).
-    as_instance=True  →  rewrite to  self.name(
-    as_instance=False →  rewrite to  _Class_internal.name(
+    Shared mechanism: replace bare name( with prefix+name(.
+    Never touches def lines.  No knowledge of public vs internal.
     """
-    if not internal_names:
+    if not names:
         return body_lines
 
-    prefix = "self." if as_instance else f"_{class_name}_internal."
-    out = []
+    out: List[str] = []
     for line in body_lines:
-        # Never rewrite the function definition itself
         if re.match(r'^[ \t]*def\s+', line):
             out.append(line)
             continue
 
         new = line
-        for name in internal_names:
+        for name in names:
             new = re.sub(
                 rf"(?<!\.)\b{re.escape(name)}\s*\(",
                 f"{prefix}{name}(",
@@ -501,82 +539,23 @@ def _rewrite_calls_in_body(
         out.append(new)
     return out
 
-def stage_c_rewrite(prefix_b: str) -> str:
+
+def _reassemble_with_transformed_methods(
+    source: str,
+    *,
+    class_predicate,
+    transform_method,
+) -> str:
     """
-    Stage C – call-site repair and internal signature normalization.
+    Shared slice→mutate→reassemble engine.
 
-    Planned structure (spiritual C.a / C.b / C.c; implementation may still be
-    a single function until the split is landed):
-
-    ------------------------------------------------------------------
-    0. Shared name index (common use)
-    ------------------------------------------------------------------
-    From the post-Stage-B text, build a small semantic map:
-
-        public_class_name -> {
-            "funcs":  set of function names on Name_internal,
-            "nested": set of nested class names on Name_internal,
-        }
-
-    Line ranges are *not* held across the whole of Stage C; each sub-stage
-    re-derives member ranges from the text it receives so insertions in a
-    later pass cannot invalidate earlier coordinates.
-
-    ------------------------------------------------------------------
-    C.a  Public qualification
-    ------------------------------------------------------------------
-    For public classes only:
-      - Rewrite bare callees that live only on the internal side
-        (funcs ∪ nested) to  _Name_internal.Name(
-      - Nested class names (e.g. StringLoader) are included here so that
-        public dual/static methods can reach them as
-        _AtomicImporter_internal.StringLoader(...)
-      - Must not emit self. and must not touch internal class bodies
-
-    ------------------------------------------------------------------
-    C.b  Internal call rewrite
-    ------------------------------------------------------------------
-    For internal classes only:
-      - Rewrite bare sibling *method* calls to  self.name(
-      - Name set is funcs only (nested class names stay bare on the
-        internal side, where they are already in scope)
-      - Must not touch signatures or public classes
-
-    ------------------------------------------------------------------
-    C.c  Signature injection
-    ------------------------------------------------------------------
-    For internal classes only:
-      - Ensure every method signature begins with self
-        (_ensure_self_parameter; multi-line aware)
-      - Must not rewrite call sites
-
-    Ordering: C.a → C.b → C.c.  C.c runs last because it may insert lines
-    (dedicated self, parameter line in multi-line signatures).
-
-    Hand-off between sub-stages is full source text (plus, optionally, the
-    shared name index).  No parallel IR required for the first split.
+    class_predicate(class_name) -> bool
+    transform_method(raw_lines, class_name) -> new raw_lines
+      (only called for kind == "func" members)
     """
-    source_lines = prefix_b.splitlines(keepends=True)
+    source_lines = source.splitlines(keepends=True)
     plain_lines = [ln.rstrip("\n\r") for ln in source_lines]
-
-    class_ranges = _parse_class_ranges(prefix_b)
-
-    # public_name → set of internal method names
-    internal_map: Dict[str, set[str]] = {}
-    for class_name, cls_start, cls_end in class_ranges:
-        if class_name.endswith("_internal"):
-            continue
-        internal_name = f"{class_name}_internal"
-        internal_cls = next(
-            ((n, s, e) for n, s, e in class_ranges if n == internal_name), None
-        )
-        if internal_cls is None:
-            internal_map[class_name] = set()
-            continue
-        _, i_start, i_end = internal_cls
-        i_raw = _parse_raw_member_ranges(prefix_b, i_start, i_end)
-        names = {name for kind, name, _, _ in i_raw if kind == "func"}
-        internal_map[class_name] = names
+    class_ranges = _parse_class_ranges(source)
 
     pieces: List[str] = []
     last_end = 0
@@ -584,62 +563,31 @@ def stage_c_rewrite(prefix_b: str) -> str:
     for class_name, cls_start, cls_end in class_ranges:
         pieces.extend(source_lines[last_end : cls_start - 1])
 
-        # ----------------------------------------------------------
-        # Internal class – rewrite bodies + insure `self`
-        # ----------------------------------------------------------
-        if class_name.endswith("_internal"):
-            public_name = class_name[: -len("_internal")]
-            internal_names = internal_map.get(public_name, set())
-
-            raw = _parse_raw_member_ranges(prefix_b, cls_start, cls_end)
-            func_ranges = _expand_member_ranges(
-                plain_lines, cls_start, cls_end, raw
-            )
-
-            new_class_lines = [f"class {class_name}:\n"]
-            if not func_ranges:
-                new_class_lines.append("    pass\n")
-            else:
-                for fn in func_ranges:
-                    # 1. make sure the signature has self
-                    body = _ensure_self_parameter(fn.raw_lines)
-                    # 2. turn bare sibling calls into self.xxx(
-                    body = _rewrite_calls_in_body(
-                        body,
-                        internal_names,
-                        public_name,
-                        as_instance=True,
-                    )
-                    for ln in body:
-                        new_class_lines.append(ln + "\n")
-                    new_class_lines.append("\n")
-
-            pieces.extend(new_class_lines)
+        if not class_predicate(class_name):
+            pieces.extend(source_lines[cls_start - 1 : cls_end])
             last_end = cls_end
             continue
 
-        # ----------------------------------------------------------
-        # Public class – existing behaviour (as_instance=False)
-        # ----------------------------------------------------------
-        internal_names = internal_map.get(class_name, set())
-        raw = _parse_raw_member_ranges(prefix_b, cls_start, cls_end)
-        func_ranges = _expand_member_ranges(
-            plain_lines, cls_start, cls_end, raw
-        )
+        raw = _parse_raw_member_ranges(source, cls_start, cls_end)
+        members = _expand_member_ranges(plain_lines, cls_start, cls_end, raw)
 
         new_class_lines = [f"class {class_name}:\n"]
-        if not func_ranges:
+        method_members = [m for m in members if m.kind == "func"]
+        # Preserve nested classes and other non-func members in document order
+        # by walking all members; only funcs are transformed.
+        if not members:
             new_class_lines.append("    pass\n")
         else:
-            for fn in func_ranges:
-                body = _rewrite_calls_in_body(
-                    fn.raw_lines,
-                    internal_names,
-                    class_name,
-                    as_instance=False,
-                )
+            for mem in members:
+                if mem.kind == "func":
+                    body = transform_method(mem.raw_lines, class_name)
+                else:
+                    body = list(mem.raw_lines)
                 for ln in body:
-                    new_class_lines.append(ln + "\n")
+                    if ln.endswith("\n"):
+                        new_class_lines.append(ln)
+                    else:
+                        new_class_lines.append(ln + "\n")
                 new_class_lines.append("\n")
 
         pieces.extend(new_class_lines)
@@ -648,6 +596,112 @@ def stage_c_rewrite(prefix_b: str) -> str:
     pieces.extend(source_lines[last_end:])
     return "".join(pieces)
 
+
+# ----- C.a ---------------------------------------------------------------
+
+def _pass_public_qualification(source: str) -> str:
+    """
+    C.a – Public qualification.
+
+    In public method bodies only, rewrite bare callees that live only on the
+    internal side (funcs ∪ nested) to _Name_internal.Name(.
+    Does not emit self. and does not touch internal class bodies.
+    """
+    index = _build_internal_name_index(source)
+
+    def predicate(class_name: str) -> bool:
+        return not class_name.endswith("_internal") and class_name in index
+
+    def transform(raw_lines: List[str], class_name: str) -> List[str]:
+        entry = index.get(class_name, {"funcs": set(), "nested": set()})
+        names = entry["funcs"] | entry["nested"]
+        prefix = f"_{class_name}_internal."
+        return _rewrite_bare_callees(raw_lines, names, prefix)
+
+    return _reassemble_with_transformed_methods(
+        source,
+        class_predicate=predicate,
+        transform_method=transform,
+    )
+
+
+# ----- C.b ---------------------------------------------------------------
+
+def _pass_internal_calls(source: str) -> str:
+    """
+    C.b – Internal call rewrite.
+
+    In internal method bodies only, rewrite bare sibling *method* calls to
+    self.name(.  Name set is funcs only so nested class names stay bare
+    on the internal side.  Does not touch signatures or public classes.
+    """
+    index = _build_internal_name_index(source)
+
+    def predicate(class_name: str) -> bool:
+        return class_name.endswith("_internal")
+
+    def transform(raw_lines: List[str], class_name: str) -> List[str]:
+        public_name = class_name[: -len("_internal")]
+        entry = index.get(public_name, {"funcs": set(), "nested": set()})
+        names = entry["funcs"]  # nested deliberately excluded
+        return _rewrite_bare_callees(raw_lines, names, "self.")
+
+    return _reassemble_with_transformed_methods(
+        source,
+        class_predicate=predicate,
+        transform_method=transform,
+    )
+
+
+# ----- C.c ---------------------------------------------------------------
+
+def _pass_ensure_self(source: str) -> str:
+    """
+    C.c – Signature injection.
+
+    For internal classes only, ensure every method signature begins with
+    self.  Does not rewrite call sites.
+    """
+    def predicate(class_name: str) -> bool:
+        return class_name.endswith("_internal")
+
+    def transform(raw_lines: List[str], class_name: str) -> List[str]:
+        return _ensure_self_parameter(raw_lines)
+
+    return _reassemble_with_transformed_methods(
+        source,
+        class_predicate=predicate,
+        transform_method=transform,
+    )
+
+
+# ----- Sequencer ---------------------------------------------------------
+
+def stage_c_rewrite(prefix_b: str) -> str:
+    """
+    Stage C – call-site repair and internal signature normalization.
+
+    0. Shared name index is built inside each pass that needs it
+       (public → {funcs, nested}).
+
+    C.a  Public qualification
+         bare callees (funcs ∪ nested) in public methods
+         → _Name_internal.Name(
+
+    C.b  Internal call rewrite
+         bare sibling method calls in internal methods
+         → self.name(
+         (nested class names excluded so they stay bare on the internal side)
+
+    C.c  Signature injection
+         every internal method signature begins with self
+
+    Ordering: C.a → C.b → C.c.  Hand-off is full source text.
+    """
+    text = _pass_public_qualification(prefix_b)
+    text = _pass_internal_calls(text)
+    text = _pass_ensure_self(text)
+    return text
 
 # ---------------------------------------------------------------------------
 # Public entry point (writes B and C to the VirtualFS)

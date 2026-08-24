@@ -50,6 +50,7 @@ class PathReffs_internal:
 
 
 
+
     @lru_cache(maxsize=1)
     def _load_registry(self) -> list[dict]:
         root = self.find_communicators_root()
@@ -57,6 +58,7 @@ class PathReffs_internal:
         if not registry_file.exists():
             raise FileNotFoundError(f"file_registry.json not found at {registry_file}")
         return json.loads(registry_file.read_text(encoding="utf-8"))
+
 
 
 
@@ -91,6 +93,7 @@ class PathReffs_internal:
         raise FileNotFoundError(
             f"Broken reference: uuid={uuid!r}, file_path={file_path!r}, file_name={file_name!r}"
         )
+
 
 
 _PathReffs_internal = PathReffs_internal()
@@ -185,6 +188,7 @@ class AtomicImporter_internal:
 
 
 
+
     def _extract(self, module: ModuleType, items: tuple) -> tuple[Any, ...]:
         """
         items may contain:
@@ -199,6 +203,7 @@ class AtomicImporter_internal:
             else:
                 result.append(getattr(module, item))
         return tuple(result)
+
 
 
 
@@ -223,6 +228,7 @@ class AtomicImporter_internal:
 
 
 
+
     # ---------------------------------------------------------------------------
     # Path version
     # ---------------------------------------------------------------------------
@@ -234,6 +240,7 @@ class AtomicImporter_internal:
             name = path.stem
         source = path.read_text(encoding="utf-8")
         return self.from_code(source, name, filename=str(path))
+
 
 
 
@@ -255,12 +262,14 @@ class AtomicImporter_internal:
 
 
 
+
     def from_code(self, source: str, name: str, filename: str | None = None) -> ModuleType:
         """Equivalent to: import <module>  (from a string)"""
         if filename is None:
             filename = f"<string:{name}>"
         loader = StringLoader(source, filename)
         return self._load(name, loader, filename)
+
 
 
 
@@ -283,6 +292,7 @@ class AtomicImporter_internal:
         """
         mod = self.from_code(source, name, filename=filename)
         return self._extract(mod, items)
+
 
 
 _AtomicImporter_internal = AtomicImporter_internal()
@@ -330,7 +340,7 @@ class AtomicImporter:
         """Equivalent to: import <module>  (from a string)"""
         if filename is None:
             filename = f"<string:{name}>"
-        loader = StringLoader(source, filename)
+        loader = _AtomicImporter_internal.StringLoader(source, filename)
         return _AtomicImporter_internal._load(name, loader, filename)
 
 
@@ -370,6 +380,7 @@ class manifest_internal:
 
 
 
+
     def _find_external_caller(self, internal_files):
         frame = inspect.currentframe()
         while frame:
@@ -378,6 +389,7 @@ class manifest_internal:
                 return f'{frame.f_code.co_filename}.{frame.f_code.co_qualname}'
             frame = frame.f_back
         return None
+
 
 
 
@@ -404,6 +416,7 @@ class manifest_internal:
             print(f'{utc_ts} {level} {process_path} {message}')
         else:
             print(f'{utc_ts} {process_path} {message}')
+
 
 
 _manifest_internal = manifest_internal()
@@ -496,6 +509,7 @@ class transponder_internal:
 
 
 
+
     # Utils:
 
     def create_listener(self, ip, port):
@@ -504,6 +518,7 @@ class transponder_internal:
         l.bind((ip, port))
         l.listen(5)
         return l
+
 
 
 
@@ -518,6 +533,7 @@ class transponder_internal:
 
 
 
+
     def connect_to(self, host, port):
         """
         Actively connects to a remote listening endpoint (host, port).
@@ -526,6 +542,7 @@ class transponder_internal:
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.connect((host, port))
         return conn
+
 
 
 
@@ -538,12 +555,14 @@ class transponder_internal:
 
 
 
+
     def recv(self, conn, size):
         """
         Receive up to `size` bytes from the given connected endpoint.
         Returns the bytes received (may be fewer than `size`).
         """
         return conn.recv(size)
+
 
 
 
@@ -571,6 +590,7 @@ class transponder_internal:
 
         except Exception as e:
             manifest.error(f"Connection error: {e}", process_path="Metamorphosis.generated.namespace.imports!.tier2.transponder_internal.handle_connection")
+
 
 
 _transponder_internal = transponder_internal()
