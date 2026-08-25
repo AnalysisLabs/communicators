@@ -148,45 +148,6 @@ def metamorphosis_db_available() -> bool:
 
 _pending_artifacts: dict[str, str] = {}   # dst → combined source
 
-
-def save_combined(dst: str, combined: str) -> None:
-    """
-    Two-pronged save:
-
-      1. If Metamorphosis DB is alive, try to write into its VFS.
-      2. On any failure (or DB not ready) fall back to real-FS
-         next to the harness and also stash in _pending_artifacts.
-    """
-    if metamorphosis_db_available():
-        try:
-            write_file, = from_path_import(
-                resolve_path(
-                    _writer_ref.uuid,
-                    _writer_ref.file_path,
-                    _writer_ref.file_name,
-                ),
-                "write_file",
-            )
-            write_file(
-                dst,
-                combined,
-                access_tier="agent_user",
-                create_parents=True,
-            )
-            print(f"→ Combined script stored in Metamorphosis DB → {dst}")
-            # Successful DB write – no need to keep a pending copy
-            _pending_artifacts.pop(dst, None)
-            return
-        except Exception as e:
-            print(f"→ Metamorphosis DB write failed ({type(e).__name__}: {e}); falling back")
-
-    # Fallback: real filesystem + pending registry
-    out_name = Path(dst).name
-    out_path = find_communicators_root() / "Metamorphosis" / "execution" / out_name
-    out_path.write_text(combined, encoding="utf-8")
-    _pending_artifacts[dst] = combined
-    print(f"→ Combined script saved (pending) → {out_path}")
-
 def flush_pending_artifacts() -> None:
     """
     Move every artifact currently sitting in _pending_artifacts into the
@@ -221,6 +182,46 @@ def flush_pending_artifacts() -> None:
         del _pending_artifacts[dst]
 
     print("→ flush_pending_artifacts complete")
+
+def save_combined(dst: str, combined: str) -> None:
+    """
+    Two-pronged save:
+
+      1. If Metamorphosis DB is alive, try to write into its VFS.
+      2. On any failure (or DB not ready) fall back to real-FS
+         next to the harness and also stash in _pending_artifacts.
+    """
+    if metamorphosis_db_available():
+        try:
+            flush_pending_artifacts()
+            write_file, = from_path_import(
+                resolve_path(
+                    _writer_ref.uuid,
+                    _writer_ref.file_path,
+                    _writer_ref.file_name,
+                ),
+                "write_file",
+            )
+            write_file(
+                dst,
+                combined,
+                access_tier="agent_user",
+                create_parents=True,
+            )
+            print(f"→ Combined script stored in Metamorphosis DB → {dst}")
+            # Successful DB write – no need to keep a pending copy
+            _pending_artifacts.pop(dst, None)
+            return
+        except Exception as e:
+            print(f"→ Metamorphosis DB write failed ({type(e).__name__}: {e}); falling back")
+
+    # Fallback: real filesystem + pending registry
+    out_name = Path(dst).name
+    out_path = find_communicators_root() / "Metamorphosis" / "execution" / out_name
+    out_path.write_text(combined, encoding="utf-8")
+    _pending_artifacts[dst] = combined
+    print(f"→ Combined script saved (pending) → {out_path}")
+
 
 # ---------------------------------------------------------------------------
 # Source assembly

@@ -110,7 +110,7 @@ def main() -> None:
         src=_meta_boot_ref,
         dst="Metamorphosis/DB/metamorphosis_bootloader.py",
         prefix=prefix,
-        wait=False,
+        wait=True,
         launch=True,          # ← flip to True when you are ready to launch
         db=None,
         persistent=True
