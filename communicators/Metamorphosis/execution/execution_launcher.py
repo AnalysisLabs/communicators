@@ -19,6 +19,7 @@ process-path injection, VirtualFS writes) stays in the parent harness.
 
 from __future__ import annotations
 
+import argparse
 import linecache
 import sys
 import traceback
@@ -40,19 +41,21 @@ def _install_intermediary(dst: str) -> None:
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("usage: execution_launcher.py <dst>", file=sys.stderr)
-        sys.exit(2)
+    # Launcher only claims --dst. Everything else belongs to the target.
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--dst", required=True)
+    args, remaining = parser.parse_known_args()
 
-    dst = sys.argv[1]
+    dst = args.dst
+
+    # Target CLI sees only the flags that were meant for it
+    sys.argv = [sys.argv[0], *remaining]
+
     src = sys.stdin.read()
-
     if not src:
         print("execution_launcher: empty source on stdin", file=sys.stderr)
         sys.exit(1)
 
-    # Make the source recoverable under the exact name we are about to compile with.
-    # This is the companion fix that prevents "could not get source code".
     linecache.cache[dst] = (
         len(src),
         None,
@@ -62,11 +65,8 @@ def main() -> None:
 
     _install_intermediary(dst)
 
-    # The critical step: compile under the VirtualFS destination name.
     code = compile(src, dst, "exec")
 
-    # Controlled globals so __file__ exists (stops Manifest._get_internal_files
-    # from raising NameError) and the module looks like a normal top-level script.
     glb = {
         "__name__": "__main__",
         "__file__": dst,

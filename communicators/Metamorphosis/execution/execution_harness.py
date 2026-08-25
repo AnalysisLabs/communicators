@@ -262,19 +262,44 @@ def load_module(src: FileRef, dst: str, prefix: str) -> tuple[str, str]:
     return combined, dst
 
 
+def _target_kwargs_to_cli(kwargs: dict) -> list[str]:
+    """
+    Turn arbitrary target kwargs into CLI flags.
+    None  → omit
+    True  → --flag
+    False → omit          (store_true style)
+    other → --flag value
+    """
+    args: list[str] = []
+    for key, value in kwargs.items():
+        flag = f"--{key.replace('_', '-')}"
+        if value is None:
+            continue
+        if isinstance(value, bool):
+            if value:
+                args.append(flag)
+            continue
+        args.extend([flag, str(value)])
+    return args
+
 # ---------------------------------------------------------------------------
 # Launch
 # ---------------------------------------------------------------------------
 
-def execution_harness(src: FileRef, dst: str, prefix: str, wait: bool = False, launch: bool = False,) -> None:
+def execution_harness(
+    src: FileRef,
+    dst: str,
+    prefix: str,
+    wait: bool = False,
+    launch: bool = False,
+    **target_kwargs,                    # ← any kwargs the target demands
+) -> None:
     """
-    Assemble the program using the supplied prefix and hand it to the child-side launcher.
+    Assemble the program and optionally hand it to the child-side launcher.
 
-    The child process:
-      - receives the source on stdin
-      - receives the VirtualFS destination as argv[1]
-      - compiles under that name, populates linecache, installs the
-        process_path intermediary, then execs.
+    Harness-owned parameters: src, dst, prefix, wait, launch.
+    Every other keyword argument is assumed to belong to the target program
+    and is forwarded unchanged (as CLI flags) to execution_launcher.
     """
     comm_root = find_communicators_root()
     combined, dst = load_module(src, dst, prefix)
@@ -287,9 +312,11 @@ def execution_harness(src: FileRef, dst: str, prefix: str, wait: bool = False, l
     if not launcher.exists():
         raise FileNotFoundError(f"execution_launcher.py not found at {launcher}")
 
+    cli_args = _target_kwargs_to_cli(target_kwargs)
+
     try:
         proc = subprocess.Popen(
-            [sys.executable, str(launcher), dst],
+            [sys.executable, str(launcher), "--dst", dst, *cli_args],
             stdin=subprocess.PIPE,
             start_new_session=True,
             stdout=open(str(comm_root / "ns_server.log"), "a"),

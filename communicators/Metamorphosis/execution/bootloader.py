@@ -112,6 +112,8 @@ def main() -> None:
         prefix=prefix,
         wait=False,
         launch=True,          # ← flip to True when you are ready to launch
+        db=None,
+        persistent=True
     )
 
     # namespace.py – assemble only (launch=False) so we can validate the

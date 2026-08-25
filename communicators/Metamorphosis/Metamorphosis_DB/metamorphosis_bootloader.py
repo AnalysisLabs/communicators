@@ -77,7 +77,7 @@ def main(argv: list[str] | None = None) -> None:
         action="store_true",
         help="Do not wipe an existing database (overrides EPHEMERAL=True)",
     )
-    args = parser.parse_args(argv)
+    args = parser.parse_args(argv)   # argv=None → sys.argv (after launcher rewrite)
 
     print("→ Initializing metamorphosis database …")
     path = init_metamorphosis_db(
@@ -86,10 +86,6 @@ def main(argv: list[str] | None = None) -> None:
     )
     mode = "persistent" if args.persistent else "ephemeral"
     print(f"→ metamorphosis database ready ({mode}) at {path}")
-
-    # Future extension point:
-    # from metamorphosis_layout import seed_metamorphosis_layout
-    # seed_metamorphosis_layout(path)
 
     print("metamorphosis boot sequence complete")
 
