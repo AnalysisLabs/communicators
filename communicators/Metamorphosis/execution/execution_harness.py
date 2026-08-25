@@ -21,8 +21,6 @@ import sys
 import traceback
 from pathlib import Path
 
-from vfs_process_path import inject_process_paths
-
 
 def find_communicators_root(start=None):
     d = Path(start or Path.cwd()).absolute()
@@ -41,7 +39,7 @@ _atomic_importer = (
     / "atomic_importer.py"
 )
 sys.path.insert(0, str(_atomic_importer.parent))
-from atomic_importer import from_path_import
+from atomic_importer import from_path_import, from_code_import
 
 _path_reffs = (
     find_communicators_root()
@@ -146,31 +144,68 @@ def metamorphosis_db_available() -> bool:
 # Two-pronged persistence
 # ---------------------------------------------------------------------------
 
-_pending_artifacts: dict[str, str] = {}   # dst → combined source
+_pending_artifacts: dict[str, str] = {}
+_active_prefix: str | None = None
+_write_file_cached = None
+_writer_loading = False
+
+def _get_write_file():
+    """
+    Build (prefix + metamorphosis_writer source) and extract write_file
+    via from_code_import so PathReffs / AtomicImporter / COMMUNICATORS_ROOT exist.
+    """
+    global _write_file_cached, _writer_loading
+
+    if _write_file_cached is not None:
+        return _write_file_cached
+
+    if _active_prefix is None:
+        raise RuntimeError(
+            "write_file requested before any load_module set _active_prefix"
+        )
+
+    if _writer_loading:
+        # Writer top-level itself calls load_module → save_combined.
+        # Do not recurse into another writer load.
+        raise RuntimeError("write_file requested while metamorphosis_writer is loading")
+
+    writer_path = resolve_path(
+        _writer_ref.uuid,
+        _writer_ref.file_path,
+        _writer_ref.file_name,
+    )
+    if not writer_path.exists():
+        raise FileNotFoundError(f"metamorphosis_writer not found at {writer_path}")
+
+    user_code = writer_path.read_text(encoding="utf-8")
+    combined = (
+        _active_prefix.rstrip()
+        + "\n\n\n# ==================== (USER PROGRAM) ====================\n"
+        + user_code
+    )
+    # Intentionally no inject_process_paths / no save_combined — this is a
+    # library load for the harness, not a staged artifact publish.
+
+    _writer_loading = True
+    try:
+        write_file, = from_code_import(
+            combined,
+            "metamorphosis_writer",
+            "write_file",
+            filename=str(writer_path),  # better paths in tracebacks
+        )
+        _write_file_cached = write_file
+        return write_file
+    finally:
+        _writer_loading = False
 
 def flush_pending_artifacts() -> None:
-    """
-    Move every artifact currently sitting in _pending_artifacts into the
-    Metamorphosis DB.
-
-    Precondition: the caller guarantees that the Metamorphosis DB is fully
-    operational (metamorphosis_db_available() would return True and the
-    writer is usable).  No fallback logic is performed here.
-    """
     if not _pending_artifacts:
         print("→ flush_pending_artifacts: nothing pending")
         return
 
-    write_file, = from_path_import(
-        resolve_path(
-            _writer_ref.uuid,
-            _writer_ref.file_path,
-            _writer_ref.file_name,
-        ),
-        "write_file",
-    )
+    write_file = _get_write_file()
 
-    # Iterate over a copy so we can mutate the dict safely
     for dst, combined in list(_pending_artifacts.items()):
         write_file(
             dst,
@@ -183,25 +218,15 @@ def flush_pending_artifacts() -> None:
 
     print("→ flush_pending_artifacts complete")
 
-def save_combined(dst: str, combined: str) -> None:
-    """
-    Two-pronged save:
 
-      1. If Metamorphosis DB is alive, try to write into its VFS.
-      2. On any failure (or DB not ready) fall back to real-FS
-         next to the harness and also stash in _pending_artifacts.
-    """
-    if metamorphosis_db_available():
+def save_combined(dst: str, combined: str) -> None:
+    # While the writer module is still executing its top-level body it will
+    # call load_module(structures) → save_combined.  Never attempt a DB write
+    # in that window (write_file is not ready / would recurse).
+    if metamorphosis_db_available() and not _writer_loading:
         try:
             flush_pending_artifacts()
-            write_file, = from_path_import(
-                resolve_path(
-                    _writer_ref.uuid,
-                    _writer_ref.file_path,
-                    _writer_ref.file_name,
-                ),
-                "write_file",
-            )
+            write_file = _get_write_file()
             write_file(
                 dst,
                 combined,
@@ -209,13 +234,14 @@ def save_combined(dst: str, combined: str) -> None:
                 create_parents=True,
             )
             print(f"→ Combined script stored in Metamorphosis DB → {dst}")
-            # Successful DB write – no need to keep a pending copy
             _pending_artifacts.pop(dst, None)
             return
         except Exception as e:
-            print(f"→ Metamorphosis DB write failed ({type(e).__name__}: {e}); falling back")
+            print(
+                f"→ Metamorphosis DB write failed ({type(e).__name__}: {e}); "
+                f"falling back"
+            )
 
-    # Fallback: real filesystem + pending registry
     out_name = Path(dst).name
     out_path = find_communicators_root() / "Metamorphosis" / "execution" / out_name
     out_path.write_text(combined, encoding="utf-8")
@@ -240,6 +266,9 @@ def load_module(src: FileRef, dst: str, prefix: str) -> tuple[str, str]:
     prefix : str
         Fully assembled prefix code (provided by Genesis).
     """
+    global _active_prefix
+    _active_prefix = prefix
+
     program_path = resolve_path(src.uuid, src.file_path, src.file_name)
 
     if not program_path.exists():
