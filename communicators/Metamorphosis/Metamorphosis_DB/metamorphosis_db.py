@@ -74,7 +74,7 @@ DEFAULT_DB_FILE = Path(__file__).resolve().parent / "metamorphosis.db"
 EPHEMERAL: bool = True
 
 
-def _PathReffs.resolve_path(db_path: Path | str | None = None) -> Path:
+def resolve_path(db_path: Path | str | None = None) -> Path:
     if db_path is not None:
         return Path(db_path)
     return DEFAULT_DB_FILE
