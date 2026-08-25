@@ -103,13 +103,13 @@ DEFAULT_DB_FILE = PathReffs.resolve_path(
 )
 
 _CANDIDATES = [
-    Path(__file__).resolve().parent / "metamorphosis.db",
+    DEFAULT_DB_FILE,
     Path.cwd() / "metamorphosis.db",
 ]
 
 
 def _default_db() -> Path:
-    return next((p for p in _CANDIDATES if p.exists()), _DEFAULT_DB)
+    return next((p for p in _CANDIDATES if p.exists()), DEFAULT_DB_FILE)
 
 
 def _connect(db_path: Optional[Path | str] = None) -> sqlite3.Connection:
