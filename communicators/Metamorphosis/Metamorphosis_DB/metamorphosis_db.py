@@ -66,8 +66,19 @@ create_core_structures, = AtomicImporter.from_code_import(
 # Path & lifetime configuration
 # ---------------------------------------------------------------------------
 
-# Default location: sibling of this script (same convention as bootstrap).
-DEFAULT_DB_FILE = Path(__file__).resolve().parent / "metamorphosis.db"
+# Default location via the file registry (same convention as every other
+# tracked artefact in the tree).
+_meta_db_ref = PathReffs.FileRef(
+    uuid="747cfa54-45a3-4102-82ea-8610907e1f1a",
+    file_path="Metamorphosis/Metamorphosis_DB",
+    file_name="metamorphosis.db",
+)
+
+DEFAULT_DB_FILE = PathReffs.resolve_path(
+    _meta_db_ref.uuid,
+    _meta_db_ref.file_path,
+    _meta_db_ref.file_name,
+)
 
 # Development default: wipe on every init so schema experiments stay cheap.
 # Flip to False when real persistent data (tokens, billing, etc.) appears.
@@ -105,7 +116,7 @@ def init_metamorphosis_db(
     Path
         Absolute path of the database file that was created.
     """
-    path = _PathReffs.resolve_path(db_path)
+    path = resolve_path(db_path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
     do_wipe = EPHEMERAL if ephemeral is None else ephemeral

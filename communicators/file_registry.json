@@ -250,6 +250,11 @@
     "file_name": "Metamorphosis_DB"
   },
   {
+    "uuid": "747cfa54-45a3-4102-82ea-8610907e1f1a",
+    "file_path": "Metamorphosis/Metamorphosis_DB",
+    "file_name": "metamorphosis.db"
+  },
+  {
     "uuid": "131e8e12-a85c-4897-9348-10c7c8219b97",
     "file_path": "Metamorphosis/Metamorphosis_DB",
     "file_name": "metamorphosis_bootloader.py"
