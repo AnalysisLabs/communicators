@@ -16,6 +16,8 @@ The launcher is responsible for:
 
 from __future__ import annotations
 
+import fcntl
+import json
 import subprocess
 import sys
 import traceback
@@ -144,7 +146,78 @@ def metamorphosis_db_available() -> bool:
 # Two-pronged persistence
 # ---------------------------------------------------------------------------
 
-_pending_artifacts: dict[str, str] = {}
+# ---------------------------------------------------------------------------
+# Shared pending store (RAM-backed, cross-process)
+# ---------------------------------------------------------------------------
+# /dev/shm is already tmpfs. We only mkdir; we do not mount.
+_PENDING_DIR = Path("/dev/shm/communicators/metamorphosis_flush")
+_PENDING_JSON = _PENDING_DIR / "pending_artifacts.json"
+_PENDING_LOCK = _PENDING_DIR / "pending_artifacts.lock"
+
+
+def _ensure_pending_dir() -> Path:
+    shm = Path("/dev/shm")
+    if not shm.is_dir():
+        raise RuntimeError(
+            "/dev/shm is missing; cannot create RAM-backed pending store"
+        )
+    _PENDING_DIR.mkdir(parents=True, exist_ok=True)
+    return _PENDING_DIR
+
+
+def _with_pending_lock(fn):
+    """
+    Exclusive lock for the singleton JSON.
+    Not re-entrant across a second open() of the lock file — callers must
+    not nest stash/flush/load under an already-held lock.
+    """
+    _ensure_pending_dir()
+    _PENDING_LOCK.touch(exist_ok=True)
+    with open(_PENDING_LOCK, "a+") as lf:
+        fcntl.flock(lf.fileno(), fcntl.LOCK_EX)
+        try:
+            return fn()
+        finally:
+            fcntl.flock(lf.fileno(), fcntl.LOCK_UN)
+
+
+def _read_pending_unlocked() -> dict[str, str]:
+    if not _PENDING_JSON.exists():
+        return {}
+    raw = _PENDING_JSON.read_text(encoding="utf-8")
+    if not raw.strip():
+        return {}
+    data = json.loads(raw)
+    if not isinstance(data, dict):
+        raise ValueError(f"pending JSON is not an object: {_PENDING_JSON}")
+    return {str(k): str(v) for k, v in data.items()}
+
+
+def _write_pending_unlocked(data: dict[str, str]) -> None:
+    _ensure_pending_dir()
+    tmp = _PENDING_DIR / "pending_artifacts.json.tmp"
+    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(_PENDING_JSON)  # atomic on the same tmpfs
+
+
+def _stash_pending(dst: str, combined: str) -> None:
+    def _mutate() -> None:
+        data = _read_pending_unlocked()
+        data[dst] = combined
+        _write_pending_unlocked(data)
+
+    _with_pending_lock(_mutate)
+
+
+def _drop_pending_keys(keys: list[str]) -> None:
+    def _mutate() -> None:
+        data = _read_pending_unlocked()
+        for key in keys:
+            data.pop(key, None)
+        _write_pending_unlocked(data)
+
+    _with_pending_lock(_mutate)
+
 _active_prefix: str | None = None
 _write_file_cached = None
 _writer_loading = False
@@ -189,18 +262,12 @@ def _get_write_file():
     writer_dst = "Metamorphosis/DB/metamorphosis_writer.py"
 
     def _stash_writer_pending(dst: str, source: str) -> None:
-            """
-            Pending-only publish for the writer artifact.
-            Does not call save_combined, flush, or write_file — no cycle with
-            the DB path. A later successful save_combined/flush drains this.
-            """
-            out_name = Path(dst).name
-            out_path = (
-                find_communicators_root() / "Metamorphosis" / "execution" / out_name
-            )
-            out_path.write_text(source, encoding="utf-8")
-            _pending_artifacts[dst] = source
-            print(f"→ Combined script saved (pending) → {out_path}")
+        """
+        Pending-only publish for the writer artifact.
+        Does not call save_combined, flush, or write_file.
+        """
+        _stash_pending(dst, source)
+        print(f"→ Combined script saved (pending) → {_PENDING_JSON} [{dst}]")
 
     _writer_loading = True
     try:
@@ -218,13 +285,15 @@ def _get_write_file():
         _writer_loading = False
 
 def flush_pending_artifacts() -> None:
-    if not _pending_artifacts:
+    snapshot = _with_pending_lock(_read_pending_unlocked)
+    if not snapshot:
         print("→ flush_pending_artifacts: nothing pending")
         return
 
-    write_file = _get_write_file()
+    write_file = _get_write_file()  # may stash writer; lock is not held
 
-    for dst, combined in list(_pending_artifacts.items()):
+    flushed: list[str] = []
+    for dst, combined in snapshot.items():
         write_file(
             dst,
             combined,
@@ -232,8 +301,9 @@ def flush_pending_artifacts() -> None:
             create_parents=True,
         )
         print(f"→ flushed pending artifact → {dst}")
-        del _pending_artifacts[dst]
+        flushed.append(dst)
 
+    _drop_pending_keys(flushed)
     print("→ flush_pending_artifacts complete")
 
 
@@ -263,7 +333,7 @@ def save_combined(dst: str, combined: str) -> None:
     out_name = Path(dst).name
     out_path = find_communicators_root() / "Metamorphosis" / "execution" / out_name
     out_path.write_text(combined, encoding="utf-8")
-    _pending_artifacts[dst] = combined
+    _stash_pending(dst, combined)
     print(f"→ Combined script saved (pending) → {out_path}")
 
 
