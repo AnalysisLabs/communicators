@@ -285,12 +285,12 @@ def _get_write_file():
         _writer_loading = False
 
 def flush_pending_artifacts() -> None:
+    write_file = _get_write_file()  # stash writer FIRST; lock not held
+
     snapshot = _with_pending_lock(_read_pending_unlocked)
     if not snapshot:
         print("→ flush_pending_artifacts: nothing pending")
         return
-
-    write_file = _get_write_file()  # may stash writer; lock is not held
 
     flushed: list[str] = []
     for dst, combined in snapshot.items():
@@ -322,7 +322,6 @@ def save_combined(dst: str, combined: str) -> None:
                 create_parents=True,
             )
             print(f"→ Combined script stored in Metamorphosis DB → {dst}")
-            _pending_artifacts.pop(dst, None)
             return
         except Exception as e:
             print(
