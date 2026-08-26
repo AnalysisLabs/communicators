@@ -186,8 +186,26 @@ def _get_write_file():
     # Intentionally no inject_process_paths / no save_combined — this is a
     # library load for the harness, not a staged artifact publish.
 
+    writer_dst = "Metamorphosis/DB/metamorphosis_writer.py"
+
+    def _stash_writer_pending(dst: str, source: str) -> None:
+            """
+            Pending-only publish for the writer artifact.
+            Does not call save_combined, flush, or write_file — no cycle with
+            the DB path. A later successful save_combined/flush drains this.
+            """
+            out_name = Path(dst).name
+            out_path = (
+                find_communicators_root() / "Metamorphosis" / "execution" / out_name
+            )
+            out_path.write_text(source, encoding="utf-8")
+            _pending_artifacts[dst] = source
+            print(f"→ Combined script saved (pending) → {out_path}")
+
     _writer_loading = True
     try:
+        _stash_writer_pending(writer_dst, combined)
+
         write_file, = from_code_import(
             combined,
             "metamorphosis_writer",
