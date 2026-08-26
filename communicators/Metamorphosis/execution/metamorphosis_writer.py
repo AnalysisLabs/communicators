@@ -1122,7 +1122,9 @@ def write_file(
             conn.execute(
                 """
                 UPDATE file_graph
-                SET content_id = ?, access_tier = ?
+                SET content_id = ?,
+                    access_tier = ?,
+                    updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
                 WHERE id = ?
                 """,
                 (content_id, access_tier, existing_file),

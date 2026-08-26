@@ -83,7 +83,8 @@ python3 -c '
 import sqlite3
 conn = sqlite3.connect("metamorphosis.db")
 for row in conn.execute("""
-    SELECT id, parent_id, name, type, content_id, access_tier, created_at
+    SELECT id, parent_id, name, type, content_id, access_tier,
+           created_at, updated_at
     FROM file_graph
     ORDER BY id
 """):
@@ -98,7 +99,7 @@ python3 -c '
 import sqlite3
 conn = sqlite3.connect("metamorphosis.db")
 for row in conn.execute("""
-    SELECT id, name, type, content_id, access_tier
+    SELECT id, name, type, content_id, access_tier, created_at, updated_at
     FROM file_graph
     WHERE parent_id IS NULL
     ORDER BY id
