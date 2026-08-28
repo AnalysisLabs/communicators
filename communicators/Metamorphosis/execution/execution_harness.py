@@ -329,9 +329,6 @@ def save_combined(dst: str, combined: str) -> None:
                 f"falling back"
             )
 
-    out_name = Path(dst).name
-    out_path = find_communicators_root() / "Metamorphosis" / "execution" / out_name
-    out_path.write_text(combined, encoding="utf-8")
     _stash_pending(dst, combined)
     print(f"→ Combined script saved (pending) → {out_path}")
 
