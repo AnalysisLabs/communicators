@@ -1,20 +1,64 @@
 localhost = "localhost"
 
-def load(object_program: str = None, with_program: str = None, in_namespace: dict = None, from_namespace: dict = None, to_namespace: dict = None):
-    if os.path.exists(str(object_program)):
-        contents = open(object_program).read()
-    else:
-        contents = object_program
-    if with_program:
-        contents = subprocess.run(['python3', with_program, object_program], capture_output=True, text=True).stdout
-    r = transponder.request_response(localhost, 8765, {(in_namespace or to_namespace): contents})
-    # wait for simple 200 response as green light (detailed pseudocode placeholder)
-    return
+_harness_ref = PathReffs.FileRef(
+    uuid="1314875b-3a56-43ef-bda0-6d126042f5c1",
+    file_path="Metamorphosis/execution",
+    file_name="execution_harness.py",
+)
 
-def build(object_program: str, with_program: str, in_namespace: dict, from_namespace: dict = None, to_namespace: dict = None):
-    contents = transponder.request_response(localhost, 8765, (in_namespace or from_namespace))
-    result = subprocess.run(['python3', with_program, object_program], capture_output=True, text=True).stdout
-    transponder.send_and_close(localhost, 8765, {(in_namespace or to_namespace): result})
+load_module, execution_harness = AtomicImporter.from_path_import(
+    PathReffs.resolve_path(
+        _harness_ref.uuid,
+        _harness_ref.file_path,
+        _harness_ref.file_name,
+    ),
+    "load_module",
+    "execution_harness",
+)
+
+prefix = (
+    COMMUNICATORS_ROOT
+    / "Metamorphosis"
+    / "execution"
+    / "prefix.py"
+).read_text(encoding="utf-8")
+
+_namespace_ref = PathReffs.FileRef(
+    uuid="253a5376-dfdc-4e07-b4d1-20446bb9211f",
+    file_path="Metamorphosis/servers",
+    file_name="namespace.py",
+)
+
+_namespace_src, _ = load_module(
+    src=_namespace_ref,
+    dst="Metamorphosis/generated/namespace.py",
+    prefix=prefix,
+)
+
+request, = AtomicImporter.from_code_import(
+    _namespace_src,
+    "namespace",
+    "request",
+)
+
+def load(db_ref, file_ref=None, blob=None):
+    if file_ref is not None:
+        return request(db_ref, file_ref=file_ref)
+    if blob is not None:
+        return request(db_ref, blob=blob)
+    raise TypeError("load requires file_ref or blob")
+
+def build(spec_ref, transformer_ref, dest_ref):
+    spec = request(spec_ref)
+    blob = execution_harness(
+        src=transformer_ref,
+        dst="Metamorphosis/generated/build_transformer.py",
+        prefix=prefix,
+        wait=True,
+        launch=True,
+        spec=spec_ref,
+    )
+    return request(dest_ref, blob=blob)
 
 def final_byte_cleanup(dirty_line: str) -> str:
     """Final byte literal pass: remove all " (only ' matter for f-strings)."""

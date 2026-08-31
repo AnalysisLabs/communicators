@@ -1,5 +1,13 @@
-1. load ideal.yaml to state_namespace
-2. build mermaid_code.mmd with generate_mermaid.py to state_namespace
-3. build topology.json with generate_topology_json.py to state_namespace
-4. build process_registry.json with process_registry.py to state_namespace
-5. build codebase with build_real_nodes.py to ideal_state_namespace
+1. load ideal.yaml -> "Metamorphosis/DB/state_namespace"
+2. load mermaid_code.mmd -> "Metamorphosis/DB/state_namespace"
+3. load generate_mermaid.py -> "Metamorphosis/DB/state_namespace"
+4. load topology.json -> "Metamorphosis/DB/state_namespace"
+5. load generate_topology_json.py -> "Metamorphosis/DB/state_namespace"
+6. load process_registry.json -> "Metamorphosis/DB/state_namespace"
+7. load process_registry.py -> "Metamorphosis/DB/state_namespace"
+8. load codebase -> "Metamorphosis/DB/state_namespace"
+9. load build_real_nodes.py -> "Metamorphosis/DB/state_namespace"
+10. build generate_mermaid.py(build_real_nodes.py) -> "Metamorphosis/DB/state_namespace/mermaid_code.mmd"
+11. build generate_topology_json.py(mermaid_code.mmd) -> "Metamorphosis/DB/state_namespace/topology.json"
+12. build process_registry.py(topology.json) -> "Metamorphosis/DB/state_namespace/process_registry.json"
+13. build build_real_nodes.py(process_registry.json) -> "Metamorphosis/DB/ideal_state_namespace/codebase"
