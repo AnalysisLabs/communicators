@@ -60,85 +60,146 @@ def build(spec_ref, transformer_ref, dest_ref):
     )
     return request(dest_ref, blob=blob)
 
-def final_byte_cleanup(dirty_line: str) -> str:
-    """Final byte literal pass: remove all " (only ' matter for f-strings)."""
-    b = dirty_line.encode('utf-8')
-    b = b.replace(b'"', b'')
-    return b.decode('utf-8')
+_METHODS_DIR_REF = PathReffs.FileRef(
+    uuid="6436be95-3579-4b62-9c06-49de2dd6c595",
+    file_path="Metamorphosis",
+    file_name="transpiler-methods",
+)
 
-# Validity check
-def parse_line(line):
-    # Strip numbered prefix
+_LOAD_RE = re.compile(
+    r'^\s*(\d+)\.\s+load\s+(\S+)\s*->\s*"([^"]+)"\s*$'
+)
+_BUILD_RE = re.compile(
+    r'^\s*(\d+)\.\s+build\s+(\S+)\((\S+)\)\s*->\s*"([^"]+)"\s*$'
+)
+
+
+def _methods_parent_path() -> str:
+    return f"{_METHODS_DIR_REF.file_path}/{_METHODS_DIR_REF.file_name}"
+
+
+def _file_ref_under_methods(name: str) -> "PathReffs.FileRef":
+    parent = _methods_parent_path()
+    registry = json.loads(
+        (COMMUNICATORS_ROOT / "file_registry.json").read_text(encoding="utf-8")
+    )
+    for entry in registry:
+        if entry["file_path"] == parent and entry["file_name"] == name:
+            return PathReffs.FileRef(
+                uuid=entry["uuid"],
+                file_path=entry["file_path"],
+                file_name=entry["file_name"],
+            )
+    raise FileNotFoundError(
+        f"{name!r} is not registered under {_methods_parent_path()}"
+    )
+
+
+def _join_vfs(container: str, name: str) -> str:
+    container = container.rstrip("/")
+    if container.split("/")[-1] == name:
+        return container
+    return f"{container}/{name}"
+
+
+def _emit_file_ref(file_ref: "PathReffs.FileRef") -> str:
+    return (
+        "PathReffs.FileRef("
+        f"uuid={file_ref.uuid!r}, "
+        f"file_path={file_ref.file_path!r}, "
+        f"file_name={file_ref.file_name!r})"
+    )
+
+
+def parse_line(line: str, name_map: dict[str, str]) -> str | None:
     line = line.strip()
-    words = line.split()
-    if len(words) < 3 or not words[0].rstrip('.').isdigit() or words[1] not in ['load', 'build']:
+    if not line:
         return None
-    num_str = words[0].rstrip('.')
-    verb, obj = words[1], words[2]
-    path = f"f'{{base_dir}}/{obj}'".encode()
-    kwargs = {'object_program': path.replace(b'"', b'').decode()}
-    for i in range(3, len(words)):
-        if words[i] == 'with' and i + 1 < len(words):
-            kwargs['with_program'] = f"f'{{base_dir}}/{words[i + 1]}'"
-        if words[i] == 'in' and i + 1 < len(words):
-            kwargs['in_namespace'] = f"f'{{base_dir}}/{words[i + 1]}'"
-        if words[i] == 'from' and i + 1 < len(words):
-            kwargs['from_namespace'] = f"f'{{base_dir}}/{words[i + 1]}'"
-        if words[i] == 'to' and i + 1 < len(words):
-            kwargs['to_namespace'] = f"f'{{base_dir}}/{words[i + 1]}'"
-    kw_str = ', '.join(f'{k}="{v}"' for k, v in kwargs.items())
-    dirty_line = f'code_block_{num_str} = {verb}({kw_str})'
-    return final_byte_cleanup(dirty_line)
 
-def transpile(md_file):
+    m = _LOAD_RE.match(line)
+    if m:
+        num_str, name, dest = m.group(1), m.group(2), m.group(3)
+        db_ref = _join_vfs(dest, name)
+        name_map[name] = db_ref
+        file_ref = _file_ref_under_methods(name)
+        return (
+            f"code_block_{num_str} = load("
+            f"db_ref={db_ref!r}, "
+            f"file_ref={_emit_file_ref(file_ref)})"
+        )
+
+    m = _BUILD_RE.match(line)
+    if m:
+        num_str, transformer, spec, dest = m.group(1), m.group(2), m.group(3), m.group(4)
+        if transformer not in name_map:
+            raise ValueError(f"bare name {transformer!r} used before its location was specified")
+        if spec not in name_map:
+            raise ValueError(f"bare name {spec!r} used before its location was specified")
+        dest_ref = dest.rstrip("/")
+        name_map[dest_ref.split("/")[-1]] = dest_ref
+        return (
+            f"code_block_{num_str} = build("
+            f"spec_ref={name_map[spec]!r}, "
+            f"transformer_ref={name_map[transformer]!r}, "
+            f"dest_ref={dest_ref!r})"
+        )
+
+    raise ValueError(f"unrecognized panel line: {line!r}")
+
+
+def transpile(md_file) -> str:
     code = []
-    ordered_objects = []
-    has_invalid = False
+    name_map: dict[str, str] = {}
     invalid_lines = []
-    with open(md_file, 'r') as f:
+    with open(md_file, "r") as f:
         for num, line in enumerate(f, 1):
-            parsed = parse_line(line)
-            if parsed:
-                code.append(parsed)
-            else:
-                has_invalid = True
-                invalid_lines.append(f'Line {num}: {line.rstrip()!r}')
-    if has_invalid:
-        # raise ValueError('This is not valid assembly line script')
-        raise ValueError(f'Invalid lines in {md_file}:\n' + '\n'.join(invalid_lines))
+            if not line.strip():
+                continue
+            try:
+                code.append(parse_line(line, name_map))
+            except Exception as e:
+                invalid_lines.append(f"Line {num}: {line.rstrip()!r} ({e})")
+    if invalid_lines:
+        raise ValueError(f"Invalid lines in {md_file}:\n" + "\n".join(invalid_lines))
 
-    # return '\n'.join(code)
+    base_dir_src = (
+        "base_dir = PathReffs.resolve_path(\n"
+        f"    {_METHODS_DIR_REF.uuid!r},\n"
+        f"    {_METHODS_DIR_REF.file_path!r},\n"
+        f"    {_METHODS_DIR_REF.file_name!r},\n"
+        ")\n"
+    )
+    generated_code = (
+        base_dir_src
+        + "\n"
+        + inspect.getsource(load)
+        + "\n"
+        + inspect.getsource(build)
+        + "\n"
+        + "\n".join(code)
+        + "\n"
+    )
 
-    generated_code = '\n'.join(code)
-    imports_str = "base_dir = f'{COMMUNICATORS_ROOT}/state-methods'\n\n"
-    # Copy load/build verbatim dynamically
-    load_src = inspect.getsource(load)
-    build_src = inspect.getsource(build)
-    generated_code = imports_str + "\n" + load_src + '\n' + build_src + '\n' + generated_code
-    # Minimal addition: process code to check object_program='to' uniqueness
-    tree = ast.parse(generated_code)
-    objects = []
-    for node in ast.walk(tree):
-        if (isinstance(node, ast.Call) and
-            isinstance(node.func, ast.Name) and
-            node.func.id in ('load', 'build')):
-            for kw in node.keywords:
-                if kw.arg == 'object_program':
-                    if isinstance(kw.value, ast.Constant):
-                        objects.append(ast.literal_eval(kw.value))
-                    else:
-                        objects.append(ast.unparse(kw.value).strip("'\""))
-                    break
-    counts = Counter(objects)
+    dests = list(name_map.values())
+    counts = Counter(dests)
     shared = {k: v for k, v in counts.items() if v > 1}
-    print(f"All 'to' (object_program=) values {'unique' if not shared else f'shared: {shared}'}. Ready for _to_ handling if needed (What's next.md).")
+    print(
+        "All mapped vfs dests "
+        + ("unique" if not shared else f"shared: {shared}")
+        + f". names: {sorted(name_map)}"
+    )
     return generated_code
 
-if __name__ == '__main__':
-    md_file = f'{COMMUNICATORS_ROOT}/state-methods/panel.md'
+
+if __name__ == "__main__":
+    md_file = PathReffs.resolve_path(
+        _METHODS_DIR_REF.uuid,
+        _METHODS_DIR_REF.file_path,
+        _METHODS_DIR_REF.file_name,
+    ) / "panel.md"
     cat = transpile(md_file)
-    caterpillar_path = Path(COMMUNICATORS_ROOT) / 'transpiler' / 'caterpillar_transpiler.py'
-    with open(caterpillar_path, 'w') as f:
-        f.write(cat)
-    load(object_program=cat, in_namespace='Metamorphosis')
-    os.execvp('python3', ['python3', 'caterpillar_transpiler.py'])
+    caterpillar_path = (
+        Path(COMMUNICATORS_ROOT) / "Metamorphosis" / "transpiler" / "caterpillar_transpiler.py"
+    )
+    caterpillar_path.write_text(cat, encoding="utf-8")
+    load(db_ref="Metamorphosis/transpiler/caterpillar_transpiler.py", blob=cat)
