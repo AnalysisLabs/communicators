@@ -71,6 +71,12 @@ _namespace_ref = FileRef(
     file_name="namespace.py",
 )
 
+_egg_transpiler_ref = FileRef(
+    uuid="2d057654-b1d8-4c38-b9b1-214eb60b4acd",
+    file_path="Metamorphosis/transpiler",
+    file_name="egg_transpiler.py",
+)
+
 
 def main() -> None:
     if len(sys.argv) < 2:
@@ -122,8 +128,16 @@ def main() -> None:
         src=_namespace_ref,
         dst="Metamorphosis/generated/namespace.py",
         prefix=prefix,
-        wait=False,
-        launch=False,          # ← flip to True when you are ready to launch
+        wait=True,
+        launch=True,          # ← flip to True when you are ready to launch
+    )
+
+    execution_harness(
+        src=_egg_transpiler_ref,
+        dst="Metamorphosis/generated/egg_transpiler.py",
+        prefix=prefix,
+        wait=True,
+        launch=True,          # ← flip to True when you are ready to launch
     )
 
     print("Metamorphosis bootloader sequence complete")
