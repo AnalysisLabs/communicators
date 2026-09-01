@@ -44,12 +44,15 @@ def main() -> None:
     # Launcher only claims --dst. Everything else belongs to the target.
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--dst", required=True)
+    parser.add_argument("--prefix", default=None)
     args, remaining = parser.parse_known_args()
 
     dst = args.dst
 
     # Target CLI sees only the flags that were meant for it
     sys.argv = [sys.argv[0], *remaining]
+    if args.prefix is not None:
+        sys.argv.extend(["--prefix", args.prefix])
 
     src = sys.stdin.read()
     if not src:
@@ -72,6 +75,8 @@ def main() -> None:
         "__file__": dst,
         "__builtins__": __builtins__,
     }
+    if args.prefix is not None:
+        glb["prefix"] = args.prefix
 
     exec(code, glb)
 

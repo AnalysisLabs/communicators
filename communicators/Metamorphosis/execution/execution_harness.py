@@ -414,6 +414,8 @@ def execution_harness(
     Harness-owned parameters: src, dst, prefix, wait, launch.
     Every other keyword argument is assumed to belong to the target program
     and is forwarded unchanged (as CLI flags) to execution_launcher.
+    When launch=True, prefix is also forwarded to the launcher as --prefix
+    (launcher-owned, not a target kwarg).
     """
     comm_root = find_communicators_root()
     combined, dst = load_module(src, dst, prefix)
@@ -430,7 +432,7 @@ def execution_harness(
 
     try:
         proc = subprocess.Popen(
-            [sys.executable, str(launcher), "--dst", dst, *cli_args],
+            [sys.executable, str(launcher), "--dst", dst, "--prefix", prefix, *cli_args],
             stdin=subprocess.PIPE,
             start_new_session=True,
             stdout=open(str(comm_root / "ns_server.log"), "a"),
