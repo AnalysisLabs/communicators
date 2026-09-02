@@ -36,13 +36,6 @@ load_module, = AtomicImporter.from_path_import(
     "load_module",
 )
 
-prefix = (
-    COMMUNICATORS_ROOT
-    / "Metamorphosis"
-    / "execution"
-    / "prefix.py"
-).read_text(encoding="utf-8")
-
 _writer_ref = PathReffs.FileRef(
     uuid="93752a7b-6da4-49ff-b704-e2bc2c32926a",
     file_path="Metamorphosis/Metamorphosis_DB",

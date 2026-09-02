@@ -38,14 +38,6 @@ load_module, = AtomicImporter.from_path_import(
     "load_module",
 )
 
-# The Meta execution bootloader already wrote the prefix here
-prefix = (
-    COMMUNICATORS_ROOT
-    / "Metamorphosis"
-    / "execution"
-    / "prefix.py"
-).read_text(encoding="utf-8")
-
 # ---------------------------------------------------------------------------
 # Assemble the real (prefix + metamorphosis_db) source, then extract the symbol
 # ---------------------------------------------------------------------------

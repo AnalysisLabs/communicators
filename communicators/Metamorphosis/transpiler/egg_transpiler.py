@@ -16,13 +16,6 @@ load_module, execution_harness = AtomicImporter.from_path_import(
     "execution_harness",
 )
 
-prefix = (
-    COMMUNICATORS_ROOT
-    / "Metamorphosis"
-    / "execution"
-    / "prefix.py"
-).read_text(encoding="utf-8")
-
 _namespace_ref = PathReffs.FileRef(
     uuid="253a5376-dfdc-4e07-b4d1-20446bb9211f",
     file_path="Metamorphosis/servers",
