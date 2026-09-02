@@ -253,6 +253,8 @@ def _get_write_file():
     user_code = writer_path.read_text(encoding="utf-8")
     combined = (
         _active_prefix.rstrip()
+        + "\n\nprefix = "
+        + repr(_active_prefix)
         + "\n\n\n# ==================== (USER PROGRAM) ====================\n"
         + user_code
     )
