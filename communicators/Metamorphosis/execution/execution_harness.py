@@ -330,7 +330,7 @@ def save_combined(dst: str, combined: str) -> None:
             )
 
     _stash_pending(dst, combined)
-    print(f"→ Combined script saved (pending) → {out_path}")
+    print(f"→ Combined script saved (pending) → {dst}")
 
 
 # ---------------------------------------------------------------------------

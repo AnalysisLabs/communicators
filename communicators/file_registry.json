@@ -350,6 +350,11 @@
     "file_name": "build_ir.py"
   },
   {
+    "uuid": "c4e8a1d0-7b3f-4f2a-9e16-2d5b8c0a14e7",
+    "file_path": "Metamorphosis/transpiler-methods",
+    "file_name": "build_real_nodes.py"
+  },
+  {
     "uuid": "f2ab9674-e912-48d8-bf53-31c12e9952db",
     "file_path": "Metamorphosis/transpiler-methods",
     "file_name": "com-graph.mmd"
