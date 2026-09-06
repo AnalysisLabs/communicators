@@ -21,7 +21,7 @@ from websockets.sync.server import serve
 
 # === COMMUNICATORS_ROOT (resolved at prefix-build time) ===
 from pathlib import Path
-COMMUNICATORS_ROOT = Path('/home/prometheusd/Analysis Labs/Dev Tools/com-branches/staged/staged-1/communicators')
+COMMUNICATORS_ROOT = Path('/home/prometheusd/Analysis Labs/Dev Tools/com-branches/staged/staged-2/communicators')
 
 # === Tier 1 (imports) ===
 
