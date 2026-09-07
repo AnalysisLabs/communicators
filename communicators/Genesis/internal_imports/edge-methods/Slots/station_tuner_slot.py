@@ -34,65 +34,31 @@ Capability row (harvest later for L1):
 from __future__ import annotations
 
 import argparse
-import json
 import socket
 import sys
 import threading
 import time
 
-
-def encode_msg(payload: dict) -> bytes:
-    if not isinstance(payload, dict):
-        raise TypeError(f"payload must be dict, got {type(payload)!r}")
-    return json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+from codec import Codec
+from demo import Demo
+from locators import Locators
 
 
-def decode_msg(raw) -> dict:
-    if raw is None or raw == b"" or raw == "":
-        return {}
-    if isinstance(raw, (bytes, bytearray)):
-        text = raw.decode("utf-8")
-    else:
-        text = str(raw)
-    obj = json.loads(text)
-    if not isinstance(obj, dict):
-        raise ValueError(f"JSON root must be an object, got {type(obj).__name__}")
-    return obj
+class UdpMail:
+    """File-local helpers used by both Station and Tuner.
 
+    This is the @modulemethod role: a class both peer classes qualify
+    against. Stage C will not rewrite these calls; they stay
+    UdpMail.bind_udp(...).
+    """
 
-def parse_hostport(spec: str) -> tuple[str, int]:
-    spec = spec.strip()
-    if "://" in spec:
-        spec = spec.split("://", 1)[1]
-    if spec.count(":") != 1:
-        raise ValueError(f"expected host:port, got {spec!r}")
-    host, port_s = spec.rsplit(":", 1)
-    host = "127.0.0.1" if host in ("", "localhost") else host
-    return host, int(port_s)
-
-
-def fmt_addr(addr: tuple[str, int]) -> str:
-    return f"{addr[0]}:{addr[1]}"
-
-
-PULSES = [
-    "WXYZ lighthouse-tick, barometer 29.92 and falling",
-    "WXYZ shipping forecast: fog in the packet strait",
-    "WXYZ pulse-stamp quartz-fox is not the sender of this line",
-    "WXYZ time-pips: three short, one long, tea kettle optional",
-]
-
-
-def pulse_text(seq: int) -> str:
-    return PULSES[seq % len(PULSES)] + f"  [seq {seq}]"
-
-
-def bind_udp(addr: tuple[str, int]) -> socket.socket:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(addr)
-    sock.settimeout(0.3)
-    return sock
+    @staticmethod
+    def bind_udp(addr: tuple[str, int]) -> socket.socket:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(addr)
+        sock.settimeout(0.3)
+        return sock
 
 
 # ---------------------------------------------------------------------------
@@ -114,10 +80,10 @@ class Station:
         self.join_thread = None
 
     def addr_s(self) -> str:
-        return f"udp://{fmt_addr(self.listen)}"
+        return f"udp://{Locators.fmt_addr(self.listen)}"
 
     def start(self) -> None:
-        self.sock = bind_udp(self.listen)
+        self.sock = UdpMail.bind_udp(self.listen)
         self.alive.set()
         self.join_thread = threading.Thread(target=self._join_loop, name=f"{self.name}-join", daemon=True)
         self.join_thread.start()
@@ -132,22 +98,22 @@ class Station:
             except OSError:
                 break
             try:
-                msg = decode_msg(raw)
+                msg = Codec.decode_msg(raw)
             except Exception as e:
                 print(f"[{self.name} BAD JSON] from={src} {e}", flush=True)
                 continue
             if msg.get("kind") != "tune":
                 print(f"[{self.name} IGNORE] kind={msg.get('kind')!r} from={src}", flush=True)
                 continue
-            recv_s = msg.get("recv") or fmt_addr(src)
+            recv_s = msg.get("recv") or Locators.fmt_addr(src)
             try:
-                dest = parse_hostport(str(recv_s))
+                dest = Locators.parse_hostport(str(recv_s))
             except ValueError:
                 dest = (src[0], src[1])
             entry = {"name": msg.get("name") or "?", "recv": dest, "ts": time.time()}
             with self.reg_lock:
                 self.registry[dest] = entry
-            print(f"[{self.name} JOIN] {entry['name']} → {fmt_addr(dest)}  n={len(self.registry)}", flush=True)
+            print(f"[{self.name} JOIN] {entry['name']} → {Locators.fmt_addr(dest)}  n={len(self.registry)}", flush=True)
 
     def next_seq(self) -> int:
         with self.seq_lock:
@@ -164,10 +130,10 @@ class Station:
             "from": self.name,
             "kind": "pulse",
             "seq": seq,
-            "text": pulse_text(seq),
+            "text": Demo.pulse_text(seq),
             "ts": time.time(),
         }
-        data = encode_msg(payload)
+        data = Codec.encode_bytes(payload)
         dests = self._destinations()
         print(
             f"[{self.name} PULSE] seq={seq} text={payload['text']!r} → {len(dests)} tuner(s)",
@@ -178,7 +144,7 @@ class Station:
                 try:
                     self.sock.sendto(data, dest)
                 except OSError as e:
-                    print(f"[{self.name} SEND FAIL] {fmt_addr(dest)} {e}", flush=True)
+                    print(f"[{self.name} SEND FAIL] {Locators.fmt_addr(dest)} {e}", flush=True)
 
     def run(self, hold: float | None) -> None:
         deadline = None if hold is None else time.time() + hold
@@ -218,15 +184,15 @@ class Tuner:
         self.recv_thread = None
 
     def addr_s(self) -> str:
-        return f"udp://{fmt_addr(self.listen)}"
+        return f"udp://{Locators.fmt_addr(self.listen)}"
 
     def start(self) -> None:
-        self.sock = bind_udp(self.listen)
+        self.sock = UdpMail.bind_udp(self.listen)
         self.alive.set()
         self.recv_thread = threading.Thread(target=self._recv_loop, name=f"{self.name}-recv", daemon=True)
         self.recv_thread.start()
         print(
-            f"[{self.name} TUNER] recv {self.addr_s()}  station udp://{fmt_addr(self.station)}",
+            f"[{self.name} TUNER] recv {self.addr_s()}  station udp://{Locators.fmt_addr(self.station)}",
             flush=True,
         )
 
@@ -234,11 +200,11 @@ class Tuner:
         payload = {
             "kind": "tune",
             "name": self.name,
-            "recv": fmt_addr(self.listen),
+            "recv": Locators.fmt_addr(self.listen),
             "ts": time.time(),
         }
-        self.sock.sendto(encode_msg(payload), self.station)
-        print(f"[{self.name} TUNE] sent to {fmt_addr(self.station)} recv={fmt_addr(self.listen)}", flush=True)
+        self.sock.sendto(Codec.encode_bytes(payload), self.station)
+        print(f"[{self.name} TUNE] sent to {Locators.fmt_addr(self.station)} recv={Locators.fmt_addr(self.listen)}", flush=True)
 
     def wait_for_station(self, timeout: float) -> None:
         deadline = time.time() + timeout
@@ -259,7 +225,7 @@ class Tuner:
             except OSError:
                 break
             try:
-                incoming = decode_msg(raw)
+                incoming = Codec.decode_msg(raw)
             except Exception as e:
                 print(f"[{self.name} BAD JSON] {e}: {raw!r}", flush=True)
                 continue
@@ -300,50 +266,54 @@ class Tuner:
         print(f"[{self.name} CLOSE] {self.addr_s()} heard={len(self.inbox)}", flush=True)
 
 
-def parse_args(argv=None):
-    p = argparse.ArgumentParser(description="Station/tuner slot — UDP unicast fan-out + join registry")
-    p.add_argument("--role", required=True, choices=("station", "tuner"))
-    p.add_argument("--name", required=True, help="identity printed on every message")
-    p.add_argument("--listen", required=True, help="local UDP bind host:port")
-    p.add_argument("--peer", help="station host:port (required for tuner)")
-    p.add_argument("--interval", type=float, default=0.5, help="station pulse period seconds")
-    p.add_argument("--repeat", type=int, default=2, help="redundant sendto copies per pulse")
-    p.add_argument("--auto", action="store_true", help="run for --hold seconds then exit")
-    p.add_argument("--hold", type=float, default=4.0, help="seconds to run when --auto")
-    p.add_argument("--wait", type=float, default=8.0, help="tuner seconds spent retrying tune")
-    return p.parse_args(argv)
+class StationTunerCli:
+    """Dev entrypoint for this file. Not a production Wire verb."""
 
+    @staticmethod
+    def parse_args(argv=None):
+        p = argparse.ArgumentParser(description="Station/tuner slot — UDP unicast fan-out + join registry")
+        p.add_argument("--role", required=True, choices=("station", "tuner"))
+        p.add_argument("--name", required=True, help="identity printed on every message")
+        p.add_argument("--listen", required=True, help="local UDP bind host:port")
+        p.add_argument("--peer", help="station host:port (required for tuner)")
+        p.add_argument("--interval", type=float, default=0.5, help="station pulse period seconds")
+        p.add_argument("--repeat", type=int, default=2, help="redundant sendto copies per pulse")
+        p.add_argument("--auto", action="store_true", help="run for --hold seconds then exit")
+        p.add_argument("--hold", type=float, default=4.0, help="seconds to run when --auto")
+        p.add_argument("--wait", type=float, default=8.0, help="tuner seconds spent retrying tune")
+        return p.parse_args(argv)
 
-def main(argv=None) -> int:
-    args = parse_args(argv)
-    listen = parse_hostport(args.listen)
+    @staticmethod
+    def main(argv=None) -> int:
+        args = StationTunerCli.parse_args(argv)
+        listen = Locators.parse_hostport(args.listen)
 
-    if args.role == "station":
-        station = Station(args.name, listen, args.interval, args.repeat)
+        if args.role == "station":
+            station = Station(args.name, listen, args.interval, args.repeat)
+            try:
+                station.start()
+                station.run(hold=args.hold if args.auto else None)
+            finally:
+                station.close()
+            return 0
+
+        if not args.peer:
+            print("tuner requires --peer host:port of the station", file=sys.stderr)
+            return 2
+        peer = Locators.parse_hostport(args.peer)
+        if peer == listen:
+            print("tuner --listen must not equal the station --peer address", file=sys.stderr)
+            return 2
+
+        tuner = Tuner(args.name, listen, peer)
         try:
-            station.start()
-            station.run(hold=args.hold if args.auto else None)
+            tuner.start()
+            tuner.wait_for_station(timeout=args.wait)
+            tuner.run(hold=args.hold if args.auto else None)
         finally:
-            station.close()
+            tuner.close()
         return 0
-
-    if not args.peer:
-        print("tuner requires --peer host:port of the station", file=sys.stderr)
-        return 2
-    peer = parse_hostport(args.peer)
-    if peer == listen:
-        print("tuner --listen must not equal the station --peer address", file=sys.stderr)
-        return 2
-
-    tuner = Tuner(args.name, listen, peer)
-    try:
-        tuner.start()
-        tuner.wait_for_station(timeout=args.wait)
-        tuner.run(hold=args.hold if args.auto else None)
-    finally:
-        tuner.close()
-    return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(StationTunerCli.main())

@@ -23,7 +23,6 @@ Capability row (harvest later for L1):
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 import threading
 import time
@@ -31,64 +30,9 @@ import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-
-# ---------------------------------------------------------------------------
-# JSON framing — the only payload format this slot speaks
-# ---------------------------------------------------------------------------
-
-def encode_msg(payload: dict) -> bytes:
-    if not isinstance(payload, dict):
-        raise TypeError(f"payload must be dict, got {type(payload)!r}")
-    return json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-
-
-def decode_msg(raw) -> dict:
-    if raw is None or raw == b"" or raw == "":
-        return {}
-    if isinstance(raw, (bytes, bytearray)):
-        text = raw.decode("utf-8")
-    else:
-        text = str(raw)
-    obj = json.loads(text)
-    if not isinstance(obj, dict):
-        raise ValueError(f"JSON root must be an object, got {type(obj).__name__}")
-    return obj
-
-
-def parse_hostport(spec: str) -> tuple[str, int]:
-    spec = spec.strip()
-    if "://" in spec:
-        spec = spec.split("://", 1)[1]
-    if spec.count(":") != 1:
-        raise ValueError(f"expected host:port, got {spec!r}")
-    host, port_s = spec.rsplit(":", 1)
-    host = "127.0.0.1" if host in ("", "localhost") else host
-    return host, int(port_s)
-
-
-# Distinctive canned lines so each origin is obvious in the other terminal.
-SILLY = {
-    "FOX": [
-        "quartz-fox juggles 17 pinecones under a magenta lighthouse",
-        "FOX-only proverb: never trust a teapot that quotes Hegel",
-        "FOX payload zebra-plaid #3 — this line must not appear on FOX as inbound from itself",
-    ],
-    "OTTER": [
-        "otter-kelp accordion solo in B-flat minor, volume 11",
-        "OTTER-only proverb: a polite cyclone still rearranges the furniture",
-        "OTTER payload marmalade-submarine #9 — origin stamp is the point",
-    ],
-}
-
-
-def silly_for(name: str) -> list[str]:
-    if name in SILLY:
-        return list(SILLY[name])
-    return [
-        f"{name} recites the serial number of a leftover moon: 7Q-NEBULA",
-        f"{name} claims the spoon is a diplomat from the cutlery republic",
-        f"{name} unique-stamp {int(time.time())} — look for this exact token",
-    ]
+from codec import Codec
+from demo import Demo
+from locators import Locators
 
 
 # ---------------------------------------------------------------------------
@@ -128,7 +72,7 @@ class HttpSlot:
                 return
 
             def _write(self, code: int, payload: dict):
-                body = encode_msg(payload)
+                body = Codec.encode_bytes(payload)
                 self.send_response(code)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Content-Length", str(len(body)))
@@ -150,7 +94,7 @@ class HttpSlot:
                 n = int(self.headers.get("Content-Length") or 0)
                 raw = self.rfile.read(n) if n else b""
                 try:
-                    incoming = decode_msg(raw)
+                    incoming = Codec.decode_msg(raw)
                 except Exception as e:
                     self._write(400, {"ok": False, "error": type(e).__name__, "message": str(e)})
                     return
@@ -198,7 +142,7 @@ class HttpSlot:
     # -- client (negative) ---------------------------------------------------
 
     def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
-        body = encode_msg(payload)
+        body = Codec.encode_bytes(payload)
         req = urllib.request.Request(
             self.peer_url("/msg"),
             data=body,
@@ -207,7 +151,7 @@ class HttpSlot:
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = resp.read()
-        return decode_msg(raw)
+        return Codec.decode_msg(raw)
 
     def wait_for_peer(self, timeout: float = 20.0) -> None:
         deadline = time.time() + timeout
@@ -216,7 +160,7 @@ class HttpSlot:
         while time.time() < deadline:
             try:
                 with urllib.request.urlopen(url, timeout=1.0) as resp:
-                    info = decode_msg(resp.read())
+                    info = Codec.decode_msg(resp.read())
                 print(f"[{self.name} PEER UP] {info}", flush=True)
                 return
             except Exception as e:
@@ -238,7 +182,7 @@ class HttpSlot:
         return reply
 
     def burst(self) -> None:
-        for line in silly_for(self.name):
+        for line in Demo.silly_for(self.name):
             try:
                 self.send_text(line)
             except Exception as e:
@@ -246,60 +190,64 @@ class HttpSlot:
             time.sleep(0.15)
 
 
-def parse_args(argv=None):
-    p = argparse.ArgumentParser(description="HTTP slot prototype — each process listens and dials")
-    p.add_argument("--name", required=True, help="endpoint identity printed on every message")
-    p.add_argument("--listen", required=True, help="local host:port that serves POST /msg")
-    p.add_argument("--peer", required=True, help="remote host:port this process POSTs to")
-    p.add_argument("--auto", action="store_true", help="send canned burst, skip stdin")
-    p.add_argument("--hold", type=float, default=3.0, help="seconds to stay alive after --auto burst")
-    p.add_argument("--wait", type=float, default=20.0, help="seconds to wait for peer /health")
-    return p.parse_args(argv)
+class HttpCli:
+    """Dev entrypoint for this file. Not a production Wire verb."""
 
+    @staticmethod
+    def parse_args(argv=None):
+        p = argparse.ArgumentParser(description="HTTP slot prototype — each process listens and dials")
+        p.add_argument("--name", required=True, help="endpoint identity printed on every message")
+        p.add_argument("--listen", required=True, help="local host:port that serves POST /msg")
+        p.add_argument("--peer", required=True, help="remote host:port this process POSTs to")
+        p.add_argument("--auto", action="store_true", help="send canned burst, skip stdin")
+        p.add_argument("--hold", type=float, default=3.0, help="seconds to stay alive after --auto burst")
+        p.add_argument("--wait", type=float, default=20.0, help="seconds to wait for peer /health")
+        return p.parse_args(argv)
 
-def stdin_loop(slot: HttpSlot) -> None:
-    print(f"[{slot.name} READY] type a line to send, Ctrl-C to quit", flush=True)
-    try:
-        for line in sys.stdin:
-            text = line.rstrip("\n")
-            if not text:
-                continue
-            if text in {":q", "/quit", "/exit"}:
-                return
-            try:
-                slot.send_text(text)
-            except Exception as e:
-                print(f"[{slot.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
-    except KeyboardInterrupt:
-        print(flush=True)
+    @staticmethod
+    def stdin_loop(slot: HttpSlot) -> None:
+        print(f"[{slot.name} READY] type a line to send, Ctrl-C to quit", flush=True)
+        try:
+            for line in sys.stdin:
+                text = line.rstrip("\n")
+                if not text:
+                    continue
+                if text in {":q", "/quit", "/exit"}:
+                    return
+                try:
+                    slot.send_text(text)
+                except Exception as e:
+                    print(f"[{slot.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
+        except KeyboardInterrupt:
+            print(flush=True)
 
+    @staticmethod
+    def main(argv=None) -> int:
+        args = HttpCli.parse_args(argv)
+        listen = Locators.parse_hostport(args.listen)
+        peer = Locators.parse_hostport(args.peer)
+        if listen == peer:
+            print("listen and peer are the same address; both endpoints need their own port", file=sys.stderr)
+            return 2
 
-def main(argv=None) -> int:
-    args = parse_args(argv)
-    listen = parse_hostport(args.listen)
-    peer = parse_hostport(args.peer)
-    if listen == peer:
-        print("listen and peer are the same address; both endpoints need their own port", file=sys.stderr)
-        return 2
+        slot = HttpSlot(args.name, listen, peer)
+        slot.start_server_thread()
+        time.sleep(0.15)
 
-    slot = HttpSlot(args.name, listen, peer)
-    slot.start_server_thread()
-    time.sleep(0.15)
-
-    try:
-        slot.wait_for_peer(timeout=args.wait)
-        slot.burst()
-        if args.auto:
-            time.sleep(args.hold)
-        else:
-            stdin_loop(slot)
-    except KeyboardInterrupt:
-        print(flush=True)
-    finally:
-        slot.close()
-        print(f"[{slot.name} CLOSE] listen {slot.listen_url()}", flush=True)
-    return 0
+        try:
+            slot.wait_for_peer(timeout=args.wait)
+            slot.burst()
+            if args.auto:
+                time.sleep(args.hold)
+            else:
+                HttpCli.stdin_loop(slot)
+        except KeyboardInterrupt:
+            print(flush=True)
+        finally:
+            slot.close()
+            print(f"[{slot.name} CLOSE] listen {slot.listen_url()}", flush=True)
+        return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(HttpCli.main())

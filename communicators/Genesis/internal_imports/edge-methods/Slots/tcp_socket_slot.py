@@ -31,73 +31,14 @@ Capability row (harvest later for L1):
 from __future__ import annotations
 
 import argparse
-import json
 import socket
 import sys
 import threading
 import time
 
-
-# ---------------------------------------------------------------------------
-# JSON framing — the only payload format this slot speaks
-# Stream boundary is a trailing newline (HTTP used the HTTP body instead).
-# ---------------------------------------------------------------------------
-
-def encode_msg(payload: dict) -> bytes:
-    if not isinstance(payload, dict):
-        raise TypeError(f"payload must be dict, got {type(payload)!r}")
-    return json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
-
-
-def decode_msg(raw) -> dict:
-    if raw is None or raw == b"" or raw == "":
-        return {}
-    if isinstance(raw, (bytes, bytearray)):
-        text = raw.decode("utf-8")
-    else:
-        text = str(raw)
-    text = text.strip()
-    if not text:
-        return {}
-    obj = json.loads(text)
-    if not isinstance(obj, dict):
-        raise ValueError(f"JSON root must be an object, got {type(obj).__name__}")
-    return obj
-
-
-def parse_hostport(spec: str) -> tuple[str, int]:
-    spec = spec.strip()
-    if "://" in spec:
-        spec = spec.split("://", 1)[1]
-    if spec.count(":") != 1:
-        raise ValueError(f"expected host:port, got {spec!r}")
-    host, port_s = spec.rsplit(":", 1)
-    host = "127.0.0.1" if host in ("", "localhost") else host
-    return host, int(port_s)
-
-
-SILLY = {
-    "FOX": [
-        "quartz-fox juggles 17 pinecones under a magenta lighthouse",
-        "FOX-only proverb: never trust a teapot that quotes Hegel",
-        "FOX payload zebra-plaid #3 — this line must not appear on FOX as inbound from itself",
-    ],
-    "OTTER": [
-        "otter-kelp accordion solo in B-flat minor, volume 11",
-        "OTTER-only proverb: a polite cyclone still rearranges the furniture",
-        "OTTER payload marmalade-submarine #9 — origin stamp is the point",
-    ],
-}
-
-
-def silly_for(name: str) -> list[str]:
-    if name in SILLY:
-        return list(SILLY[name])
-    return [
-        f"{name} recites the serial number of a leftover moon: 7Q-NEBULA",
-        f"{name} claims the spoon is a diplomat from the cutlery republic",
-        f"{name} unique-stamp {int(time.time())} — look for this exact token",
-    ]
+from codec import Codec
+from demo import Demo
+from locators import Locators
 
 
 # ---------------------------------------------------------------------------
@@ -213,7 +154,7 @@ class TcpSlot:
                     if not raw.strip():
                         continue
                     try:
-                        incoming = decode_msg(raw)
+                        incoming = Codec.decode_msg(raw)
                     except Exception as e:
                         print(f"[{self.name} BAD JSON] {e}: {raw!r}", flush=True)
                         continue
@@ -254,7 +195,7 @@ class TcpSlot:
                 print(f"[{self.name} REPLY FAIL] {e}", flush=True)
 
     def _write(self, payload: dict) -> None:
-        data = encode_msg(payload)
+        data = Codec.encode_bytes(payload, newline=True)
         with self.send_lock:
             self.conn.sendall(data)
 
@@ -287,7 +228,7 @@ class TcpSlot:
         return reply
 
     def burst(self) -> None:
-        for line in silly_for(self.name):
+        for line in Demo.silly_for(self.name):
             try:
                 self.send_text(line)
             except Exception as e:
@@ -311,61 +252,65 @@ class TcpSlot:
         self.listener = None
 
 
-def parse_args(argv=None):
-    p = argparse.ArgumentParser(description="TCP slot prototype — one shared host:port, duplex socket")
-    p.add_argument("--name", required=True, help="endpoint identity printed on every message")
-    p.add_argument("--listen", required=True, help="shared host:port (must equal --peer)")
-    p.add_argument("--peer", required=True, help="shared host:port (must equal --listen)")
-    p.add_argument("--auto", action="store_true", help="send canned burst, skip stdin")
-    p.add_argument("--hold", type=float, default=3.0, help="seconds to stay alive after --auto burst")
-    p.add_argument("--wait", type=float, default=20.0, help="seconds to wait for the duplex socket")
-    return p.parse_args(argv)
+class TcpCli:
+    """Dev entrypoint for this file. Not a production Wire verb."""
 
+    @staticmethod
+    def parse_args(argv=None):
+        p = argparse.ArgumentParser(description="TCP slot prototype — one shared host:port, duplex socket")
+        p.add_argument("--name", required=True, help="endpoint identity printed on every message")
+        p.add_argument("--listen", required=True, help="shared host:port (must equal --peer)")
+        p.add_argument("--peer", required=True, help="shared host:port (must equal --listen)")
+        p.add_argument("--auto", action="store_true", help="send canned burst, skip stdin")
+        p.add_argument("--hold", type=float, default=3.0, help="seconds to stay alive after --auto burst")
+        p.add_argument("--wait", type=float, default=20.0, help="seconds to wait for the duplex socket")
+        return p.parse_args(argv)
 
-def stdin_loop(slot: TcpSlot) -> None:
-    print(f"[{slot.name} READY] type a line to send, Ctrl-C to quit", flush=True)
-    try:
-        for line in sys.stdin:
-            text = line.rstrip("\n")
-            if not text:
-                continue
-            if text in {":q", "/quit", "/exit"}:
-                return
-            try:
-                slot.send_text(text)
-            except Exception as e:
-                print(f"[{slot.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
-    except KeyboardInterrupt:
-        print(flush=True)
+    @staticmethod
+    def stdin_loop(slot: TcpSlot) -> None:
+        print(f"[{slot.name} READY] type a line to send, Ctrl-C to quit", flush=True)
+        try:
+            for line in sys.stdin:
+                text = line.rstrip("\n")
+                if not text:
+                    continue
+                if text in {":q", "/quit", "/exit"}:
+                    return
+                try:
+                    slot.send_text(text)
+                except Exception as e:
+                    print(f"[{slot.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
+        except KeyboardInterrupt:
+            print(flush=True)
 
+    @staticmethod
+    def main(argv=None) -> int:
+        args = TcpCli.parse_args(argv)
+        listen = Locators.parse_hostport(args.listen)
+        peer = Locators.parse_hostport(args.peer)
+        if listen != peer:
+            print(
+                "tcp slot uses one duplex socket; --listen and --peer must be the same host:port\n"
+                f"  listen={listen!r} peer={peer!r}",
+                file=sys.stderr,
+            )
+            return 2
 
-def main(argv=None) -> int:
-    args = parse_args(argv)
-    listen = parse_hostport(args.listen)
-    peer = parse_hostport(args.peer)
-    if listen != peer:
-        print(
-            "tcp slot uses one duplex socket; --listen and --peer must be the same host:port\n"
-            f"  listen={listen!r} peer={peer!r}",
-            file=sys.stderr,
-        )
-        return 2
-
-    slot = TcpSlot(args.name, listen)
-    try:
-        slot.wait_for_peer(timeout=args.wait)
-        slot.burst()
-        if args.auto:
-            time.sleep(args.hold)
-        else:
-            stdin_loop(slot)
-    except KeyboardInterrupt:
-        print(flush=True)
-    finally:
-        slot.close()
-        print(f"[{slot.name} CLOSE] {slot.addr_s()}", flush=True)
-    return 0
+        slot = TcpSlot(args.name, listen)
+        try:
+            slot.wait_for_peer(timeout=args.wait)
+            slot.burst()
+            if args.auto:
+                time.sleep(args.hold)
+            else:
+                TcpCli.stdin_loop(slot)
+        except KeyboardInterrupt:
+            print(flush=True)
+        finally:
+            slot.close()
+            print(f"[{slot.name} CLOSE] {slot.addr_s()}", flush=True)
+        return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(TcpCli.main())

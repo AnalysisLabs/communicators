@@ -32,7 +32,6 @@ Capability row (harvest later for L1):
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import socket
 import stat
@@ -40,112 +39,9 @@ import sys
 import threading
 import time
 
-
-# ---------------------------------------------------------------------------
-# JSON framing — the only payload format this slot speaks
-# Stream boundary is a trailing newline (same as TCP).
-# ---------------------------------------------------------------------------
-
-def encode_msg(payload: dict) -> bytes:
-    if not isinstance(payload, dict):
-        raise TypeError(f"payload must be dict, got {type(payload)!r}")
-    return json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
-
-
-def decode_msg(raw) -> dict:
-    if raw is None or raw == b"" or raw == "":
-        return {}
-    if isinstance(raw, (bytes, bytearray)):
-        text = raw.decode("utf-8")
-    else:
-        text = str(raw)
-    text = text.strip()
-    if not text:
-        return {}
-    obj = json.loads(text)
-    if not isinstance(obj, dict):
-        raise ValueError(f"JSON root must be an object, got {type(obj).__name__}")
-    return obj
-
-
-def parse_sockpath(spec: str) -> str:
-    """Accept a filesystem path, unix://path, or host:port (mapped into /tmp)."""
-    spec = spec.strip()
-    if spec.startswith("unix://"):
-        spec = spec[len("unix://"):]
-    if spec.startswith("unix:"):
-        spec = spec[len("unix:"):]
-    looks_like_path = (
-        spec.startswith("/")
-        or spec.startswith("./")
-        or spec.startswith("../")
-        or spec.endswith(".sock")
-        or "/" in spec
-    )
-    if looks_like_path:
-        return spec
-    if spec.count(":") == 1:
-        host, port_s = spec.rsplit(":", 1)
-        if port_s.isdigit():
-            host = "127.0.0.1" if host in ("", "localhost") else host
-            return f"/tmp/unix_slot_{host}_{port_s}.sock"
-    return spec
-
-
-SILLY = {
-    "FOX": [
-        "quartz-fox juggles 17 pinecones under a magenta lighthouse",
-        "FOX-only proverb: never trust a teapot that quotes Hegel",
-        "FOX payload zebra-plaid #3 — this line must not appear on FOX as inbound from itself",
-    ],
-    "OTTER": [
-        "otter-kelp accordion solo in B-flat minor, volume 11",
-        "OTTER-only proverb: a polite cyclone still rearranges the furniture",
-        "OTTER payload marmalade-submarine #9 — origin stamp is the point",
-    ],
-}
-
-
-def silly_for(name: str) -> list[str]:
-    if name in SILLY:
-        return list(SILLY[name])
-    return [
-        f"{name} recites the serial number of a leftover moon: 7Q-NEBULA",
-        f"{name} claims the spoon is a diplomat from the cutlery republic",
-        f"{name} unique-stamp {int(time.time())} — look for this exact token",
-    ]
-
-
-def _is_sock_file(path: str) -> bool:
-    try:
-        return stat.S_ISSOCK(os.stat(path).st_mode)
-    except FileNotFoundError:
-        return False
-    except OSError:
-        return False
-
-
-def _unlink_if_stale(path: str) -> bool:
-    """Remove a leftover socket file that nothing is accepting on."""
-    if not _is_sock_file(path):
-        return False
-    probe = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    try:
-        probe.connect(path)
-        return False
-    except ConnectionRefusedError:
-        try:
-            os.unlink(path)
-            return True
-        except FileNotFoundError:
-            return False
-    except OSError:
-        return False
-    finally:
-        try:
-            probe.close()
-        except OSError:
-            pass
+from codec import Codec
+from demo import Demo
+from locators import Locators
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +49,38 @@ def _unlink_if_stale(path: str) -> bool:
 # ---------------------------------------------------------------------------
 
 class UnixSlot:
+    @staticmethod
+    def _is_sock_file(path: str) -> bool:
+        try:
+            return stat.S_ISSOCK(os.stat(path).st_mode)
+        except FileNotFoundError:
+            return False
+        except OSError:
+            return False
+
+    @staticmethod
+    def _unlink_if_stale(path: str) -> bool:
+        """Remove a leftover socket file that nothing is accepting on."""
+        if not UnixSlot._is_sock_file(path):
+            return False
+        probe = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        try:
+            probe.connect(path)
+            return False
+        except ConnectionRefusedError:
+            try:
+                os.unlink(path)
+                return True
+            except FileNotFoundError:
+                return False
+        except OSError:
+            return False
+        finally:
+            try:
+                probe.close()
+            except OSError:
+                pass
+
     def __init__(self, name: str, path: str):
         self.name = name
         self.path = path
@@ -232,7 +160,7 @@ class UnixSlot:
                     return
                 except ConnectionRefusedError as e2:
                     last_err = e2
-                    if _unlink_if_stale(self.path):
+                    if UnixSlot._unlink_if_stale(self.path):
                         print(f"[{self.name} STALE] removed leftover {self.path}", flush=True)
                     time.sleep(0.15)
                 except OSError as e2:
@@ -268,7 +196,7 @@ class UnixSlot:
                     if not raw.strip():
                         continue
                     try:
-                        incoming = decode_msg(raw)
+                        incoming = Codec.decode_msg(raw)
                     except Exception as e:
                         print(f"[{self.name} BAD JSON] {e}: {raw!r}", flush=True)
                         continue
@@ -308,7 +236,7 @@ class UnixSlot:
                 print(f"[{self.name} REPLY FAIL] {e}", flush=True)
 
     def _write(self, payload: dict) -> None:
-        data = encode_msg(payload)
+        data = Codec.encode_bytes(payload, newline=True)
         with self.send_lock:
             self.conn.sendall(data)
 
@@ -341,7 +269,7 @@ class UnixSlot:
         return reply
 
     def burst(self) -> None:
-        for line in silly_for(self.name):
+        for line in Demo.silly_for(self.name):
             try:
                 self.send_text(line)
             except Exception as e:
@@ -371,61 +299,65 @@ class UnixSlot:
             self.owns_path = False
 
 
-def parse_args(argv=None):
-    p = argparse.ArgumentParser(description="Unix-socket slot prototype — one shared path, duplex socket")
-    p.add_argument("--name", required=True, help="endpoint identity printed on every message")
-    p.add_argument("--listen", required=True, help="shared socket path (must equal --peer)")
-    p.add_argument("--peer", required=True, help="shared socket path (must equal --listen)")
-    p.add_argument("--auto", action="store_true", help="send canned burst, skip stdin")
-    p.add_argument("--hold", type=float, default=3.0, help="seconds to stay alive after --auto burst")
-    p.add_argument("--wait", type=float, default=20.0, help="seconds to wait for the duplex socket")
-    return p.parse_args(argv)
+class UnixCli:
+    """Dev entrypoint for this file. Not a production Wire verb."""
 
+    @staticmethod
+    def parse_args(argv=None):
+        p = argparse.ArgumentParser(description="Unix-socket slot prototype — one shared path, duplex socket")
+        p.add_argument("--name", required=True, help="endpoint identity printed on every message")
+        p.add_argument("--listen", required=True, help="shared socket path (must equal --peer)")
+        p.add_argument("--peer", required=True, help="shared socket path (must equal --listen)")
+        p.add_argument("--auto", action="store_true", help="send canned burst, skip stdin")
+        p.add_argument("--hold", type=float, default=3.0, help="seconds to stay alive after --auto burst")
+        p.add_argument("--wait", type=float, default=20.0, help="seconds to wait for the duplex socket")
+        return p.parse_args(argv)
 
-def stdin_loop(slot: UnixSlot) -> None:
-    print(f"[{slot.name} READY] type a line to send, Ctrl-C to quit", flush=True)
-    try:
-        for line in sys.stdin:
-            text = line.rstrip("\n")
-            if not text:
-                continue
-            if text in {":q", "/quit", "/exit"}:
-                return
-            try:
-                slot.send_text(text)
-            except Exception as e:
-                print(f"[{slot.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
-    except KeyboardInterrupt:
-        print(flush=True)
+    @staticmethod
+    def stdin_loop(slot: UnixSlot) -> None:
+        print(f"[{slot.name} READY] type a line to send, Ctrl-C to quit", flush=True)
+        try:
+            for line in sys.stdin:
+                text = line.rstrip("\n")
+                if not text:
+                    continue
+                if text in {":q", "/quit", "/exit"}:
+                    return
+                try:
+                    slot.send_text(text)
+                except Exception as e:
+                    print(f"[{slot.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
+        except KeyboardInterrupt:
+            print(flush=True)
 
+    @staticmethod
+    def main(argv=None) -> int:
+        args = UnixCli.parse_args(argv)
+        listen = Locators.parse_sockpath(args.listen)
+        peer = Locators.parse_sockpath(args.peer)
+        if listen != peer:
+            print(
+                "unix slot uses one duplex socket; --listen and --peer must be the same path\n"
+                f"  listen={listen!r} peer={peer!r}",
+                file=sys.stderr,
+            )
+            return 2
 
-def main(argv=None) -> int:
-    args = parse_args(argv)
-    listen = parse_sockpath(args.listen)
-    peer = parse_sockpath(args.peer)
-    if listen != peer:
-        print(
-            "unix slot uses one duplex socket; --listen and --peer must be the same path\n"
-            f"  listen={listen!r} peer={peer!r}",
-            file=sys.stderr,
-        )
-        return 2
-
-    slot = UnixSlot(args.name, listen)
-    try:
-        slot.wait_for_peer(timeout=args.wait)
-        slot.burst()
-        if args.auto:
-            time.sleep(args.hold)
-        else:
-            stdin_loop(slot)
-    except KeyboardInterrupt:
-        print(flush=True)
-    finally:
-        slot.close()
-        print(f"[{slot.name} CLOSE] {slot.addr_s()}", flush=True)
-    return 0
+        slot = UnixSlot(args.name, listen)
+        try:
+            slot.wait_for_peer(timeout=args.wait)
+            slot.burst()
+            if args.auto:
+                time.sleep(args.hold)
+            else:
+                UnixCli.stdin_loop(slot)
+        except KeyboardInterrupt:
+            print(flush=True)
+        finally:
+            slot.close()
+            print(f"[{slot.name} CLOSE] {slot.addr_s()}", flush=True)
+        return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(UnixCli.main())

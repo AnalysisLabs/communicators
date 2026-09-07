@@ -45,66 +45,9 @@ import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-
-BIN_DIR = "/dev/shm"
-
-
-def encode_msg(payload: dict) -> bytes:
-    if not isinstance(payload, dict):
-        raise TypeError(f"payload must be dict, got {type(payload)!r}")
-    return json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-
-
-def decode_msg(raw) -> dict:
-    if raw is None or raw == b"" or raw == "":
-        return {}
-    if isinstance(raw, (bytes, bytearray)):
-        text = raw.decode("utf-8")
-    else:
-        text = str(raw)
-    obj = json.loads(text)
-    if not isinstance(obj, dict):
-        raise ValueError(f"JSON root must be an object, got {type(obj).__name__}")
-    return obj
-
-
-def parse_hostport(spec: str) -> tuple[str, int]:
-    spec = spec.strip()
-    if "://" in spec:
-        spec = spec.split("://", 1)[1]
-    if spec.count(":") != 1:
-        raise ValueError(f"expected host:port, got {spec!r}")
-    host, port_s = spec.rsplit(":", 1)
-    host = "127.0.0.1" if host in ("", "localhost") else host
-    return host, int(port_s)
-
-
-def fmt_addr(addr: tuple[str, int]) -> str:
-    return f"{addr[0]}:{addr[1]}"
-
-
-SILLY = {
-    "FOX": [
-        "quartz-fox juggles 17 pinecones under a magenta lighthouse",
-        "FOX-only proverb: never trust a teapot that quotes Hegel",
-        "FOX payload zebra-plaid #3 — this line must not appear on FOX as inbound from itself",
-    ],
-    "OTTER": [
-        "otter-kelp accordion solo in B-flat minor, volume 11",
-        "OTTER-only proverb: a polite cyclone still rearranges the furniture",
-        "OTTER payload marmalade-submarine #9 — origin stamp is the point",
-    ],
-}
-
-
-def silly_for(name: str) -> list[str]:
-    if name in SILLY:
-        return list(SILLY[name])
-    return [
-        f"{name} recites the serial number of a leftover moon: 7Q-NEBULA",
-        f"{name} claims the spoon is a diplomat from the cutlery republic",
-        f"{name} unique-stamp {int(time.time())} — look for this exact token",
-    ]
+from codec import Codec
+from demo import Demo
+from locators import Locators
 
 
 # ---------------------------------------------------------------------------
@@ -124,7 +67,7 @@ class Mailbox:
         self.lock = threading.Lock()
         self.clients: dict[str, dict] = {}
         self.lanes: dict[str, list] = {}
-        self.bin_path = os.path.join(BIN_DIR, f"http_mailbox_{self.mailbox_id}.json")
+        self.bin_path = os.path.join(Locators.BIN_DIR, f"http_mailbox_{self.mailbox_id}.json")
         self._persist()
 
     def _snapshot(self) -> dict:
@@ -137,7 +80,7 @@ class Mailbox:
 
     def _persist(self) -> None:
         try:
-            os.makedirs(BIN_DIR, exist_ok=True)
+            os.makedirs(Locators.BIN_DIR, exist_ok=True)
             tmp = self.bin_path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as fh:
                 json.dump(self._snapshot(), fh, ensure_ascii=False, indent=2)
@@ -254,7 +197,7 @@ class MailboxServer:
             return self.seq
 
     def listen_url(self) -> str:
-        return f"http://{fmt_addr(self.listen)}"
+        return f"http://{Locators.fmt_addr(self.listen)}"
 
     def _handler_class(self):
         slot = self
@@ -264,7 +207,7 @@ class MailboxServer:
                 return
 
             def _write(self, code: int, payload: dict):
-                body = encode_msg(payload)
+                body = Codec.encode_bytes(payload)
                 self.send_response(code)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Content-Length", str(len(body)))
@@ -274,7 +217,7 @@ class MailboxServer:
             def _read_json(self) -> dict:
                 n = int(self.headers.get("Content-Length") or 0)
                 raw = self.rfile.read(n) if n else b""
-                return decode_msg(raw)
+                return Codec.decode_msg(raw)
 
             def do_GET(self):
                 parsed = urllib.parse.urlparse(self.path)
@@ -420,7 +363,7 @@ class MailboxServer:
         )
 
     def burst(self) -> None:
-        for line in silly_for(self.name):
+        for line in Demo.silly_for(self.name):
             self.send_text(line)
             time.sleep(0.15)
 
@@ -452,16 +395,16 @@ class MailboxClient:
             return self.seq
 
     def peer_url(self, path: str) -> str:
-        return f"http://{fmt_addr(self.peer)}{path}"
+        return f"http://{Locators.fmt_addr(self.peer)}{path}"
 
     def _request(self, method: str, path: str, payload: dict | None = None, timeout: float = 5.0) -> dict:
-        data = None if payload is None else encode_msg(payload)
+        data = None if payload is None else Codec.encode_bytes(payload)
         headers = {}
         if data is not None:
             headers["Content-Type"] = "application/json; charset=utf-8"
         req = urllib.request.Request(self.peer_url(path), data=data, method=method, headers=headers)
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return decode_msg(resp.read())
+            return Codec.decode_msg(resp.read())
 
     def wait_for_server(self, timeout: float) -> dict:
         deadline = time.time() + timeout
@@ -523,7 +466,7 @@ class MailboxClient:
                 print(f"[{self.name} POLL FAIL] {type(e).__name__}: {e}", flush=True)
 
     def burst(self) -> None:
-        for line in silly_for(self.name):
+        for line in Demo.silly_for(self.name):
             try:
                 self.send_text(line)
             except Exception as e:
@@ -534,92 +477,96 @@ class MailboxClient:
         self.stop.set()
 
 
-def parse_args(argv=None):
-    p = argparse.ArgumentParser(description="HTTP mailbox slot — server holds queues, client polls")
-    p.add_argument("--role", required=True, choices=("server", "client"))
-    p.add_argument("--name", required=True, help="endpoint identity printed on every message")
-    p.add_argument("--listen", help="server bind host:port (server role)")
-    p.add_argument("--peer", help="server host:port (client role)")
-    p.add_argument("--poll", type=float, default=3.0, help="client poll cycle seconds; also the server TTL")
-    p.add_argument("--auto", action="store_true", help="send canned burst, skip stdin")
-    p.add_argument("--hold", type=float, default=8.0, help="seconds to stay alive after --auto burst")
-    p.add_argument("--wait", type=float, default=20.0, help="seconds to wait for the other role")
-    return p.parse_args(argv)
+class MailboxCli:
+    """Dev entrypoint for this file. Not a production Wire verb."""
 
+    @staticmethod
+    def parse_args(argv=None):
+        p = argparse.ArgumentParser(description="HTTP mailbox slot — server holds queues, client polls")
+        p.add_argument("--role", required=True, choices=("server", "client"))
+        p.add_argument("--name", required=True, help="endpoint identity printed on every message")
+        p.add_argument("--listen", help="server bind host:port (server role)")
+        p.add_argument("--peer", help="server host:port (client role)")
+        p.add_argument("--poll", type=float, default=3.0, help="client poll cycle seconds; also the server TTL")
+        p.add_argument("--auto", action="store_true", help="send canned burst, skip stdin")
+        p.add_argument("--hold", type=float, default=8.0, help="seconds to stay alive after --auto burst")
+        p.add_argument("--wait", type=float, default=20.0, help="seconds to wait for the other role")
+        return p.parse_args(argv)
 
-def stdin_loop(send_text) -> None:
-    try:
-        for line in sys.stdin:
-            text = line.rstrip("\n")
-            if not text:
-                continue
-            if text in {":q", "/quit", "/exit"}:
-                return
-            try:
-                send_text(text)
-            except Exception as e:
-                print(f"[SEND FAIL] {type(e).__name__}: {e}", flush=True)
-    except KeyboardInterrupt:
-        print(flush=True)
+    @staticmethod
+    def stdin_loop(send_text) -> None:
+        try:
+            for line in sys.stdin:
+                text = line.rstrip("\n")
+                if not text:
+                    continue
+                if text in {":q", "/quit", "/exit"}:
+                    return
+                try:
+                    send_text(text)
+                except Exception as e:
+                    print(f"[SEND FAIL] {type(e).__name__}: {e}", flush=True)
+        except KeyboardInterrupt:
+            print(flush=True)
 
+    @staticmethod
+    def run_server(args) -> int:
+        if not args.listen:
+            print("server role requires --listen host:port", file=sys.stderr)
+            return 2
+        slot = MailboxServer(args.name, Locators.parse_hostport(args.listen), args.poll)
+        slot.start()
+        time.sleep(0.15)
+        try:
+            slot.wait_for_client(timeout=args.wait)
+            slot.burst()
+            if args.auto:
+                time.sleep(args.hold)
+            else:
+                print(f"[{slot.name} READY] type a line to queue for clients, Ctrl-C to quit", flush=True)
+                MailboxCli.stdin_loop(slot.send_text)
+        except KeyboardInterrupt:
+            print(flush=True)
+        finally:
+            slot.close()
+            print(f"[{slot.name} CLOSE] listen {slot.listen_url()} mailbox={slot.box.mailbox_id}", flush=True)
+        return 0
 
-def run_server(args) -> int:
-    if not args.listen:
-        print("server role requires --listen host:port", file=sys.stderr)
-        return 2
-    slot = MailboxServer(args.name, parse_hostport(args.listen), args.poll)
-    slot.start()
-    time.sleep(0.15)
-    try:
-        slot.wait_for_client(timeout=args.wait)
-        slot.burst()
-        if args.auto:
-            time.sleep(args.hold)
-        else:
-            print(f"[{slot.name} READY] type a line to queue for clients, Ctrl-C to quit", flush=True)
-            stdin_loop(slot.send_text)
-    except KeyboardInterrupt:
-        print(flush=True)
-    finally:
-        slot.close()
-        print(f"[{slot.name} CLOSE] listen {slot.listen_url()} mailbox={slot.box.mailbox_id}", flush=True)
-    return 0
+    @staticmethod
+    def run_client(args) -> int:
+        if not args.peer:
+            print("client role requires --peer host:port", file=sys.stderr)
+            return 2
+        slot = MailboxClient(args.name, Locators.parse_hostport(args.peer), args.poll)
+        try:
+            slot.wait_for_server(timeout=args.wait)
+            slot.tune()
+            poller = threading.Thread(target=slot.poll_loop, name=f"{slot.name}-poll", daemon=True)
+            poller.start()
+            slot.poll_once()
+            slot.burst()
+            if args.auto:
+                time.sleep(args.hold)
+            else:
+                print(f"[{slot.name} READY] type a line to POST, Ctrl-C to quit", flush=True)
+                MailboxCli.stdin_loop(slot.send_text)
+        except KeyboardInterrupt:
+            print(flush=True)
+        finally:
+            slot.close()
+            print(f"[{slot.name} CLOSE] peer {Locators.fmt_addr(slot.peer)} mailbox={slot.mailbox_id}", flush=True)
+        return 0
 
-
-def run_client(args) -> int:
-    if not args.peer:
-        print("client role requires --peer host:port", file=sys.stderr)
-        return 2
-    slot = MailboxClient(args.name, parse_hostport(args.peer), args.poll)
-    try:
-        slot.wait_for_server(timeout=args.wait)
-        slot.tune()
-        poller = threading.Thread(target=slot.poll_loop, name=f"{slot.name}-poll", daemon=True)
-        poller.start()
-        slot.poll_once()
-        slot.burst()
-        if args.auto:
-            time.sleep(args.hold)
-        else:
-            print(f"[{slot.name} READY] type a line to POST, Ctrl-C to quit", flush=True)
-            stdin_loop(slot.send_text)
-    except KeyboardInterrupt:
-        print(flush=True)
-    finally:
-        slot.close()
-        print(f"[{slot.name} CLOSE] peer {fmt_addr(slot.peer)} mailbox={slot.mailbox_id}", flush=True)
-    return 0
-
-
-def main(argv=None) -> int:
-    args = parse_args(argv)
-    if args.poll <= 0:
-        print("--poll must be > 0", file=sys.stderr)
-        return 2
-    if args.role == "server":
-        return run_server(args)
-    return run_client(args)
+    @staticmethod
+    def main(argv=None) -> int:
+        args = MailboxCli.parse_args(argv)
+        if args.poll <= 0:
+            print("--poll must be > 0", file=sys.stderr)
+            return 2
+        if args.role == "server":
+            return MailboxCli.run_server(args)
+        return MailboxCli.run_client(args)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(MailboxCli.main())
