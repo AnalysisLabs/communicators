@@ -1,4 +1,6 @@
 # communicators
+Status: In development. Take guarrantees as aspirational. For latest developments see the staged-2 branch. Fully functional Communicator OS projected for MVP in late October 2026 at current rate of progress.
+
 History:
 I am building a system with many servers and an even greater number of websocket connections. Faced with this unsustainable complexity of testing and maintaining dozens of websocket connections I built this communicators library so make connecting any two custom python servers via websockets, be as easy as specifying the host and port of the current server and the server it needs to initiate a connection to.
 
