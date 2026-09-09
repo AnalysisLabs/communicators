@@ -31,9 +31,6 @@ Capability row (harvest later for L1):
   client: listen no  | connect(HTTP) yes | send(POST) yes | recv(poll) yes | request_response no
 """
 
-from codec import Codec
-from locators import Locators
-
 
 # ---------------------------------------------------------------------------
 # Server-side mailbox (SHM bin keyed by the startup UUID)
@@ -53,7 +50,7 @@ class Mailbox:
         self.lock = threading.Lock()
         self.clients: dict[str, dict] = {}
         self.lanes: dict[str, list] = {}
-        self.bin_path = os.path.join(Locators.BIN_DIR, f"http_mailbox_{self.mailbox_id}.json")
+        self.bin_path = os.path.join(Transponder_Locators.BIN_DIR, f"http_mailbox_{self.mailbox_id}.json")
         self._persist()
 
     @internalmethod
@@ -68,7 +65,7 @@ class Mailbox:
     @internalmethod
     def _persist(self) -> None:
         try:
-            os.makedirs(Locators.BIN_DIR, exist_ok=True)
+            os.makedirs(Transponder_Locators.BIN_DIR, exist_ok=True)
             tmp = self.bin_path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as fh:
                 json.dump(self._snapshot(), fh, ensure_ascii=False, indent=2)
@@ -196,7 +193,7 @@ class MailboxServer:
 
     @dualmethod
     def listen_url(self) -> str:
-        return f"http://{Locators.fmt_addr(self.listen)}"
+        return f"http://{Transponder_Locators.fmt_addr(self.listen)}"
 
     @internalmethod
     def _handler_class(self):
@@ -207,7 +204,7 @@ class MailboxServer:
                 return
 
             def _write(self, code: int, payload: dict):
-                body = Codec.encode_bytes(payload)
+                body = Transponder_Codec.encode_bytes(payload)
                 self.send_response(code)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Content-Length", str(len(body)))
@@ -217,7 +214,7 @@ class MailboxServer:
             def _read_json(self) -> dict:
                 n = int(self.headers.get("Content-Length") or 0)
                 raw = self.rfile.read(n) if n else b""
-                return Codec.decode_msg(raw)
+                return Transponder_Codec.decode_msg(raw)
 
             def do_GET(self):
                 parsed = urllib.parse.urlparse(self.path)
@@ -399,17 +396,17 @@ class MailboxClient:
 
     @dualmethod
     def peer_url(self, path: str) -> str:
-        return f"http://{Locators.fmt_addr(self.peer)}{path}"
+        return f"http://{Transponder_Locators.fmt_addr(self.peer)}{path}"
 
     @internalmethod
     def _request(self, method: str, path: str, payload: dict | None = None, timeout: float = 5.0) -> dict:
-        data = None if payload is None else Codec.encode_bytes(payload)
+        data = None if payload is None else Transponder_Codec.encode_bytes(payload)
         headers = {}
         if data is not None:
             headers["Content-Type"] = "application/json; charset=utf-8"
         req = urllib.request.Request(self.peer_url(path), data=data, method=method, headers=headers)
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return Codec.decode_msg(resp.read())
+            return Transponder_Codec.decode_msg(resp.read())
 
     @externalmethod
     def wait_for_server(self, timeout: float) -> dict:

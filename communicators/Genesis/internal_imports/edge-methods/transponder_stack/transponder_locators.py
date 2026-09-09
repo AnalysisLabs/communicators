@@ -62,7 +62,7 @@ class Transponder_Locators:
             if spec.startswith(prefix):
                 spec = spec[len(prefix):]
                 break
-        if not Locators.TOKEN_RE.match(spec):
+        if not Transponder_Locators.TOKEN_RE.match(spec):
             raise ValueError(f"token must be hex, got {spec!r}")
         if len(spec) < 8:
             raise ValueError(f"token too short ({len(spec)}); pass a hex communicator token")
@@ -74,6 +74,6 @@ class Transponder_Locators:
         a, b = sorted((token_a, token_b))
         stem = f"comm_slot_{a}_{b}"
         return (
-            os.path.join(Locators.BIN_DIR, f"{stem}.json"),
-            os.path.join(Locators.BIN_DIR, f"{stem}.lock"),
+            os.path.join(Transponder_Locators.BIN_DIR, f"{stem}.json"),
+            os.path.join(Transponder_Locators.BIN_DIR, f"{stem}.lock"),
         )

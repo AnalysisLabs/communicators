@@ -29,10 +29,6 @@ Capability row (harvest later for L1):
   serve yes | request_response yes | send_and_close yes | persistent_client yes
 """
 
-from codec import Codec
-from demo import Demo
-from locators import Locators
-
 
 # ---------------------------------------------------------------------------
 # Slot
@@ -198,7 +194,7 @@ class UnixSlot:
                     if not raw.strip():
                         continue
                     try:
-                        incoming = Codec.decode_msg(raw)
+                        incoming = Transponder_Codec.decode_msg(raw)
                     except Exception as e:
                         print(f"[{self.name} BAD JSON] {e}: {raw!r}", flush=True)
                         continue
@@ -248,7 +244,7 @@ class UnixSlot:
 
     @internalmethod
     def _write(self, payload: dict) -> None:
-        data = Codec.encode_bytes(payload, newline=True)
+        data = Transponder_Codec.encode_bytes(payload, newline=True)
         with self.send_lock:
             self.conn.sendall(data)
 
@@ -284,12 +280,7 @@ class UnixSlot:
 
     @externalmethod
     def burst(self) -> None:
-        for line in Demo.silly_for(self.name):
-            try:
-                self.send_text(line)
-            except Exception as e:
-                print(f"[{self.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
-            time.sleep(0.15)
+        pass
 
     @externalmethod
     def close(self) -> None:

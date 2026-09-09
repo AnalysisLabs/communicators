@@ -35,7 +35,7 @@ class Transponder_Codec:
         """Dict -> UTF-8 JSON bytes. newline=True is NDJSON framing for
         stream slots; the extra byte is *frame*, not codec.
         """
-        data = Codec.encode_msg(payload).encode("utf-8")
+        data = Transponder_Codec.encode_msg(payload).encode("utf-8")
         if newline:
             data += b"\n"
         return data
@@ -67,12 +67,8 @@ class Transponder_Codec:
         """Round-trip through JSON so shm-style bins store the same shape
         the wire would have sent.
         """
-        return Codec.decode_msg(Codec.encode_msg(payload))
+        return Transponder_Codec.decode_msg(Transponder_Codec.encode_msg(payload))
 
 
 # Qualified use (Codec.encode_msg) is the prefix convention.
 # These aliases keep current slot call sites short during the increment.
-encode_msg = Codec.encode_msg
-decode_msg = Codec.decode_msg
-encode_bytes = Codec.encode_bytes
-canonicalize = Codec.canonicalize

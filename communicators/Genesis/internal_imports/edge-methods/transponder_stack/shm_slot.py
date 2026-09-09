@@ -28,10 +28,6 @@ Capability row (harvest later for L1):
   serve yes | request_response yes | send_and_close yes | persistent_client yes
 """
 
-from codec import Codec
-from demo import Demo
-from locators import Locators
-
 
 class DirWatch:
     IN_MODIFY = 0x00000002
@@ -96,7 +92,7 @@ class ShmSlot:
         self.name = name
         self.mine = mine
         self.peer = peer
-        self.bin_path, self.lock_path = Locators.shm_bin_paths(mine, peer)
+        self.bin_path, self.lock_path = Transponder_Locators.shm_bin_paths(mine, peer)
         self.seq = 0
         self.seq_lock = threading.Lock()
         self.inbox = []
@@ -121,7 +117,7 @@ class ShmSlot:
 
     @internalmethod
     def _lock(self):
-        os.makedirs(Locators.BIN_DIR, exist_ok=True)
+        os.makedirs(Transponder_Locators.BIN_DIR, exist_ok=True)
         lockf = open(self.lock_path, "a+")
         fcntl.flock(lockf.fileno(), fcntl.LOCK_EX)
         return lockf
@@ -181,7 +177,7 @@ class ShmSlot:
     @dualmethod
     def attach(self, wait: float) -> None:
         self.ensure_bin()
-        self.watch = DirWatch(Locators.BIN_DIR, os.path.basename(self.bin_path))
+        self.watch = DirWatch(Transponder_Locators.BIN_DIR, os.path.basename(self.bin_path))
         self.alive.set()
         self.watch_thread = threading.Thread(
             target=self._watch_loop, name=f"{self.name}-inotify", daemon=True
@@ -242,7 +238,7 @@ class ShmSlot:
                     pass
         for raw in items:
             try:
-                incoming = Codec.decode_msg(raw)
+                incoming = Transponder_Codec.decode_msg(raw)
             except Exception as e:
                 print(f"[{self.name} BAD JSON] {e}: {raw!r}", flush=True)
                 continue
@@ -298,7 +294,7 @@ class ShmSlot:
 
     @internalmethod
     def _enqueue(self, dest_token: str, payload: dict) -> None:
-        boxed = Codec.canonicalize(payload)
+        boxed = Transponder_Codec.canonicalize(payload)
 
         def append(obj):
             obj["lanes"].setdefault(dest_token, []).append(boxed)
@@ -339,12 +335,7 @@ class ShmSlot:
 
     @externalmethod
     def burst(self) -> None:
-        for line in Demo.silly_for(self.name):
-            try:
-                self.send_text(line)
-            except Exception as e:
-                print(f"[{self.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
-            time.sleep(0.15)
+        pass
 
     @externalmethod
     def close(self) -> None:

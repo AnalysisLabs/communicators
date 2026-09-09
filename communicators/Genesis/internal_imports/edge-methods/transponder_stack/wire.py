@@ -7,13 +7,6 @@ WebSocket is a first-class slot and can be selected explicitly; it is not
 on the default fallback row.
 """
 
-from codec import Codec
-from locators import Locators
-from shm_slot import ShmSlot
-from tcp_socket_slot import TcpSlot
-from unix_socket_slot import UnixSlot
-from websocket_slot import WsSlot
-
 
 class SlotRefused(RuntimeError):
     @externalmethod
@@ -25,10 +18,9 @@ class SlotRefused(RuntimeError):
         super().__init__(f"{slot} refuses {verb}: {flag}{extra}")
 
 
-
 class Wire:
-    encode_msg = staticmethod(Codec.encode_msg)
-    decode_msg = staticmethod(Codec.decode_msg)
+    encode_msg = staticmethod(Transponder_Codec.encode_msg)
+    decode_msg = staticmethod(Transponder_Codec.decode_msg)
 
     FEATURES = {
         "tcp": {"verbs": {"attach": "yes", "send": "yes", "recv": "yes"}},
@@ -52,7 +44,7 @@ class Wire:
 
     @dualmethod
     def require(self, slot: str, verb: str) -> None:
-        row = FEATURES.get(slot)
+        row = Wire.FEATURES.get(slot)
         if row is None:
             raise SlotRefused(slot, verb, "no", "unknown slot")
         flag = row["verbs"].get(verb, "no")
@@ -66,7 +58,7 @@ class Wire:
         seen = {start}
         cur = start
         while True:
-            nxt = FALLBACK.get(self.scope, {}).get(cur)
+            nxt = Wire.FALLBACK.get(self.scope, {}).get(cur)
             if nxt is None or nxt in seen:
                 break
             out.append(nxt)
@@ -77,17 +69,17 @@ class Wire:
     @internalmethod
     def _make_slot(self, scheme: str, name: str, ref: dict):
         if scheme == "tcp":
-            host, port = Locators.parse_hostport(ref["inet"])
+            host, port = Transponder_Locators.parse_hostport(ref["inet"])
             return TcpSlot(name, (host, port))
         if scheme == "ws":
-            host, port = Locators.parse_hostport(ref["inet"])
+            host, port = Transponder_Locators.parse_hostport(ref["inet"])
             return WsSlot(name, (host, port))
         if scheme == "unix":
-            path = Locators.parse_sockpath(ref.get("path") or ref["inet"])
+            path = Transponder_Locators.parse_sockpath(ref.get("path") or ref["inet"])
             return UnixSlot(name, path)
         if scheme == "shm":
-            mine = Locators.parse_token(ref["mine"])
-            peer = Locators.parse_token(ref["peer"])
+            mine = Transponder_Locators.parse_token(ref["mine"])
+            peer = Transponder_Locators.parse_token(ref["peer"])
             return ShmSlot(name, mine, peer)
         raise SlotRefused(scheme, "attach", "no", "no constructor")
 

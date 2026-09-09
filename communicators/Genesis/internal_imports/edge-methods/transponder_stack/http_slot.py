@@ -20,10 +20,6 @@ Capability row (harvest later for L1):
   serve yes | request_response yes | send_and_close yes | persistent_client later
 """
 
-from codec import Codec
-from demo import Demo
-from locators import Locators
-
 
 # ---------------------------------------------------------------------------
 # Slot
@@ -67,7 +63,7 @@ class HttpSlot:
                 return
 
             def _write(self, code: int, payload: dict):
-                body = Codec.encode_bytes(payload)
+                body = Transponder_Codec.encode_bytes(payload)
                 self.send_response(code)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Content-Length", str(len(body)))
@@ -89,7 +85,7 @@ class HttpSlot:
                 n = int(self.headers.get("Content-Length") or 0)
                 raw = self.rfile.read(n) if n else b""
                 try:
-                    incoming = Codec.decode_msg(raw)
+                    incoming = Transponder_Codec.decode_msg(raw)
                 except Exception as e:
                     self._write(400, {"ok": False, "error": type(e).__name__, "message": str(e)})
                     return
@@ -141,7 +137,7 @@ class HttpSlot:
 
     @dualmethod
     def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
-        body = Codec.encode_bytes(payload)
+        body = Transponder_Codec.encode_bytes(payload)
         req = urllib.request.Request(
             self.peer_url("/msg"),
             data=body,
@@ -150,7 +146,7 @@ class HttpSlot:
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = resp.read()
-        return Codec.decode_msg(raw)
+        return Transponder_Codec.decode_msg(raw)
 
     @externalmethod
     def wait_for_peer(self, timeout: float = 20.0) -> None:
@@ -160,7 +156,7 @@ class HttpSlot:
         while time.time() < deadline:
             try:
                 with urllib.request.urlopen(url, timeout=1.0) as resp:
-                    info = Codec.decode_msg(resp.read())
+                    info = Transponder_Codec.decode_msg(resp.read())
                 print(f"[{self.name} PEER UP] {info}", flush=True)
                 return
             except Exception as e:
@@ -184,9 +180,4 @@ class HttpSlot:
 
     @externalmethod
     def burst(self) -> None:
-        for line in Demo.silly_for(self.name):
-            try:
-                self.send_text(line)
-            except Exception as e:
-                print(f"[{self.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
-            time.sleep(0.15)
+        pass

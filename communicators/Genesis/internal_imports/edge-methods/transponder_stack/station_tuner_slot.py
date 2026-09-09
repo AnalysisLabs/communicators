@@ -31,10 +31,6 @@ Capability row (harvest later for L1):
   tuner:   listen(pulse) yes | send(tune) once | recv yes | request_response no
 """
 
-from codec import Codec
-from demo import Demo
-from locators import Locators
-
 
 class UdpMail:
     """File-local helpers used by both Station and Tuner.
@@ -75,7 +71,7 @@ class Station:
 
     @dualmethod
     def addr_s(self) -> str:
-        return f"udp://{Locators.fmt_addr(self.listen)}"
+        return f"udp://{Transponder_Locators.fmt_addr(self.listen)}"
 
     @dualmethod
     def start(self) -> None:
@@ -95,16 +91,16 @@ class Station:
             except OSError:
                 break
             try:
-                msg = Codec.decode_msg(raw)
+                msg = Transponder_Codec.decode_msg(raw)
             except Exception as e:
                 print(f"[{self.name} BAD JSON] from={src} {e}", flush=True)
                 continue
             if msg.get("kind") != "tune":
                 print(f"[{self.name} IGNORE] kind={msg.get('kind')!r} from={src}", flush=True)
                 continue
-            recv_s = msg.get("recv") or Locators.fmt_addr(src)
+            recv_s = msg.get("recv") or Transponder_Locators.fmt_addr(src)
             try:
-                dest = Locators.parse_hostport(str(recv_s))
+                dest = Transponder_Locators.parse_hostport(str(recv_s))
             except ValueError:
                 dest = (src[0], src[1])
             entry = {"name": msg.get("name") or "?", "recv": dest, "ts": time.time()}
@@ -130,10 +126,10 @@ class Station:
             "from": self.name,
             "kind": "pulse",
             "seq": seq,
-            "text": Demo.pulse_text(seq),
+            "text": f"pulse {seq}",
             "ts": time.time(),
         }
-        data = Codec.encode_bytes(payload)
+        data = Transponder_Codec.encode_bytes(payload)
         dests = self._destinations()
         print(
             f"[{self.name} PULSE] seq={seq} text={payload['text']!r} → {len(dests)} tuner(s)",
@@ -144,7 +140,7 @@ class Station:
                 try:
                     self.sock.sendto(data, dest)
                 except OSError as e:
-                    print(f"[{self.name} SEND FAIL] {Locators.fmt_addr(dest)} {e}", flush=True)
+                    print(f"[{self.name} SEND FAIL] {Transponder_Locators.fmt_addr(dest)} {e}", flush=True)
 
     @externalmethod
     def run(self, hold: float | None) -> None:
@@ -188,7 +184,7 @@ class Tuner:
 
     @dualmethod
     def addr_s(self) -> str:
-        return f"udp://{Locators.fmt_addr(self.listen)}"
+        return f"udp://{Transponder_Locators.fmt_addr(self.listen)}"
 
     @dualmethod
     def start(self) -> None:
@@ -197,7 +193,7 @@ class Tuner:
         self.recv_thread = threading.Thread(target=self._recv_loop, name=f"{self.name}-recv", daemon=True)
         self.recv_thread.start()
         print(
-            f"[{self.name} TUNER] recv {self.addr_s()}  station udp://{Locators.fmt_addr(self.station)}",
+            f"[{self.name} TUNER] recv {self.addr_s()}  station udp://{Transponder_Locators.fmt_addr(self.station)}",
             flush=True,
         )
 
@@ -206,11 +202,11 @@ class Tuner:
         payload = {
             "kind": "tune",
             "name": self.name,
-            "recv": Locators.fmt_addr(self.listen),
+            "recv": Transponder_Locators.fmt_addr(self.listen),
             "ts": time.time(),
         }
-        self.sock.sendto(Codec.encode_bytes(payload), self.station)
-        print(f"[{self.name} TUNE] sent to {Locators.fmt_addr(self.station)} recv={Locators.fmt_addr(self.listen)}", flush=True)
+        self.sock.sendto(Transponder_Codec.encode_bytes(payload), self.station)
+        print(f"[{self.name} TUNE] sent to {Transponder_Locators.fmt_addr(self.station)} recv={Transponder_Locators.fmt_addr(self.listen)}", flush=True)
 
     @externalmethod
     def wait_for_station(self, timeout: float) -> None:
@@ -233,7 +229,7 @@ class Tuner:
             except OSError:
                 break
             try:
-                incoming = Codec.decode_msg(raw)
+                incoming = Transponder_Codec.decode_msg(raw)
             except Exception as e:
                 print(f"[{self.name} BAD JSON] {e}: {raw!r}", flush=True)
                 continue
