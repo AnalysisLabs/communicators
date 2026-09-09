@@ -30,6 +30,7 @@ from locators import Locators
 # ---------------------------------------------------------------------------
 
 class HttpSlot:
+    @internalmethod
     def __init__(self, name: str, listen: tuple[str, int], peer: tuple[str, int]):
         self.name = name
         self.listen_host, self.listen_port = listen
@@ -41,19 +42,23 @@ class HttpSlot:
         self.inbox = []
         self.inbox_lock = threading.Lock()
 
+    @dualmethod
     def next_seq(self) -> int:
         with self.seq_lock:
             self.seq += 1
             return self.seq
 
+    @dualmethod
     def peer_url(self, path: str = "/msg") -> str:
         return f"http://{self.peer_host}:{self.peer_port}{path}"
 
+    @dualmethod
     def listen_url(self) -> str:
         return f"http://{self.listen_host}:{self.listen_port}"
 
     # -- server (positive) ---------------------------------------------------
 
+    @internalmethod
     def _handler_class(self):
         slot = self
 
@@ -110,6 +115,7 @@ class HttpSlot:
 
         return Handler
 
+    @dualmethod
     def serve(self):
         Handler = self._handler_class()
         self.httpd = ThreadingHTTPServer((self.listen_host, self.listen_port), Handler)
@@ -120,10 +126,12 @@ class HttpSlot:
         )
         self.httpd.serve_forever()
 
+    @externalmethod
     def start_server_thread(self):
         self.server_thread = threading.Thread(target=self.serve, name=f"{self.name}-http", daemon=True)
         self.server_thread.start()
 
+    @externalmethod
     def close(self):
         if self.httpd is not None:
             self.httpd.shutdown()
@@ -131,6 +139,7 @@ class HttpSlot:
 
     # -- client (negative) ---------------------------------------------------
 
+    @dualmethod
     def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
         body = Codec.encode_bytes(payload)
         req = urllib.request.Request(
@@ -143,6 +152,7 @@ class HttpSlot:
             raw = resp.read()
         return Codec.decode_msg(raw)
 
+    @externalmethod
     def wait_for_peer(self, timeout: float = 20.0) -> None:
         deadline = time.time() + timeout
         url = self.peer_url("/health")
@@ -158,6 +168,7 @@ class HttpSlot:
                 time.sleep(0.2)
         raise TimeoutError(f"{self.name} never saw peer at {url}: {last_err}")
 
+    @dualmethod
     def send_text(self, text: str) -> dict:
         payload = {
             "from": self.name,
@@ -171,6 +182,7 @@ class HttpSlot:
         print(f"[{self.name} REPLY] {reply}", flush=True)
         return reply
 
+    @externalmethod
     def burst(self) -> None:
         for line in Demo.silly_for(self.name):
             try:

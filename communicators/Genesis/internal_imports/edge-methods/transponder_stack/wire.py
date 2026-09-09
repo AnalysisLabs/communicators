@@ -16,6 +16,7 @@ from websocket_slot import WsSlot
 
 
 class SlotRefused(RuntimeError):
+    @externalmethod
     def __init__(self, slot: str, verb: str, flag: str, detail: str = ""):
         self.slot = slot
         self.verb = verb
@@ -40,6 +41,7 @@ class Wire:
         "loopback": {"tcp": "unix", "unix": "shm"},
     }
 
+    @internalmethod
     def __init__(self, favored: str = "tcp", scope: str = "loopback"):
         self.favored = favored
         self.scope = scope
@@ -48,6 +50,7 @@ class Wire:
         self.on_message = None
         self.name = None
 
+    @dualmethod
     def require(self, slot: str, verb: str) -> None:
         row = FEATURES.get(slot)
         if row is None:
@@ -56,6 +59,7 @@ class Wire:
         if flag != "yes":
             raise SlotRefused(slot, verb, flag)
 
+    @dualmethod
     def candidates(self) -> list[str]:
         start = self.favored or "tcp"
         out = [start]
@@ -70,6 +74,7 @@ class Wire:
             cur = nxt
         return out
 
+    @internalmethod
     def _make_slot(self, scheme: str, name: str, ref: dict):
         if scheme == "tcp":
             host, port = Locators.parse_hostport(ref["inet"])
@@ -86,12 +91,14 @@ class Wire:
             return ShmSlot(name, mine, peer)
         raise SlotRefused(scheme, "attach", "no", "no constructor")
 
+    @internalmethod
     def _hook(self, incoming: dict) -> None:
         cb = self.on_message
         if cb is None:
             return
         cb(incoming)
 
+    @externalmethod
     def attach(self, *, name: str, ref: dict, on_message, timeout: float = 12.0, schemes=None):
         self.name = name
         self.on_message = on_message
@@ -118,6 +125,7 @@ class Wire:
                         pass
         raise RuntimeError(f"Wire.attach exhausted {wanted}: {errors}")
 
+    @externalmethod
     def send(self, payload: dict) -> None:
         if self.slot is None:
             raise RuntimeError("Wire.send before attach")
@@ -126,6 +134,7 @@ class Wire:
             raise SlotRefused(self.scheme, "send", "no", "slot has no _write")
         self.slot._write(payload)
 
+    @externalmethod
     def close(self) -> None:
         if self.slot is not None:
             try:

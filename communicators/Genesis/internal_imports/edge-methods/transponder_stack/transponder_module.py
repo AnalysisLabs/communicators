@@ -12,6 +12,7 @@ class NegativeCom:
     # Clarification: Only NegativeCom has permission to initiate websocket connections.
     _instance = None
 
+    @internalmethod
     def __init__(self, config=None):
         self.config = config or {}
         self.echo_payload = None
@@ -21,6 +22,7 @@ class NegativeCom:
         self.ws = None
         self.wire = self.config.get("wire")
 
+    @internalmethod
     def __new__(cls, config):
         if cls._instance is None:
             cls._instance = object.__new__(cls)
@@ -33,6 +35,7 @@ class NegativeCom:
             cls._instance.echo_seen = set()
         return cls._instance
 
+    @dualmethod
     def inject_echo_payload(func):
         def wrapper(self, *args, **kwargs):
             if 'payload' not in kwargs and hasattr(self, 'echo_payload'):
@@ -40,6 +43,7 @@ class NegativeCom:
             return func(self, *args, **kwargs)
         return wrapper
 
+    @externalmethod
     def attach_wire(self, wire):
         self.wire = wire
         self.ws = wire
@@ -48,6 +52,7 @@ class NegativeCom:
         self._start_up_pump()
         return wire
 
+    @internalmethod
     def _start_up_pump(self):
         if getattr(self, "_pump_started", False):
             return
@@ -62,6 +67,7 @@ class NegativeCom:
 
         threading.Thread(target=pump, name="neg-up-pump", daemon=True).start()
 
+    @dualmethod
     def process_down_queue(self):
         with self.lock:
             manifest.info("This was triggered.")
@@ -75,6 +81,7 @@ class NegativeCom:
                     self.down_queue.popleft()
                     self._busy_down = False
 
+    @dualmethod
     def sender(self, ws, payload):
         body = payload if isinstance(payload, dict) else freight.upgrades(payload)
         if self.wire is None:
@@ -84,6 +91,7 @@ class NegativeCom:
             self.echo_seen.add(body["received"])
 
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
+    @externalmethod
     def receiver(self, ws, message=None):
         if message:
             manifest.info(f'Message received: {truncate(500, message)}')
@@ -94,6 +102,7 @@ class NegativeCom:
             self.up_queue.append(data)
             manifest.info('Message appended to up_queue')
 
+    @dualmethod
     def process_up_queue(self):
         if self._busy_up: return
         manifest.info('Processing up_queue')
@@ -107,6 +116,7 @@ class NegativeCom:
         manifest.info('up_queue processed')
         self._busy_up = False
 
+    @dualmethod
     def wait_for_echo(self, token):
         while True:
             time.sleep(0.1)
@@ -117,6 +127,7 @@ class NegativeCom:
                     self.up_queue.remove(msg)
                     return
 
+    @externalmethod
     @inject_echo_payload
     def echo(self, payload=None):
         token = freight.get(freight_obj=payload, key='communicator_token') if payload else None
@@ -124,6 +135,7 @@ class NegativeCom:
             echo_payload = {'received': token}
             self.sender(self.ws, freight.upgrades(echo_payload))
 
+    @dualmethod
     def from_N(self, payload):
         manifest.info(truncate(500, payload))
         token = freight.get(freight_obj=payload, key='communicator_token')
@@ -135,6 +147,7 @@ class NegativeCom:
             else:
                 self.sender(self.ws, echo_payload)
 
+    @externalmethod
     def to_N(self, payload):
         manifest.info(truncate(500, payload))
         payload = freight.upgrades(payload)
@@ -147,6 +160,7 @@ class PositiveCom:
     _instance = None
     # Clarification: PositiveCom only has permission to receive and maintain websocket connections.
 
+    @internalmethod
     def __init__(self, config=None):
         self.config = config or {}
         self.echo_payload = None
@@ -155,6 +169,7 @@ class PositiveCom:
         self.ws = None
         self.wire = self.config.get("wire")
 
+    @internalmethod
     def __new__(cls, config):
         if cls._instance is None:
             cls._instance = object.__new__(cls)
@@ -175,6 +190,7 @@ class PositiveCom:
             cls._instance.echo_seen = set()
         return cls._instance
 
+    @dualmethod
     def inject_echo_payload(func):
         def wrapper(self, *args, **kwargs):
             if 'payload' not in kwargs and hasattr(self, 'echo_payload'):
@@ -182,6 +198,7 @@ class PositiveCom:
             return func(self, *args, **kwargs)
         return wrapper
 
+    @externalmethod
     def attach_wire(self, wire):
         self.wire = wire
         self.ws = wire
@@ -201,6 +218,7 @@ class PositiveCom:
             threading.Thread(target=pump, name="pos-up-pump", daemon=True).start()
         return wire
 
+    @dualmethod
     @staticmethod
     def _find_pids_on_port(port: int) -> set[int]:
         if shutil.which("lsof"):
@@ -217,6 +235,7 @@ class PositiveCom:
                 return {int(pid) for pid in result.stdout.split() if pid.strip()}
         return set()
 
+    @dualmethod
     @staticmethod
     def _preemptive_port_cleanup(port: int) -> None:
         if port <= 0:
@@ -231,6 +250,7 @@ class PositiveCom:
                 continue
             time.sleep(0.1)
 
+    @dualmethod
     def process_down_queue(self):
         if self._busy_down: return
         for item in list(self.down_queue):
@@ -247,6 +267,7 @@ class PositiveCom:
                         self.down_queue.popleft()
         self._busy_down = False
 
+    @dualmethod
     def wait_for_echo(self, token):
         while True:
             time.sleep(0.1)
@@ -257,6 +278,7 @@ class PositiveCom:
                     self.up_queue.remove(msg)
                     return
 
+    @dualmethod
     def process_up_queue(self):
         if self._busy_up: return
         for item in list(self.up_queue):
@@ -269,6 +291,7 @@ class PositiveCom:
         self._busy_up = False
 
     # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
+    @externalmethod
     def receiver(self, ws, message=None):
         if message:
             data = freight.upgrades(message=message)
@@ -283,6 +306,7 @@ class PositiveCom:
             self.up_queue.append(data)
             manifest.info('Message appended to up_queue')
 
+    @dualmethod
     def sender(self, ws, payload):
         body = payload if isinstance(payload, dict) else freight.upgrades(payload)
         if self.wire is None:
@@ -291,6 +315,7 @@ class PositiveCom:
         if isinstance(body, dict) and "received" in body:
             self.echo_seen.add(body["received"])
 
+    @externalmethod
     @inject_echo_payload
     def echo(self, payload=None):
         token = freight.get(freight_obj=payload, key='communicator_token') if payload else None
@@ -298,12 +323,14 @@ class PositiveCom:
             echo_payload = {'received': token}
             self.sender(self.ws, freight.upgrades(echo_payload))
 
+    @externalmethod
     def to_P(self, payload):
         manifest.info(truncate(500, payload))
         payload = freight.upgrades(payload)
         self.down_queue.append(payload)
         self.process_down_queue()
 
+    @dualmethod
     def from_P(self, payload):
         manifest.info(truncate(500, payload))
         token = freight.get(freight_obj=payload, key='communicator_token')

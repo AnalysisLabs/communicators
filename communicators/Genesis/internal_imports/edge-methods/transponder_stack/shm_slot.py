@@ -46,6 +46,7 @@ class DirWatch:
     libc.inotify_add_watch.restype = ctypes.c_int
     libc.inotify_add_watch.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_uint32]
 
+    @internalmethod
     def __init__(self, directory: str, filename: str):
         self.directory = directory
         self.filename = filename
@@ -59,6 +60,7 @@ class DirWatch:
             os.close(self.fd)
             raise OSError("inotify_add_watch failed")
 
+    @externalmethod
     def wait(self, timeout: float) -> bool:
         ready, _, _ = select.select([self.fd], [], [], timeout)
         if not ready:
@@ -76,6 +78,7 @@ class DirWatch:
                 hit = True
         return hit
 
+    @externalmethod
     def close(self):
         try:
             os.close(self.fd)
@@ -88,6 +91,7 @@ class DirWatch:
 # ---------------------------------------------------------------------------
 
 class ShmSlot:
+    @internalmethod
     def __init__(self, name: str, mine: str, peer: str):
         self.name = name
         self.mine = mine
@@ -105,20 +109,24 @@ class ShmSlot:
         self.watch_thread = None
         self.on_payload = None
 
+    @dualmethod
     def addr_s(self) -> str:
         return f"shm://{os.path.basename(self.bin_path)}"
 
+    @dualmethod
     def next_seq(self) -> int:
         with self.seq_lock:
             self.seq += 1
             return self.seq
 
+    @internalmethod
     def _lock(self):
         os.makedirs(Locators.BIN_DIR, exist_ok=True)
         lockf = open(self.lock_path, "a+")
         fcntl.flock(lockf.fileno(), fcntl.LOCK_EX)
         return lockf
 
+    @internalmethod
     def _read_bin(self) -> dict:
         try:
             with open(self.bin_path, "r", encoding="utf-8") as f:
@@ -137,6 +145,7 @@ class ShmSlot:
         obj.setdefault("present", {})
         return obj
 
+    @internalmethod
     def _write_bin(self, obj: dict) -> None:
         tmp = self.bin_path + ".tmp"
         data = json.dumps(obj, ensure_ascii=False, indent=2) + "\n"
@@ -146,6 +155,7 @@ class ShmSlot:
             os.fsync(f.fileno())
         os.replace(tmp, self.bin_path)
 
+    @internalmethod
     def _mutate(self, fn):
         lockf = self._lock()
         try:
@@ -157,6 +167,7 @@ class ShmSlot:
             fcntl.flock(lockf.fileno(), fcntl.LOCK_UN)
             lockf.close()
 
+    @dualmethod
     def ensure_bin(self) -> None:
         def mark(obj):
             obj["present"][self.mine] = {"name": self.name, "ts": time.time()}
@@ -167,6 +178,7 @@ class ShmSlot:
         if self.peer in present:
             self.peer_up.set()
 
+    @dualmethod
     def attach(self, wait: float) -> None:
         self.ensure_bin()
         self.watch = DirWatch(Locators.BIN_DIR, os.path.basename(self.bin_path))
@@ -187,11 +199,13 @@ class ShmSlot:
         if not self.peer_up.is_set():
             raise TimeoutError(f"{self.name} never saw peer token {self.peer} in {self.bin_path}")
 
+    @externalmethod
     def wait_for_peer(self, timeout: float = 20.0) -> None:
         if not self.peer_up.is_set():
             self.attach(timeout)
         print(f"[{self.name} PEER UP] addr={self.addr_s()}", flush=True)
 
+    @internalmethod
     def _watch_loop(self) -> None:
         while self.alive.is_set():
             try:
@@ -203,6 +217,7 @@ class ShmSlot:
             if self.alive.is_set() and (hit or not self.peer_up.is_set()):
                 self._drain()
 
+    @internalmethod
     def _drain(self) -> None:
         lockf = None
         items = []
@@ -233,6 +248,7 @@ class ShmSlot:
                 continue
             self._handle_incoming(incoming)
 
+    @internalmethod
     def _handle_incoming(self, incoming: dict) -> None:
         cb = getattr(self, "on_payload", None)
         if cb is not None and incoming.get("kind") not in ("reply", "hello"):
@@ -276,9 +292,11 @@ class ShmSlot:
             except Exception as e:
                 print(f"[{self.name} REPLY FAIL] {e}", flush=True)
 
+    @internalmethod
     def _write(self, payload: dict) -> None:
         self._enqueue(self.peer, payload)
 
+    @internalmethod
     def _enqueue(self, dest_token: str, payload: dict) -> None:
         boxed = Codec.canonicalize(payload)
 
@@ -288,6 +306,7 @@ class ShmSlot:
 
         self._mutate(append)
 
+    @dualmethod
     def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
         seq = payload.get("seq")
         ev = threading.Event()
@@ -303,6 +322,7 @@ class ShmSlot:
             with self.inbox_lock:
                 self.reply_events.pop(seq, None)
 
+    @dualmethod
     def send_text(self, text: str) -> dict:
         payload = {
             "from": self.name,
@@ -317,6 +337,7 @@ class ShmSlot:
         print(f"[{self.name} REPLY] {reply}", flush=True)
         return reply
 
+    @externalmethod
     def burst(self) -> None:
         for line in Demo.silly_for(self.name):
             try:
@@ -325,6 +346,7 @@ class ShmSlot:
                 print(f"[{self.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
             time.sleep(0.15)
 
+    @externalmethod
     def close(self) -> None:
         self.alive.clear()
         if self.watch is not None:

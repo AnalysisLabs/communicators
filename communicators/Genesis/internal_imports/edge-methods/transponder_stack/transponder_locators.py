@@ -12,6 +12,7 @@ class Transponder_Locators:
     TOKEN_RE = re.compile(r"^[0-9A-Fa-f]+$")
     BIN_DIR = "/dev/shm"
 
+    @externalmethod
     @staticmethod
     def parse_hostport(spec: str) -> tuple[str, int]:
         spec = spec.strip()
@@ -23,10 +24,12 @@ class Transponder_Locators:
         host = "127.0.0.1" if host in ("", "localhost") else host
         return host, int(port_s)
 
+    @externalmethod
     @staticmethod
     def fmt_addr(addr: tuple[str, int]) -> str:
         return f"{addr[0]}:{addr[1]}"
 
+    @externalmethod
     @staticmethod
     def parse_sockpath(spec: str) -> str:
         """Filesystem path, unix://path, or host:port mapped into /tmp."""
@@ -51,6 +54,7 @@ class Transponder_Locators:
                 return f"/tmp/unix_slot_{host}_{port_s}.sock"
         return spec
 
+    @externalmethod
     @staticmethod
     def parse_token(spec: str) -> str:
         spec = spec.strip()
@@ -64,6 +68,7 @@ class Transponder_Locators:
             raise ValueError(f"token too short ({len(spec)}); pass a hex communicator token")
         return spec.lower()
 
+    @externalmethod
     @staticmethod
     def shm_bin_paths(token_a: str, token_b: str) -> tuple[str, str]:
         a, b = sorted((token_a, token_b))

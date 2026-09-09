@@ -38,6 +38,7 @@ from locators import Locators
 # ---------------------------------------------------------------------------
 
 class WsSlot:
+    @internalmethod
     def __init__(self, name: str, addr: tuple[str, int]):
         self.name = name
         self.host, self.port = addr
@@ -57,14 +58,17 @@ class WsSlot:
         self.server_thread = None
         self.on_payload = None
 
+    @dualmethod
     def addr_s(self) -> str:
         return f"ws://{self.host}:{self.port}"
 
+    @dualmethod
     def next_seq(self) -> int:
         with self.seq_lock:
             self.seq += 1
             return self.seq
 
+    @internalmethod
     def _server_handler(self, websocket):
         self.ws = websocket
         self.role = self.role or "listen"
@@ -83,6 +87,7 @@ class WsSlot:
             print(f"[{self.name} PEER CLOSED]", flush=True)
             self.alive.clear()
 
+    @internalmethod
     def _recv_loop(self) -> None:
         try:
             for raw in self.ws:
@@ -101,6 +106,7 @@ class WsSlot:
             print(f"[{self.name} PEER CLOSED]", flush=True)
             self.alive.clear()
 
+    @dualmethod
     def attach(self, wait: float) -> None:
         deadline = time.time() + wait
         last_err = None
@@ -139,11 +145,13 @@ class WsSlot:
                     time.sleep(0.15)
         raise TimeoutError(f"{self.name} never attached to {self.addr_s()}: {last_err}")
 
+    @externalmethod
     def wait_for_peer(self, timeout: float = 20.0) -> None:
         if not self.attached.is_set():
             self.attach(timeout)
         print(f"[{self.name} PEER UP] role={self.role} addr={self.addr_s()}", flush=True)
 
+    @internalmethod
     def _handle_incoming(self, incoming: dict) -> None:
         cb = getattr(self, "on_payload", None)
         if cb is not None and incoming.get("kind") not in ("reply", "hello"):
@@ -183,11 +191,13 @@ class WsSlot:
             except Exception as e:
                 print(f"[{self.name} REPLY FAIL] {e}", flush=True)
 
+    @internalmethod
     def _write(self, payload: dict) -> None:
         data = Codec.encode_msg(payload)
         with self.send_lock:
             self.ws.send(data)
 
+    @dualmethod
     def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
         seq = payload.get("seq")
         ev = threading.Event()
@@ -203,6 +213,7 @@ class WsSlot:
             with self.inbox_lock:
                 self.reply_events.pop(seq, None)
 
+    @dualmethod
     def send_text(self, text: str) -> dict:
         payload = {
             "from": self.name,
@@ -216,6 +227,7 @@ class WsSlot:
         print(f"[{self.name} REPLY] {reply}", flush=True)
         return reply
 
+    @externalmethod
     def burst(self) -> None:
         for line in Demo.silly_for(self.name):
             try:
@@ -224,6 +236,7 @@ class WsSlot:
                 print(f"[{self.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
             time.sleep(0.15)
 
+    @internalmethod
     def _stop_server(self) -> None:
         if self.server is None:
             return
@@ -237,6 +250,7 @@ class WsSlot:
             pass
         self.server = None
 
+    @externalmethod
     def close(self) -> None:
         self.alive.clear()
         if self.ws is not None:

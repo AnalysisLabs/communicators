@@ -38,6 +38,7 @@ from locators import Locators
 # ---------------------------------------------------------------------------
 
 class TcpSlot:
+    @internalmethod
     def __init__(self, name: str, addr: tuple[str, int]):
         self.name = name
         self.host, self.port = addr
@@ -55,9 +56,11 @@ class TcpSlot:
         self.recv_thread = None
         self.on_payload = None
 
+    @dualmethod
     def addr_s(self) -> str:
         return f"tcp://{self.host}:{self.port}"
 
+    @dualmethod
     def next_seq(self) -> int:
         with self.seq_lock:
             self.seq += 1
@@ -65,6 +68,7 @@ class TcpSlot:
 
     # -- bind-or-connect on the shared address -------------------------------
 
+    @internalmethod
     def _bind_listen(self) -> socket.socket:
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -73,6 +77,7 @@ class TcpSlot:
         listener.settimeout(0.3)
         return listener
 
+    @internalmethod
     def _connect(self, timeout: float) -> socket.socket:
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.settimeout(timeout)
@@ -80,6 +85,7 @@ class TcpSlot:
         conn.settimeout(None)
         return conn
 
+    @dualmethod
     def attach(self, wait: float) -> None:
         """First binder becomes listener; the other dials the same host:port."""
         deadline = time.time() + wait
@@ -118,17 +124,20 @@ class TcpSlot:
                     time.sleep(0.15)
         raise TimeoutError(f"{self.name} never attached to {self.addr_s()}: {last_err}")
 
+    @externalmethod
     def wait_for_peer(self, timeout: float = 20.0) -> None:
         # attach() already blocks until the duplex socket exists
         if self.conn is None:
             self.attach(timeout)
         print(f"[{self.name} PEER UP] role={self.role} addr={self.addr_s()}", flush=True)
 
+    @internalmethod
     def _start_recv(self) -> None:
         self.alive.set()
         self.recv_thread = threading.Thread(target=self._recv_loop, name=f"{self.name}-recv", daemon=True)
         self.recv_thread.start()
 
+    @internalmethod
     def _recv_loop(self) -> None:
         buf = b""
         conn = self.conn
@@ -155,6 +164,7 @@ class TcpSlot:
         finally:
             self.alive.clear()
 
+    @internalmethod
     def _handle_incoming(self, incoming: dict) -> None:
         cb = getattr(self, "on_payload", None)
         if cb is not None and incoming.get("kind") not in ("reply", "hello"):
@@ -195,11 +205,13 @@ class TcpSlot:
             except OSError as e:
                 print(f"[{self.name} REPLY FAIL] {e}", flush=True)
 
+    @internalmethod
     def _write(self, payload: dict) -> None:
         data = Codec.encode_bytes(payload, newline=True)
         with self.send_lock:
             self.conn.sendall(data)
 
+    @dualmethod
     def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
         seq = payload.get("seq")
         ev = threading.Event()
@@ -215,6 +227,7 @@ class TcpSlot:
             with self.inbox_lock:
                 self.reply_events.pop(seq, None)
 
+    @dualmethod
     def send_text(self, text: str) -> dict:
         payload = {
             "from": self.name,
@@ -228,6 +241,7 @@ class TcpSlot:
         print(f"[{self.name} REPLY] {reply}", flush=True)
         return reply
 
+    @externalmethod
     def burst(self) -> None:
         for line in Demo.silly_for(self.name):
             try:
@@ -236,6 +250,7 @@ class TcpSlot:
                 print(f"[{self.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
             time.sleep(0.15)
 
+    @externalmethod
     def close(self) -> None:
         self.alive.clear()
         for sock in (self.conn, self.listener):

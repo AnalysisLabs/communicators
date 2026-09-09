@@ -45,6 +45,7 @@ class Mailbox:
     Only the server process touches this. The client never sees /dev/shm.
     """
 
+    @internalmethod
     def __init__(self, server_name: str, default_poll: float):
         self.server_name = server_name
         self.mailbox_id = str(uuid.uuid4())
@@ -55,6 +56,7 @@ class Mailbox:
         self.bin_path = os.path.join(Locators.BIN_DIR, f"http_mailbox_{self.mailbox_id}.json")
         self._persist()
 
+    @internalmethod
     def _snapshot(self) -> dict:
         return {
             "mailbox": self.mailbox_id,
@@ -63,6 +65,7 @@ class Mailbox:
             "lanes": {name: list(items) for name, items in self.lanes.items()},
         }
 
+    @internalmethod
     def _persist(self) -> None:
         try:
             os.makedirs(Locators.BIN_DIR, exist_ok=True)
@@ -73,6 +76,7 @@ class Mailbox:
         except OSError:
             pass
 
+    @externalmethod
     def unlink(self) -> None:
         for path in (self.bin_path, self.bin_path + ".tmp"):
             try:
@@ -80,6 +84,7 @@ class Mailbox:
             except OSError:
                 pass
 
+    @externalmethod
     def tune(self, name: str, poll: float | None) -> dict:
         poll_s = self.default_poll if poll is None else float(poll)
         if poll_s <= 0:
@@ -91,10 +96,12 @@ class Mailbox:
             self._persist()
             return {"ok": True, "mailbox": self.mailbox_id, "name": name, "poll": poll_s}
 
+    @externalmethod
     def client_names(self) -> list[str]:
         with self.lock:
             return list(self.clients)
 
+    @internalmethod
     def expire_locked(self, now: float) -> list[tuple[str, dict]]:
         dropped = []
         for name, items in self.lanes.items():
@@ -109,6 +116,7 @@ class Mailbox:
             self.lanes[name] = keep
         return dropped
 
+    @externalmethod
     def enqueue(self, dest: str, msg: dict) -> None:
         item = {"enqueued_at": time.time(), "msg": msg}
         with self.lock:
@@ -117,6 +125,7 @@ class Mailbox:
             self.lanes[dest].append(item)
             self._persist()
 
+    @externalmethod
     def enqueue_all(self, msg: dict) -> list[str]:
         with self.lock:
             names = list(self.clients)
@@ -126,6 +135,7 @@ class Mailbox:
             self._persist()
             return names
 
+    @externalmethod
     def fetch(self, name: str) -> list[dict]:
         now = time.time()
         with self.lock:
@@ -144,6 +154,7 @@ class Mailbox:
             )
         return [item["msg"] for item in items]
 
+    @externalmethod
     def sweep(self) -> None:
         now = time.time()
         with self.lock:
@@ -164,6 +175,7 @@ class Mailbox:
 # ---------------------------------------------------------------------------
 
 class MailboxServer:
+    @internalmethod
     def __init__(self, name: str, listen: tuple[str, int], poll: float):
         self.name = name
         self.listen = listen
@@ -176,14 +188,17 @@ class MailboxServer:
         self.sweep_stop = threading.Event()
         self.client_present = threading.Event()
 
+    @dualmethod
     def next_seq(self) -> int:
         with self.seq_lock:
             self.seq += 1
             return self.seq
 
+    @dualmethod
     def listen_url(self) -> str:
         return f"http://{Locators.fmt_addr(self.listen)}"
 
+    @internalmethod
     def _handler_class(self):
         slot = self
 
@@ -307,6 +322,7 @@ class MailboxServer:
 
         return Handler
 
+    @dualmethod
     def serve(self):
         Handler = self._handler_class()
         self.httpd = ThreadingHTTPServer(self.listen, Handler)
@@ -317,21 +333,25 @@ class MailboxServer:
         )
         self.httpd.serve_forever()
 
+    @externalmethod
     def start(self):
         self.server_thread = threading.Thread(target=self.serve, name=f"{self.name}-http", daemon=True)
         self.server_thread.start()
         threading.Thread(target=self._sweep_loop, name=f"{self.name}-ttl", daemon=True).start()
 
+    @internalmethod
     def _sweep_loop(self):
         while not self.sweep_stop.wait(0.25):
             self.box.sweep()
 
+    @externalmethod
     def wait_for_client(self, timeout: float) -> None:
         print(f"[{self.name} WAIT] for a tuner-style client to POST /tune", flush=True)
         if not self.client_present.wait(timeout=timeout):
             raise TimeoutError(f"{self.name} never saw a client join")
         print(f"[{self.name} PEER UP] clients={self.box.client_names()}", flush=True)
 
+    @externalmethod
     def send_text(self, text: str) -> None:
         payload = {
             "from": self.name,
@@ -347,6 +367,7 @@ class MailboxServer:
             flush=True,
         )
 
+    @externalmethod
     def close(self):
         self.sweep_stop.set()
         if self.httpd is not None:
@@ -360,6 +381,7 @@ class MailboxServer:
 # ---------------------------------------------------------------------------
 
 class MailboxClient:
+    @internalmethod
     def __init__(self, name: str, peer: tuple[str, int], poll: float):
         self.name = name
         self.peer = peer
@@ -369,14 +391,17 @@ class MailboxClient:
         self.mailbox_id = None
         self.stop = threading.Event()
 
+    @dualmethod
     def next_seq(self) -> int:
         with self.seq_lock:
             self.seq += 1
             return self.seq
 
+    @dualmethod
     def peer_url(self, path: str) -> str:
         return f"http://{Locators.fmt_addr(self.peer)}{path}"
 
+    @internalmethod
     def _request(self, method: str, path: str, payload: dict | None = None, timeout: float = 5.0) -> dict:
         data = None if payload is None else Codec.encode_bytes(payload)
         headers = {}
@@ -386,6 +411,7 @@ class MailboxClient:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return Codec.decode_msg(resp.read())
 
+    @externalmethod
     def wait_for_server(self, timeout: float) -> dict:
         deadline = time.time() + timeout
         last_err = None
@@ -401,12 +427,14 @@ class MailboxClient:
                 time.sleep(0.2)
         raise TimeoutError(f"{self.name} never saw mailbox at {url}: {last_err}")
 
+    @externalmethod
     def tune(self) -> dict:
         info = self._request("POST", "/tune", {"from": self.name, "kind": "tune", "poll": self.poll, "ts": time.time()})
         self.mailbox_id = info.get("mailbox", self.mailbox_id)
         print(f"[{self.name} TUNE] {info}", flush=True)
         return info
 
+    @externalmethod
     def send_text(self, text: str) -> dict:
         payload = {
             "from": self.name,
@@ -420,6 +448,7 @@ class MailboxClient:
         print(f"[{self.name} ACCEPTED] {reply}", flush=True)
         return reply
 
+    @dualmethod
     def poll_once(self) -> list[dict]:
         path = "/poll?" + urllib.parse.urlencode({"name": self.name})
         info = self._request("GET", path, timeout=max(2.0, self.poll + 1.0))
@@ -436,6 +465,7 @@ class MailboxClient:
             )
         return messages
 
+    @externalmethod
     def poll_loop(self) -> None:
         while not self.stop.wait(self.poll):
             try:
@@ -445,5 +475,6 @@ class MailboxClient:
                     return
                 print(f"[{self.name} POLL FAIL] {type(e).__name__}: {e}", flush=True)
 
+    @externalmethod
     def close(self):
         self.stop.set()

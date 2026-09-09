@@ -21,6 +21,7 @@ class Transponder_Codec:
     """
     Raw = Union[None, str, bytes, bytearray, dict]
 
+    @externalmethod
     @staticmethod
     def encode_msg(payload: dict) -> str:
         """Dict -> JSON object text. No trailing newline, no UTF-8 wrap."""
@@ -28,6 +29,7 @@ class Transponder_Codec:
             raise TypeError(f"payload must be dict, got {type(payload)!r}")
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
+    @externalmethod
     @staticmethod
     def encode_bytes(payload: dict, newline: bool = False) -> bytes:
         """Dict -> UTF-8 JSON bytes. newline=True is NDJSON framing for
@@ -38,6 +40,7 @@ class Transponder_Codec:
             data += b"\n"
         return data
 
+    @externalmethod
     @staticmethod
     def decode_msg(raw: Raw) -> dict:
         """JSON object text/bytes/dict -> dict. Empty input -> {}."""
@@ -58,6 +61,7 @@ class Transponder_Codec:
             raise ValueError(f"JSON root must be an object, got {type(obj).__name__}")
         return obj
 
+    @externalmethod
     @staticmethod
     def canonicalize(payload: dict) -> dict:
         """Round-trip through JSON so shm-style bins store the same shape

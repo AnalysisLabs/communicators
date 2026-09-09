@@ -44,6 +44,7 @@ class UdpMail:
     UdpMail.bind_udp(...).
     """
 
+    @externalmethod
     @staticmethod
     def bind_udp(addr: tuple[str, int]) -> socket.socket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -58,6 +59,7 @@ class UdpMail:
 # ---------------------------------------------------------------------------
 
 class Station:
+    @internalmethod
     def __init__(self, name: str, listen: tuple[str, int], interval: float, repeat: int):
         self.name = name
         self.listen = listen
@@ -71,9 +73,11 @@ class Station:
         self.alive = threading.Event()
         self.join_thread = None
 
+    @dualmethod
     def addr_s(self) -> str:
         return f"udp://{Locators.fmt_addr(self.listen)}"
 
+    @dualmethod
     def start(self) -> None:
         self.sock = UdpMail.bind_udp(self.listen)
         self.alive.set()
@@ -81,6 +85,7 @@ class Station:
         self.join_thread.start()
         print(f"[{self.name} STATION] join-mailbox {self.addr_s()}", flush=True)
 
+    @internalmethod
     def _join_loop(self) -> None:
         while self.alive.is_set():
             try:
@@ -107,15 +112,18 @@ class Station:
                 self.registry[dest] = entry
             print(f"[{self.name} JOIN] {entry['name']} → {Locators.fmt_addr(dest)}  n={len(self.registry)}", flush=True)
 
+    @dualmethod
     def next_seq(self) -> int:
         with self.seq_lock:
             self.seq += 1
             return self.seq
 
+    @internalmethod
     def _destinations(self) -> list[tuple[tuple[str, int], str]]:
         with self.reg_lock:
             return [(dest, rec["name"]) for dest, rec in self.registry.items()]
 
+    @dualmethod
     def emit(self) -> None:
         seq = self.next_seq()
         payload = {
@@ -138,6 +146,7 @@ class Station:
                 except OSError as e:
                     print(f"[{self.name} SEND FAIL] {Locators.fmt_addr(dest)} {e}", flush=True)
 
+    @externalmethod
     def run(self, hold: float | None) -> None:
         deadline = None if hold is None else time.time() + hold
         try:
@@ -149,6 +158,7 @@ class Station:
         except KeyboardInterrupt:
             print(flush=True)
 
+    @externalmethod
     def close(self) -> None:
         self.alive.clear()
         if self.sock is not None:
@@ -165,6 +175,7 @@ class Station:
 # ---------------------------------------------------------------------------
 
 class Tuner:
+    @internalmethod
     def __init__(self, name: str, listen: tuple[str, int], station: tuple[str, int]):
         self.name = name
         self.listen = listen
@@ -175,9 +186,11 @@ class Tuner:
         self.seen = set()
         self.recv_thread = None
 
+    @dualmethod
     def addr_s(self) -> str:
         return f"udp://{Locators.fmt_addr(self.listen)}"
 
+    @dualmethod
     def start(self) -> None:
         self.sock = UdpMail.bind_udp(self.listen)
         self.alive.set()
@@ -188,6 +201,7 @@ class Tuner:
             flush=True,
         )
 
+    @externalmethod
     def tune(self) -> None:
         payload = {
             "kind": "tune",
@@ -198,6 +212,7 @@ class Tuner:
         self.sock.sendto(Codec.encode_bytes(payload), self.station)
         print(f"[{self.name} TUNE] sent to {Locators.fmt_addr(self.station)} recv={Locators.fmt_addr(self.listen)}", flush=True)
 
+    @externalmethod
     def wait_for_station(self, timeout: float) -> None:
         deadline = time.time() + timeout
         while time.time() < deadline:
@@ -208,6 +223,7 @@ class Tuner:
                 return
         print(f"[{self.name} STATION WAIT] timed out; still listening", flush=True)
 
+    @internalmethod
     def _recv_loop(self) -> None:
         while self.alive.is_set():
             try:
@@ -236,6 +252,7 @@ class Tuner:
             origin = incoming.get("from", "?")
             print(f"[{self.name} RECV] from={origin} seq={seq} text={text!r}", flush=True)
 
+    @externalmethod
     def run(self, hold: float | None) -> None:
         if hold is not None:
             time.sleep(hold)
@@ -247,6 +264,7 @@ class Tuner:
         except KeyboardInterrupt:
             print(flush=True)
 
+    @externalmethod
     def close(self) -> None:
         self.alive.clear()
         if self.sock is not None:
