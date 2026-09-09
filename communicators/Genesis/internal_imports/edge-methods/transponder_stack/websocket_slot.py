@@ -28,16 +28,6 @@ Capability row (harvest later for L1):
   serve yes | request_response yes | send_and_close yes | persistent_client yes
 """
 
-from __future__ import annotations
-
-import argparse
-import sys
-import threading
-import time
-
-from websockets.sync.client import connect
-from websockets.sync.server import serve
-
 from codec import Codec
 from demo import Demo
 from locators import Locators
@@ -256,67 +246,3 @@ class WsSlot:
                 pass
             self.ws = None
         self._stop_server()
-
-
-class WsCli:
-    """Dev entrypoint for this file. Not a production Wire verb."""
-
-    @staticmethod
-    def parse_args(argv=None):
-        p = argparse.ArgumentParser(description="WebSocket slot prototype — one shared host:port, duplex socket")
-        p.add_argument("--name", required=True, help="endpoint identity printed on every message")
-        p.add_argument("--listen", required=True, help="shared host:port (must equal --peer)")
-        p.add_argument("--peer", required=True, help="shared host:port (must equal --listen)")
-        p.add_argument("--auto", action="store_true", help="send canned burst, skip stdin")
-        p.add_argument("--hold", type=float, default=3.0, help="seconds to stay alive after --auto burst")
-        p.add_argument("--wait", type=float, default=20.0, help="seconds to wait for the duplex socket")
-        return p.parse_args(argv)
-
-    @staticmethod
-    def stdin_loop(slot: WsSlot) -> None:
-        print(f"[{slot.name} READY] type a line to send, Ctrl-C to quit", flush=True)
-        try:
-            for line in sys.stdin:
-                text = line.rstrip("\n")
-                if not text:
-                    continue
-                if text in {":q", "/quit", "/exit"}:
-                    return
-                try:
-                    slot.send_text(text)
-                except Exception as e:
-                    print(f"[{slot.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
-        except KeyboardInterrupt:
-            print(flush=True)
-
-    @staticmethod
-    def main(argv=None) -> int:
-        args = WsCli.parse_args(argv)
-        listen = Locators.parse_hostport(args.listen)
-        peer = Locators.parse_hostport(args.peer)
-        if listen != peer:
-            print(
-                "websocket slot uses one duplex socket; --listen and --peer must be the same host:port\n"
-                f"  listen={listen!r} peer={peer!r}",
-                file=sys.stderr,
-            )
-            return 2
-
-        slot = WsSlot(args.name, listen)
-        try:
-            slot.wait_for_peer(timeout=args.wait)
-            slot.burst()
-            if args.auto:
-                time.sleep(args.hold)
-            else:
-                WsCli.stdin_loop(slot)
-        except KeyboardInterrupt:
-            print(flush=True)
-        finally:
-            slot.close()
-            print(f"[{slot.name} CLOSE] {slot.addr_s()}", flush=True)
-        return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(WsCli.main())

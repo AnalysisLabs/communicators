@@ -31,22 +31,7 @@ Capability row (harvest later for L1):
   client: listen no  | connect(HTTP) yes | send(POST) yes | recv(poll) yes | request_response no
 """
 
-from __future__ import annotations
-
-import argparse
-import json
-import os
-import sys
-import threading
-import time
-import uuid
-import urllib.error
-import urllib.parse
-import urllib.request
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-
 from codec import Codec
-from demo import Demo
 from locators import Locators
 
 
@@ -362,11 +347,6 @@ class MailboxServer:
             flush=True,
         )
 
-    def burst(self) -> None:
-        for line in Demo.silly_for(self.name):
-            self.send_text(line)
-            time.sleep(0.15)
-
     def close(self):
         self.sweep_stop.set()
         if self.httpd is not None:
@@ -465,108 +445,5 @@ class MailboxClient:
                     return
                 print(f"[{self.name} POLL FAIL] {type(e).__name__}: {e}", flush=True)
 
-    def burst(self) -> None:
-        for line in Demo.silly_for(self.name):
-            try:
-                self.send_text(line)
-            except Exception as e:
-                print(f"[{self.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
-            time.sleep(0.15)
-
     def close(self):
         self.stop.set()
-
-
-class MailboxCli:
-    """Dev entrypoint for this file. Not a production Wire verb."""
-
-    @staticmethod
-    def parse_args(argv=None):
-        p = argparse.ArgumentParser(description="HTTP mailbox slot — server holds queues, client polls")
-        p.add_argument("--role", required=True, choices=("server", "client"))
-        p.add_argument("--name", required=True, help="endpoint identity printed on every message")
-        p.add_argument("--listen", help="server bind host:port (server role)")
-        p.add_argument("--peer", help="server host:port (client role)")
-        p.add_argument("--poll", type=float, default=3.0, help="client poll cycle seconds; also the server TTL")
-        p.add_argument("--auto", action="store_true", help="send canned burst, skip stdin")
-        p.add_argument("--hold", type=float, default=8.0, help="seconds to stay alive after --auto burst")
-        p.add_argument("--wait", type=float, default=20.0, help="seconds to wait for the other role")
-        return p.parse_args(argv)
-
-    @staticmethod
-    def stdin_loop(send_text) -> None:
-        try:
-            for line in sys.stdin:
-                text = line.rstrip("\n")
-                if not text:
-                    continue
-                if text in {":q", "/quit", "/exit"}:
-                    return
-                try:
-                    send_text(text)
-                except Exception as e:
-                    print(f"[SEND FAIL] {type(e).__name__}: {e}", flush=True)
-        except KeyboardInterrupt:
-            print(flush=True)
-
-    @staticmethod
-    def run_server(args) -> int:
-        if not args.listen:
-            print("server role requires --listen host:port", file=sys.stderr)
-            return 2
-        slot = MailboxServer(args.name, Locators.parse_hostport(args.listen), args.poll)
-        slot.start()
-        time.sleep(0.15)
-        try:
-            slot.wait_for_client(timeout=args.wait)
-            slot.burst()
-            if args.auto:
-                time.sleep(args.hold)
-            else:
-                print(f"[{slot.name} READY] type a line to queue for clients, Ctrl-C to quit", flush=True)
-                MailboxCli.stdin_loop(slot.send_text)
-        except KeyboardInterrupt:
-            print(flush=True)
-        finally:
-            slot.close()
-            print(f"[{slot.name} CLOSE] listen {slot.listen_url()} mailbox={slot.box.mailbox_id}", flush=True)
-        return 0
-
-    @staticmethod
-    def run_client(args) -> int:
-        if not args.peer:
-            print("client role requires --peer host:port", file=sys.stderr)
-            return 2
-        slot = MailboxClient(args.name, Locators.parse_hostport(args.peer), args.poll)
-        try:
-            slot.wait_for_server(timeout=args.wait)
-            slot.tune()
-            poller = threading.Thread(target=slot.poll_loop, name=f"{slot.name}-poll", daemon=True)
-            poller.start()
-            slot.poll_once()
-            slot.burst()
-            if args.auto:
-                time.sleep(args.hold)
-            else:
-                print(f"[{slot.name} READY] type a line to POST, Ctrl-C to quit", flush=True)
-                MailboxCli.stdin_loop(slot.send_text)
-        except KeyboardInterrupt:
-            print(flush=True)
-        finally:
-            slot.close()
-            print(f"[{slot.name} CLOSE] peer {Locators.fmt_addr(slot.peer)} mailbox={slot.mailbox_id}", flush=True)
-        return 0
-
-    @staticmethod
-    def main(argv=None) -> int:
-        args = MailboxCli.parse_args(argv)
-        if args.poll <= 0:
-            print("--poll must be > 0", file=sys.stderr)
-            return 2
-        if args.role == "server":
-            return MailboxCli.run_server(args)
-        return MailboxCli.run_client(args)
-
-
-if __name__ == "__main__":
-    raise SystemExit(MailboxCli.main())

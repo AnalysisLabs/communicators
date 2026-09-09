@@ -14,19 +14,12 @@ Prefix shape (markers later):
         def decode_msg(...)
 """
 
-from __future__ import annotations
 
-import json
-from typing import Any, Union
-
-
-Raw = Union[None, str, bytes, bytearray, dict]
-
-
-class Codec:
+class Transponder_Codec:
     """Canonical JSON-object codec. Methods are static so T1 slots and a
     later T2 Wire can both call Codec.encode_msg without holding state.
     """
+    Raw = Union[None, str, bytes, bytearray, dict]
 
     @staticmethod
     def encode_msg(payload: dict) -> str:

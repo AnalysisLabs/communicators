@@ -1,15 +1,3 @@
-import json, secrets, os, tracemalloc, signal, shutil, subprocess, time, threading, uuid
-from collections import deque
-try:
-    from .state import manifest, truncate, freight, singleton, aux_multiton
-    from .unix_socket import generate_unique_socket_path, unix_client, unix_server
-except ImportError:
-    from shims import (
-        manifest, truncate, freight, singleton, aux_multiton,
-        generate_unique_socket_path, unix_client, unix_server,
-    )
-
-tracemalloc.start(7)
 
 """
 negative == initiates websocket
@@ -17,13 +5,6 @@ positive == recieves and remembers websocket(s)
 down == from middleware to communicator
 up == from communicator to middleware
 """
-
-def inject_echo_payload(func):
-    def wrapper(self, *args, **kwargs):
-        if 'payload' not in kwargs and hasattr(self, 'echo_payload'):
-            kwargs['payload'] = self.echo_payload
-        return func(self, *args, **kwargs)
-    return wrapper
 
 @unix_client
 @aux_multiton
@@ -51,6 +32,13 @@ class NegativeCom:
             cls._instance.wire = None
             cls._instance.echo_seen = set()
         return cls._instance
+
+    def inject_echo_payload(func):
+        def wrapper(self, *args, **kwargs):
+            if 'payload' not in kwargs and hasattr(self, 'echo_payload'):
+                kwargs['payload'] = self.echo_payload
+            return func(self, *args, **kwargs)
+        return wrapper
 
     def attach_wire(self, wire):
         self.wire = wire
@@ -186,6 +174,13 @@ class PositiveCom:
             cls._instance.connections = getattr(cls._instance, "connections", {})
             cls._instance.echo_seen = set()
         return cls._instance
+
+    def inject_echo_payload(func):
+        def wrapper(self, *args, **kwargs):
+            if 'payload' not in kwargs and hasattr(self, 'echo_payload'):
+                kwargs['payload'] = self.echo_payload
+            return func(self, *args, **kwargs)
+        return wrapper
 
     def attach_wire(self, wire):
         self.wire = wire

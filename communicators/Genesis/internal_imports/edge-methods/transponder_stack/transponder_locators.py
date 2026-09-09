@@ -8,13 +8,7 @@ callers live in many files, so this is a real T1 class, not a
 file-local module class.
 """
 
-from __future__ import annotations
-
-import os
-import re
-
-
-class Locators:
+class Transponder_Locators:
     TOKEN_RE = re.compile(r"^[0-9A-Fa-f]+$")
     BIN_DIR = "/dev/shm"
 

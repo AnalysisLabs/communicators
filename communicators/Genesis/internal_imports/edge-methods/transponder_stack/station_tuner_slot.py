@@ -31,14 +31,6 @@ Capability row (harvest later for L1):
   tuner:   listen(pulse) yes | send(tune) once | recv yes | request_response no
 """
 
-from __future__ import annotations
-
-import argparse
-import socket
-import sys
-import threading
-import time
-
 from codec import Codec
 from demo import Demo
 from locators import Locators
@@ -264,56 +256,3 @@ class Tuner:
                 pass
             self.sock = None
         print(f"[{self.name} CLOSE] {self.addr_s()} heard={len(self.inbox)}", flush=True)
-
-
-class StationTunerCli:
-    """Dev entrypoint for this file. Not a production Wire verb."""
-
-    @staticmethod
-    def parse_args(argv=None):
-        p = argparse.ArgumentParser(description="Station/tuner slot — UDP unicast fan-out + join registry")
-        p.add_argument("--role", required=True, choices=("station", "tuner"))
-        p.add_argument("--name", required=True, help="identity printed on every message")
-        p.add_argument("--listen", required=True, help="local UDP bind host:port")
-        p.add_argument("--peer", help="station host:port (required for tuner)")
-        p.add_argument("--interval", type=float, default=0.5, help="station pulse period seconds")
-        p.add_argument("--repeat", type=int, default=2, help="redundant sendto copies per pulse")
-        p.add_argument("--auto", action="store_true", help="run for --hold seconds then exit")
-        p.add_argument("--hold", type=float, default=4.0, help="seconds to run when --auto")
-        p.add_argument("--wait", type=float, default=8.0, help="tuner seconds spent retrying tune")
-        return p.parse_args(argv)
-
-    @staticmethod
-    def main(argv=None) -> int:
-        args = StationTunerCli.parse_args(argv)
-        listen = Locators.parse_hostport(args.listen)
-
-        if args.role == "station":
-            station = Station(args.name, listen, args.interval, args.repeat)
-            try:
-                station.start()
-                station.run(hold=args.hold if args.auto else None)
-            finally:
-                station.close()
-            return 0
-
-        if not args.peer:
-            print("tuner requires --peer host:port of the station", file=sys.stderr)
-            return 2
-        peer = Locators.parse_hostport(args.peer)
-        if peer == listen:
-            print("tuner --listen must not equal the station --peer address", file=sys.stderr)
-            return 2
-
-        tuner = Tuner(args.name, listen, peer)
-        try:
-            tuner.start()
-            tuner.wait_for_station(timeout=args.wait)
-            tuner.run(hold=args.hold if args.auto else None)
-        finally:
-            tuner.close()
-        return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(StationTunerCli.main())

@@ -5,30 +5,20 @@ Each process is BOTH a server (positive / listen) and a client (negative / peer)
 Messages are JSON objects on the wire. Encode at send, decode at recv.
 
 Terminal A:
-  python slot_http.py --name FOX --listen 127.0.0.1:9101 --peer 127.0.0.1:9102
+  python http_slot.py.py --name FOX --listen 127.0.0.1:9101 --peer 127.0.0.1:9102
 
 Terminal B:
-  python slot_http.py --name OTTER --listen 127.0.0.1:9102 --peer 127.0.0.1:9101
+  python http_slot.py.py --name OTTER --listen 127.0.0.1:9102 --peer 127.0.0.1:9101
 
 Type a line and press enter to send. Ctrl-C to quit.
 
 Non-interactive proof (used by the sandbox test):
-  python slot_http.py --name FOX --listen 127.0.0.1:9101 --peer 127.0.0.1:9102 --auto --hold 4
+  python http_slot.py.py --name FOX --listen 127.0.0.1:9101 --peer 127.0.0.1:9102 --auto --hold 4
 
 Capability row (harvest later for L1):
   listen yes | accept yes | connect yes | send yes | recv yes | close yes
   serve yes | request_response yes | send_and_close yes | persistent_client later
 """
-
-from __future__ import annotations
-
-import argparse
-import sys
-import threading
-import time
-import urllib.error
-import urllib.request
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from codec import Codec
 from demo import Demo
@@ -188,66 +178,3 @@ class HttpSlot:
             except Exception as e:
                 print(f"[{self.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
             time.sleep(0.15)
-
-
-class HttpCli:
-    """Dev entrypoint for this file. Not a production Wire verb."""
-
-    @staticmethod
-    def parse_args(argv=None):
-        p = argparse.ArgumentParser(description="HTTP slot prototype — each process listens and dials")
-        p.add_argument("--name", required=True, help="endpoint identity printed on every message")
-        p.add_argument("--listen", required=True, help="local host:port that serves POST /msg")
-        p.add_argument("--peer", required=True, help="remote host:port this process POSTs to")
-        p.add_argument("--auto", action="store_true", help="send canned burst, skip stdin")
-        p.add_argument("--hold", type=float, default=3.0, help="seconds to stay alive after --auto burst")
-        p.add_argument("--wait", type=float, default=20.0, help="seconds to wait for peer /health")
-        return p.parse_args(argv)
-
-    @staticmethod
-    def stdin_loop(slot: HttpSlot) -> None:
-        print(f"[{slot.name} READY] type a line to send, Ctrl-C to quit", flush=True)
-        try:
-            for line in sys.stdin:
-                text = line.rstrip("\n")
-                if not text:
-                    continue
-                if text in {":q", "/quit", "/exit"}:
-                    return
-                try:
-                    slot.send_text(text)
-                except Exception as e:
-                    print(f"[{slot.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
-        except KeyboardInterrupt:
-            print(flush=True)
-
-    @staticmethod
-    def main(argv=None) -> int:
-        args = HttpCli.parse_args(argv)
-        listen = Locators.parse_hostport(args.listen)
-        peer = Locators.parse_hostport(args.peer)
-        if listen == peer:
-            print("listen and peer are the same address; both endpoints need their own port", file=sys.stderr)
-            return 2
-
-        slot = HttpSlot(args.name, listen, peer)
-        slot.start_server_thread()
-        time.sleep(0.15)
-
-        try:
-            slot.wait_for_peer(timeout=args.wait)
-            slot.burst()
-            if args.auto:
-                time.sleep(args.hold)
-            else:
-                HttpCli.stdin_loop(slot)
-        except KeyboardInterrupt:
-            print(flush=True)
-        finally:
-            slot.close()
-            print(f"[{slot.name} CLOSE] listen {slot.listen_url()}", flush=True)
-        return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(HttpCli.main())

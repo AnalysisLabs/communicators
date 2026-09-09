@@ -87,3 +87,5 @@ flowchart TB
 ```
 
 Read it top to bottom as the product path: two short programs, one face module, one Wire, one live slot. The leftover box is real files in the directory that the chatbot terminals do not need to start.
+
+https://github.com/AnalysisLabs/communicators/tree/v3.1.1

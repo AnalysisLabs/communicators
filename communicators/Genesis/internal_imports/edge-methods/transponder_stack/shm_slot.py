@@ -28,21 +28,6 @@ Capability row (harvest later for L1):
   serve yes | request_response yes | send_and_close yes | persistent_client yes
 """
 
-from __future__ import annotations
-
-import argparse
-import ctypes
-import ctypes.util
-import fcntl
-import json
-import os
-import re
-import select
-import struct
-import sys
-import threading
-import time
-
 from codec import Codec
 from demo import Demo
 from locators import Locators
@@ -361,67 +346,3 @@ class ShmSlot:
                     os.unlink(path)
                 except FileNotFoundError:
                     pass
-
-
-class ShmCli:
-    """Dev entrypoint for this file. Not a production Wire verb."""
-
-    @staticmethod
-    def parse_args(argv=None):
-        p = argparse.ArgumentParser(description="SHM slot prototype — two tokens, one /dev/shm JSON bin")
-        p.add_argument("--name", required=True, help="endpoint identity printed on every message")
-        p.add_argument("--listen", required=True, help="this endpoint's hex communicator token")
-        p.add_argument("--peer", required=True, help="other endpoint's hex communicator token")
-        p.add_argument("--auto", action="store_true", help="send canned burst, skip stdin")
-        p.add_argument("--hold", type=float, default=3.0, help="seconds to stay alive after --auto burst")
-        p.add_argument("--wait", type=float, default=20.0, help="seconds to wait for peer presence")
-        return p.parse_args(argv)
-
-    @staticmethod
-    def stdin_loop(slot: ShmSlot) -> None:
-        print(f"[{slot.name} READY] type a line to send, Ctrl-C to quit", flush=True)
-        try:
-            for line in sys.stdin:
-                text = line.rstrip("\n")
-                if not text:
-                    continue
-                if text in {":q", "/quit", "/exit"}:
-                    return
-                try:
-                    slot.send_text(text)
-                except Exception as e:
-                    print(f"[{slot.name} SEND FAIL] {type(e).__name__}: {e}", flush=True)
-        except KeyboardInterrupt:
-            print(flush=True)
-
-    @staticmethod
-    def main(argv=None) -> int:
-        args = ShmCli.parse_args(argv)
-        try:
-            mine = Locators.parse_token(args.listen)
-            peer = Locators.parse_token(args.peer)
-        except ValueError as e:
-            print(str(e), file=sys.stderr)
-            return 2
-        if mine == peer:
-            print("listen and peer tokens must differ (one token per endpoint)", file=sys.stderr)
-            return 2
-
-        slot = ShmSlot(args.name, mine, peer)
-        try:
-            slot.wait_for_peer(timeout=args.wait)
-            slot.burst()
-            if args.auto:
-                time.sleep(args.hold)
-            else:
-                ShmCli.stdin_loop(slot)
-        except KeyboardInterrupt:
-            print(flush=True)
-        finally:
-            slot.close()
-            print(f"[{slot.name} CLOSE] {slot.addr_s()}", flush=True)
-        return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(ShmCli.main())

@@ -7,8 +7,6 @@ WebSocket is a first-class slot and can be selected explicitly; it is not
 on the default fallback row.
 """
 
-from __future__ import annotations
-
 from codec import Codec
 from locators import Locators
 from shm_slot import ShmSlot
@@ -26,21 +24,21 @@ class SlotRefused(RuntimeError):
         super().__init__(f"{slot} refuses {verb}: {flag}{extra}")
 
 
-FEATURES = {
-    "tcp": {"verbs": {"attach": "yes", "send": "yes", "recv": "yes"}},
-    "unix": {"verbs": {"attach": "yes", "send": "yes", "recv": "yes"}},
-    "ws": {"verbs": {"attach": "yes", "send": "yes", "recv": "yes"}},
-    "shm": {"verbs": {"attach": "yes", "send": "yes", "recv": "yes"}},
-}
-
-FALLBACK = {
-    "loopback": {"tcp": "unix", "unix": "shm"},
-}
-
 
 class Wire:
     encode_msg = staticmethod(Codec.encode_msg)
     decode_msg = staticmethod(Codec.decode_msg)
+
+    FEATURES = {
+        "tcp": {"verbs": {"attach": "yes", "send": "yes", "recv": "yes"}},
+        "unix": {"verbs": {"attach": "yes", "send": "yes", "recv": "yes"}},
+        "ws": {"verbs": {"attach": "yes", "send": "yes", "recv": "yes"}},
+        "shm": {"verbs": {"attach": "yes", "send": "yes", "recv": "yes"}},
+    }
+
+    FALLBACK = {
+        "loopback": {"tcp": "unix", "unix": "shm"},
+    }
 
     def __init__(self, favored: str = "tcp", scope: str = "loopback"):
         self.favored = favored
