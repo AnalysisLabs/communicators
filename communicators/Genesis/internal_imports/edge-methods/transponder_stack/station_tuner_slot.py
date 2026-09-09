@@ -106,7 +106,7 @@ class Station:
             entry = {"name": msg.get("name") or "?", "recv": dest, "ts": time.time()}
             with self.reg_lock:
                 self.registry[dest] = entry
-            print(f"[{self.name} JOIN] {entry['name']} → {Locators.fmt_addr(dest)}  n={len(self.registry)}", flush=True)
+            print(f"[{self.name} JOIN] {entry['name']} → {Transponder_Locators.fmt_addr(dest)}  n={len(self.registry)}", flush=True)
 
     @dualmethod
     def next_seq(self) -> int:

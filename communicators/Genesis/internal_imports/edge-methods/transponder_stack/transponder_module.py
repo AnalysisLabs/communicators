@@ -6,8 +6,6 @@ down == from middleware to communicator
 up == from communicator to middleware
 """
 
-@unix_client
-@aux_multiton
 class NegativeCom:
     # Clarification: Only NegativeCom has permission to initiate websocket connections.
     _instance = None
@@ -154,8 +152,6 @@ class NegativeCom:
         self.down_queue.append(payload)
         self.process_down_queue()
 
-@unix_server
-@aux_multiton
 class PositiveCom:
     _instance = None
     # Clarification: PositiveCom only has permission to receive and maintain websocket connections.

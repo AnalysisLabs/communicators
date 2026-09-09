@@ -89,6 +89,31 @@
     "file_path": "Genesis/internal_imports",
     "file_name": "edge-methods"
   },
+{
+    "uuid": "9c0c098f-aa73-4ced-af57-282cbf0a37ab",
+    "file_path": "Genesis/internal_imports/edge-methods",
+    "file_name": "elementary.py"
+  },
+  {
+    "uuid": "37c06163-cefe-4117-b7d6-6819cab8a5eb",
+    "file_path": "Genesis/internal_imports/edge-methods",
+    "file_name": "load_spreading.py"
+  },
+  {
+    "uuid": "c6daacba-edef-40b5-bf0b-43e9105d83f1",
+    "file_path": "Genesis/internal_imports/edge-methods",
+    "file_name": "fix_transponder_names.py"
+  },
+  {
+    "uuid": "03b40c3b-aebb-4b9d-aa3a-261597e76120",
+    "file_path": "Genesis/internal_imports/edge-methods",
+    "file_name": "graph-methods.md"
+  },
+  {
+    "uuid": "f2ad0a64-00b7-4658-90e2-2363e8768c1a",
+    "file_path": "Genesis/internal_imports/edge-methods",
+    "file_name": "transponder graph.md"
+  },
   {
     "uuid": "a5c40276-806f-4752-b0ac-2ec9a2fb4aa0",
     "file_path": "Genesis/internal_imports/edge-methods",
@@ -110,15 +135,145 @@
     "file_name": "ws_tamer.py"
   },
   {
-    "uuid": "9c0c098f-aa73-4ced-af57-282cbf0a37ab",
-    "file_path": "Genesis/internal_imports/edge-methods",
-    "file_name": "elementary.py"
+    "uuid": "2ee08546-eb17-4257-95bc-b352e83e27d9",
+    "file_path": "Genesis/internal_imports/edge-methods/connections",
+    "file_name": "transponder.md"
   },
   {
-    "uuid": "37c06163-cefe-4117-b7d6-6819cab8a5eb",
+    "uuid": "680884eb-763f-4907-879d-4d9c909c1ded",
     "file_path": "Genesis/internal_imports/edge-methods",
-    "file_name": "load_spreading.py"
+    "file_name": "Slots"
   },
+  {
+    "uuid": "5f7e3707-dc69-4f59-9c99-ee9910ada106",
+    "file_path": "Genesis/internal_imports/edge-methods/Slots",
+    "file_name": "codec.py"
+  },
+  {
+    "uuid": "5508a608-1d7b-4714-9f1f-7bbcc913178b",
+    "file_path": "Genesis/internal_imports/edge-methods/Slots",
+    "file_name": "demo.py"
+  },
+  {
+    "uuid": "ce22ff41-2853-4659-af0c-22b6bdedd7d3",
+    "file_path": "Genesis/internal_imports/edge-methods/Slots",
+    "file_name": "http_mailbox_slot.py"
+  },
+  {
+    "uuid": "c889f307-431c-4f7f-90ee-4043a9ebd39a",
+    "file_path": "Genesis/internal_imports/edge-methods/Slots",
+    "file_name": "locators.py"
+  },
+  {
+    "uuid": "e1756b03-6244-4757-a776-ecbb11c9fe07",
+    "file_path": "Genesis/internal_imports/edge-methods/Slots",
+    "file_name": "shm_slot.py"
+  },
+  {
+    "uuid": "c3db58c3-6f53-4f8f-80aa-5c20ec0d1ee3",
+    "file_path": "Genesis/internal_imports/edge-methods/Slots",
+    "file_name": "slot_http.py"
+  },
+  {
+    "uuid": "6645c92d-69c1-461a-84b2-5434005625cf",
+    "file_path": "Genesis/internal_imports/edge-methods/Slots",
+    "file_name": "station_tuner_slot.py"
+  },
+  {
+    "uuid": "c30ffa21-1684-43a8-a5b8-36593d17fc87",
+    "file_path": "Genesis/internal_imports/edge-methods/Slots",
+    "file_name": "tcp_socket_slot.py"
+  },
+  {
+    "uuid": "60981bac-f396-44a6-850f-8d240c2a5d69",
+    "file_path": "Genesis/internal_imports/edge-methods/Slots",
+    "file_name": "transponder_wire_stub.py"
+  },
+  {
+    "uuid": "b91d929d-b961-4dfc-95a7-f6509d4971c1",
+    "file_path": "Genesis/internal_imports/edge-methods/Slots",
+    "file_name": "unix_socket_slot.py"
+  },
+  {
+    "uuid": "b98231ff-b679-4fe9-86c1-9e9b8194b12e",
+    "file_path": "Genesis/internal_imports/edge-methods/Slots",
+    "file_name": "websocket_slot.py"
+  },
+  {
+    "uuid": "dfdde9ec-27d3-4f53-a5fb-b0bee5685b65",
+    "file_path": "Genesis/internal_imports/edge-methods/Slots",
+    "file_name": "wire_prototype.py"
+  },
+  {
+    "uuid": "eff04379-47d1-4c04-bdf2-e0a12a0abf63",
+    "file_path": "Genesis/internal_imports/edge-methods",
+    "file_name": "transponder_stack"
+  },
+  {
+    "uuid": "3ef307dc-ef4a-4de6-ac26-30792b95dd2f",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "TRANSPONDER_PREFIX_HANDOFF.md"
+  },
+  {
+    "uuid": "37dd39db-1e88-462b-99d0-46c1c32f6043",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "codec.py"
+  },
+  {
+    "uuid": "7235367f-2b5d-4999-ba7b-859f913c5492",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "http_mailbox_slot.py"
+  },
+  {
+    "uuid": "503640a9-f085-406d-8837-ac5b0208a1f3",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "http_slot.py"
+  },
+  {
+    "uuid": "8df05483-984e-4e81-bf90-6b4f994f1987",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "shm_slot.py"
+  },
+  {
+    "uuid": "d198072a-2724-4986-a7f9-11de64b26623",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "station_tuner_slot.py"
+  },
+  {
+    "uuid": "e622891d-6396-4f0c-a038-2cbc5d119fad",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "tcp_socket_slot.py"
+  },
+  {
+    "uuid": "9f3c5396-193c-4951-a47a-929cbc60d82c",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "transponder_locators.py"
+  },
+  {
+    "uuid": "b03e35ee-e03c-4eef-beec-a965790a1708",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "transponder_module.py"
+  },
+  {
+    "uuid": "3d2e0925-4f99-4440-b55c-ca4b116c5d64",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "unix_socket_slot.py"
+  },
+  {
+    "uuid": "c5ab9ec7-19c6-4786-b997-90d0a050b96e",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "websocket_slot.py"
+  },
+  {
+    "uuid": "af110108-d8d7-4c51-bffd-0723879bbf09",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "wire.py"
+  },
+  {
+    "uuid": "fbcc0548-b150-47a7-9122-29bbca7cb523",
+    "file_path": "Genesis/internal_imports/edge-methods/transponder_stack",
+    "file_name": "wire_prototype(preserve_but_ignore).py"
+  }
   {
     "uuid": "64bf54d1-e607-4bfc-b6ba-73ccc2748dd4",
     "file_path": "Genesis/internal_imports",
