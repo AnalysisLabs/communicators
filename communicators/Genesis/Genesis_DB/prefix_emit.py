@@ -1,214 +1,324 @@
-"""Emit queued class blobs into prefix text by class-name tier map.
+"""Emit a prefix from the tier table.
 
-Companion to prefix_queue.py. File names do not matter. The law is
-CLASS_TIER: class identifier -> (tier, order, prefix_name).
+No build_prefix0 / build_prefix1 / build_prefix2. Structure comes from
+MEMBERS. Load goes through _load_source.
 
-Banner convention copied from build_prefix1's Manifest block:
-
-    # === Tier N (imports) ===
-
-    # === Manifest (class) ===
-    <class body rstrip>
-    <blank line>
-
-This script does not touch T0 (standard.py + COMMUNICATORS_ROOT) and
-does not load the VFS-rectified PathReffs / AtomicImporter copies.
-Those stay in the existing builders until integration.
-
+Does not emit the obsolete Stage-B `transponder` blob.
 Does not rectify. Does not run Stage B. Does not write VirtualFS.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Mapping
+from pathlib import Path
+from typing import Callable
 
-from prefix_queue import ClassBlob, PrefixQueue
+from prefix_queue import (
+    QUEUE,
+    ClassBlob,
+    PrefixQueue,
+    cut_class,
+    whole_file_blob,
+    _origin_of,
+)
+
+
+# ---------------------------------------------------------------------------
+# Same bindings as prefix_builder. Delete this block when pasting in.
+# ---------------------------------------------------------------------------
+
+try:
+    FileRef
+except NameError:
+    @dataclass(frozen=True)
+    class FileRef:
+        uuid: str
+        file_path: str
+        file_name: str
+
+
+_PATH_REFFS = "Database/path_reffs.py"
+_ATOMIC_IMPORTER = "Database/atomic_importer.py"
+
+_CODEC_REF = FileRef(
+    uuid="37dd39db-1e88-462b-99d0-46c1c32f6043",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="codec.py",
+)
+_LOCATORS_REF = FileRef(
+    uuid="9f3c5396-193c-4951-a47a-929cbc60d82c",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="transponder_locators.py",
+)
+_WIRE_REF = FileRef(
+    uuid="af110108-d8d7-4c51-bffd-0723879bbf09",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="wire.py",
+)
+_TCP_SLOT_REF = FileRef(
+    uuid="e622891d-6396-4f0c-a038-2cbc5d119fad",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="tcp_socket_slot.py",
+)
+_UNIX_SLOT_REF = FileRef(
+    uuid="3d2e0925-4f99-4440-b55c-ca4b116c5d64",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="unix_socket_slot.py",
+)
+_WS_SLOT_REF = FileRef(
+    uuid="c5ab9ec7-19c6-4786-b997-90d0a050b96e",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="websocket_slot.py",
+)
+_SHM_SLOT_REF = FileRef(
+    uuid="8df05483-984e-4e81-bf90-6b4f994f1987",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="shm_slot.py",
+)
+_HTTP_SLOT_REF = FileRef(
+    uuid="503640a9-f085-406d-8837-ac5b0208a1f3",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="http_slot.py",
+)
+_HTTP_MAILBOX_SLOT_REF = FileRef(
+    uuid="7235367f-2b5d-4999-ba7b-859f913c5492",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="http_mailbox_slot.py",
+)
+_STATION_TUNER_SLOT_REF = FileRef(
+    uuid="d198072a-2724-4986-a7f9-11de64b26623",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="station_tuner_slot.py",
+)
+_TRANSPONDER_REF = FileRef(
+    uuid="b03e35ee-e03c-4eef-beec-a965790a1708",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="transponder_module.py",
+)
+_STANDARD_REF = FileRef(
+    uuid="8090dc7b-4a91-448d-8ab0-0b5acfbb5dee",
+    file_path="Genesis/internal_imports",
+    file_name="standard.py",
+)
+_MANIFEST_REF = FileRef(
+    uuid="64bf54d1-e607-4bfc-b6ba-73ccc2748dd4",
+    file_path="Genesis/internal_imports",
+    file_name="manifest.py",
+)
+
+# Every source the prefix still needs. Not the old T2 transponder blob.
+SOURCE_REFS = (
+    _STANDARD_REF,
+    _PATH_REFFS,
+    _ATOMIC_IMPORTER,
+    _MANIFEST_REF,
+    _CODEC_REF,
+    _LOCATORS_REF,
+    _WIRE_REF,
+    _TCP_SLOT_REF,
+    _UNIX_SLOT_REF,
+    _WS_SLOT_REF,
+    _SHM_SLOT_REF,
+    _HTTP_SLOT_REF,
+    _HTTP_MAILBOX_SLOT_REF,
+    _STATION_TUNER_SLOT_REF,
+    _TRANSPONDER_REF,
+)
 
 
 @dataclass(frozen=True)
-class ClassTier:
-    """One row of the handoff membership table, keyed by class identifier."""
-
+class Member:
     tier: int
     order: int
-    prefix_name: str
     class_name: str
+    prefix_name: str
+    ref: object | None
+    prepare: str = "cut_class"  # whole_file | cut_class | communicators_root
+    banner: str | None = None
 
 
-# Handoff §4, stack rows only. Order inside a tier is concat order.
-# Same-tier rows must not call each other; order is not a dependency edge.
-CLASS_TIER: dict[str, ClassTier] = {
-    # T1 helpers
-    "Transponder_Codec":    ClassTier(1, 10, "transponder_codec",         "Transponder_Codec"),
-    "Transponder_Locators": ClassTier(1, 11, "transponder_locators",      "Transponder_Locators"),
-    "SlotRefused":          ClassTier(1, 12, "transponder_slot_refused",  "SlotRefused"),
-    "DirWatch":             ClassTier(1, 13, "transponder_dir_watch",     "DirWatch"),
-    "UdpMail":              ClassTier(1, 14, "transponder_udp_mail",      "UdpMail"),
-    "Mailbox":              ClassTier(1, 15, "transponder_mailbox_bin",   "Mailbox"),
-    # T2 slots
-    "TcpSlot":              ClassTier(2,  0, "transponder_tcp",             "TcpSlot"),
-    "UnixSlot":             ClassTier(2,  1, "transponder_unix",            "UnixSlot"),
-    "WsSlot":               ClassTier(2,  2, "transponder_ws",              "WsSlot"),
-    "ShmSlot":              ClassTier(2,  3, "transponder_shm",             "ShmSlot"),
-    "HttpSlot":             ClassTier(2,  4, "transponder_http",            "HttpSlot"),
-    "MailboxServer":        ClassTier(2,  5, "transponder_mailbox_server",  "MailboxServer"),
-    "MailboxClient":        ClassTier(2,  6, "transponder_mailbox_client",  "MailboxClient"),
-    "Station":              ClassTier(2,  7, "transponder_station",         "Station"),
-    "Tuner":                ClassTier(2,  8, "transponder_tuner",           "Tuner"),
-    # T3 wire
-    "Wire":                 ClassTier(3,  0, "transponder_wire",     "Wire"),
-    # T4 faces
-    "NegativeCom":          ClassTier(4,  0, "transponder_negative", "NegativeCom"),
-    "PositiveCom":          ClassTier(4,  1, "transponder_positive", "PositiveCom"),
-}
+# The law. Emit expands from this tuple. No named build_prefixN.
+#
+# Member(tier, order, class_name, prefix_name, ref, prepare=..., banner=...)
+#
+#   tier         Prefix tier. A row may use names introduced in tiers 0..tier-1
+#                only. Same-tier rows must not call each other. Emit prints
+#                "# === Tier N (imports) ===" when this number changes.
+#                  0  language/std + COMMUNICATORS_ROOT
+#                  1  core objects that need only T0
+#                     (PathReffs, AtomicImporter, Manifest, then T1 helpers)
+#                  2  one-medium slots (need T1 codec/locators/helpers)
+#                  3  Wire (first type that sees more than one slot)
+#                  4  faces (NegativeCom / PositiveCom)
+#
+#   order        Concat order *inside* that tier. Not a dependency edge.
+#                Gaps are deliberate so a later row can be inserted without
+#                renumbering:
+#                  T0  0, 1
+#                  T1  0-2   existing scaffold (keep first)
+#                      10-15 stack helpers (room 3-9 if scaffold grows)
+#                  T2  0-8   slots
+#                  T3  0
+#                  T4  0-1
+#
+#   class_name   Identifier on the blob and in "# === Name (class) ===".
+#                For whole_file rows this is the banner name (PathReffs,
+#                Manifest), not necessarily the only class in the source.
+#                COMMUNICATORS_ROOT is synthetic and has no class.
+#
+#   prefix_name  Hatch spelling of the prefix *module* row
+#                (transponder_tcp, …). Not a second class identifier.
+#                User-visible names after a later Tier A trim are still
+#                the class_name values (NegativeCom, Wire, …).
+#
+#   ref          What _load_source fetches.
+#                  FileRef  — registry disk (uuid is a real UUID)
+#                  str      — VirtualFS path ("Database/path_reffs.py")
+#                  None     — nothing to load (COMMUNICATORS_ROOT)
+#                Several rows may share one ref; fill_queue loads it once
+#                and cuts out the requested class_name.
+#
+#   prepare      How that text becomes a blob.
+#                  whole_file          paste loaded source as one block
+#                                      (standard, VFS PathReffs / AtomicImporter,
+#                                      disk Manifest). Do not cut: the VFS
+#                                      copies already contain _internal + public.
+#                  cut_class           one top-level class from the source
+#                  communicators_root  generated Path assignment, no load
+#
+#   banner       Optional override for the "# === … ===" line. Used when
+#                the historical label is not "{class_name} (class)"
+#                (standard.py (from VirtualFS), COMMUNICATORS_ROOT, …).
+MEMBERS: tuple[Member, ...] = (
+    Member(0, 0, "standard", "standard", _STANDARD_REF, "whole_file",
+           "standard.py (from VirtualFS)"),
+    Member(0, 1, "COMMUNICATORS_ROOT", "COMMUNICATORS_ROOT", None, "communicators_root",
+           "COMMUNICATORS_ROOT (resolved at prefix-build time)"),
+    Member(1, 0, "PathReffs", "path_reffs", _PATH_REFFS, "whole_file"),
+    Member(1, 1, "AtomicImporter", "atomic_importer", _ATOMIC_IMPORTER, "whole_file"),
+    Member(1, 2, "Manifest", "manifest", _MANIFEST_REF, "whole_file"),
+    Member(1, 10, "Transponder_Codec", "transponder_codec", _CODEC_REF),
+    Member(1, 11, "Transponder_Locators", "transponder_locators", _LOCATORS_REF),
+    Member(1, 12, "SlotRefused", "transponder_slot_refused", _WIRE_REF),
+    Member(1, 13, "DirWatch", "transponder_dir_watch", _SHM_SLOT_REF),
+    Member(1, 14, "UdpMail", "transponder_udp_mail", _STATION_TUNER_SLOT_REF),
+    Member(1, 15, "Mailbox", "transponder_mailbox_bin", _HTTP_MAILBOX_SLOT_REF),
+    Member(2, 0, "TcpSlot", "transponder_tcp", _TCP_SLOT_REF),
+    Member(2, 1, "UnixSlot", "transponder_unix", _UNIX_SLOT_REF),
+    Member(2, 2, "WsSlot", "transponder_ws", _WS_SLOT_REF),
+    Member(2, 3, "ShmSlot", "transponder_shm", _SHM_SLOT_REF),
+    Member(2, 4, "HttpSlot", "transponder_http", _HTTP_SLOT_REF),
+    Member(2, 5, "MailboxServer", "transponder_mailbox_server", _HTTP_MAILBOX_SLOT_REF),
+    Member(2, 6, "MailboxClient", "transponder_mailbox_client", _HTTP_MAILBOX_SLOT_REF),
+    Member(2, 7, "Station", "transponder_station", _STATION_TUNER_SLOT_REF),
+    Member(2, 8, "Tuner", "transponder_tuner", _STATION_TUNER_SLOT_REF),
+    Member(3, 0, "Wire", "transponder_wire", _WIRE_REF),
+    Member(4, 0, "NegativeCom", "transponder_negative", _TRANSPONDER_REF),
+    Member(4, 1, "PositiveCom", "transponder_positive", _TRANSPONDER_REF),
+)
 
 
 class UnmappedClass(KeyError):
-    """Queue contained a class that is not in CLASS_TIER."""
+    pass
 
 
-class MissingClass(KeyError):
-    """CLASS_TIER required a class that was not in the queue."""
+def _banner(member: Member) -> str:
+    if member.banner:
+        return f"# === {member.banner} ==="
+    if member.prepare == "whole_file":
+        return f"# === {member.class_name} (class) ==="
+    return f"# === {member.class_name} (class) ==="
 
 
-def tier_of(class_name: str) -> ClassTier:
-    try:
-        return CLASS_TIER[class_name]
-    except KeyError as exc:
-        raise UnmappedClass(
-            f"{class_name!r} is not in CLASS_TIER; "
-            f"do not emit an unmapped class"
-        ) from exc
-
-
-def format_class_block(blob: ClassBlob) -> str:
-    """One Manifest-shaped block. prefix_name is recorded in CLASS_TIER,
-    not in the banner — tomorrow's emit can switch the label if wanted.
-    """
-    return "\n".join(
-        [
-            f"# === {blob.class_name} (class) ===",
-            blob.text.rstrip(),
-            "",
-        ]
+def _root_block(root=None) -> str:
+    r = root if root is not None else globals().get("root")
+    if r is None:
+        r = Path.cwd()
+    return (
+        "from pathlib import Path\n"
+        f"COMMUNICATORS_ROOT = Path({str(r)!r})\n"
     )
 
 
-def format_tier_banner(tier: int) -> str:
-    return f"# === Tier {tier} (imports) ==="
+def fill_queue(
+    *,
+    loader: Callable[[object], str] | None = None,
+    queue: PrefixQueue | None = None,
+    root=None,
+) -> PrefixQueue:
+    load = loader if loader is not None else globals().get("_load_source")
+    if load is None:
+        raise RuntimeError("_load_source is not defined")
+
+    q = queue if queue is not None else QUEUE
+    q.reset()
+    cache: dict[object, str] = {}
+
+    for member in MEMBERS:
+        if member.prepare == "communicators_root":
+            q.extend([ClassBlob(member.class_name, _root_block(root), origin="generated", whole_file=True)])
+            continue
+        ref = member.ref
+        key = ref if isinstance(ref, str) else id(ref)
+        if key not in cache:
+            cache[key] = load(ref)
+        source = cache[key]
+        origin = _origin_of(ref)
+        if member.prepare == "whole_file":
+            q.extend([whole_file_blob(source, member.class_name, origin=origin)])
+        elif member.prepare == "cut_class":
+            q.extend([ClassBlob(member.class_name, cut_class(source, member.class_name), origin=origin)])
+        else:
+            raise ValueError(f"unknown prepare {member.prepare!r} on {member.class_name}")
+    return q
 
 
-def sort_blobs(blobs: Iterable[ClassBlob]) -> list[ClassBlob]:
-    """Re-order queue contents by (tier, order). File order is discarded."""
-    return sorted(
-        blobs,
-        key=lambda b: (tier_of(b.class_name).tier, tier_of(b.class_name).order),
-    )
+def _rows(through_tier: int | None) -> list[Member]:
+    rows = [m for m in MEMBERS if through_tier is None or m.tier <= through_tier]
+    rows.sort(key=lambda m: (m.tier, m.order))
+    return rows
 
 
-def group_by_tier(
-    blobs: Iterable[ClassBlob],
+def emit_prefix(
     *,
     through_tier: int | None = None,
-) -> dict[int, list[ClassBlob]]:
-    grouped: dict[int, list[ClassBlob]] = {}
-    for blob in sort_blobs(blobs):
-        spec = tier_of(blob.class_name)
-        if through_tier is not None and spec.tier > through_tier:
-            continue
-        grouped.setdefault(spec.tier, []).append(blob)
-    return grouped
-
-
-def require_mapped(blobs: Iterable[ClassBlob], *, through_tier: int | None = None) -> None:
-    """Fail if the queue is missing a CLASS_TIER row at or below through_tier."""
-    present = {b.class_name for b in blobs}
-    missing = []
-    for spec in CLASS_TIER.values():
-        if through_tier is not None and spec.tier > through_tier:
-            continue
-        if spec.class_name not in present:
-            missing.append(spec.class_name)
-    if missing:
-        raise MissingClass(f"queue missing mapped classes: {missing}")
-
-
-def emit_tier_blocks(
-    blobs: Iterable[ClassBlob],
-    *,
-    through_tier: int | None = None,
-    require_all: bool = True,
+    queue: PrefixQueue | None = None,
+    loader: Callable[[object], str] | None = None,
+    root=None,
 ) -> str:
-    """Stack classes only, Manifest banners, tiers in order.
-
-    Returns the T1..N fragment. Caller prepends build_prefix0() /
-    PathReffs / AtomicImporter / Manifest at integration time.
-    """
-    blobs = list(blobs)
-    if require_all:
-        require_mapped(blobs, through_tier=through_tier)
-    grouped = group_by_tier(blobs, through_tier=through_tier)
-
+    q = queue if queue is not None else fill_queue(loader=loader, root=root)
+    present = q.by_name()
     parts: list[str] = []
-    for tier in sorted(grouped):
-        if parts:
+    current = None
+    for member in _rows(through_tier):
+        blob = present.get(member.class_name)
+        if blob is None:
+            raise UnmappedClass(f"queue missing {member.class_name}")
+        if member.tier != current:
+            current = member.tier
+            if parts:
+                parts.append("")
+            parts.append(f"# === Tier {current} (imports) ===")
             parts.append("")
-        parts.append(format_tier_banner(tier))
+        parts.append(_banner(member))
+        parts.append(blob.text.rstrip())
         parts.append("")
-        for blob in grouped[tier]:
-            parts.append(format_class_block(blob))
-    return "\n".join(parts).rstrip() + "\n"
+    return "\n".join(parts)
 
 
-def emit_from_queue(
-    queue: PrefixQueue | Mapping[str, ClassBlob] | Iterable[ClassBlob],
-    *,
-    through_tier: int | None = None,
-    require_all: bool = True,
-) -> str:
-    if isinstance(queue, PrefixQueue):
-        blobs = list(queue.blobs)
-    elif isinstance(queue, Mapping):
-        blobs = list(queue.values())
-    else:
-        blobs = list(queue)
-    return emit_tier_blocks(blobs, through_tier=through_tier, require_all=require_all)
-
-
-def describe_plan(queue: Iterable[ClassBlob] | PrefixQueue) -> str:
-    """Human check: class -> T{tier}.{order} prefix_name. No source paths."""
-    blobs = list(queue.blobs) if isinstance(queue, PrefixQueue) else list(queue)
+def describe_plan(queue: PrefixQueue | None = None) -> str:
+    present = queue.by_name() if queue is not None else {}
     lines = []
-    for blob in sort_blobs(blobs):
-        spec = tier_of(blob.class_name)
+    for member in _rows(None):
+        blob = present.get(member.class_name)
+        size = f"{len(blob.text):6d}" if blob else "     —"
         lines.append(
-            f"T{spec.tier}.{spec.order:02d}  {spec.prefix_name:<28}  "
-            f"{spec.class_name:<22}  {len(blob.text):6d} chars"
+            f"T{member.tier}.{member.order:02d}  {member.prefix_name:<28}  "
+            f"{member.class_name:<22}  {size}  {member.prepare}"
         )
     return "\n".join(lines)
 
 
 if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-
-    from prefix_queue import cut_all_classes, PrefixQueue
-
-    # Offline demo: cut from a directory of stack files if given,
-    # otherwise print the map alone.
-    q = PrefixQueue()
-    if len(sys.argv) > 1 and Path(sys.argv[1]).is_dir():
-        for path in sorted(Path(sys.argv[1]).glob("*.py")):
-            if path.name.startswith("wire_prototype"):
-                continue
-            q.extend(cut_all_classes(path.read_text(encoding="utf-8")))
-        print(describe_plan(q), file=sys.stderr)
-        print(emit_from_queue(q), end="")
-    else:
-        for spec in sorted(CLASS_TIER.values(), key=lambda s: (s.tier, s.order)):
-            print(f"T{spec.tier}.{spec.order:02d}  {spec.prefix_name:<28}  {spec.class_name}")
-        print(
-            "\n# usage: python prefix_emit.py /path/to/transponder_stack > stack_fragment.py",
-            file=sys.stderr,
-        )
+    print(describe_plan())
+    print("\n# fill_queue() / emit_prefix() need _load_source from prefix_builder")

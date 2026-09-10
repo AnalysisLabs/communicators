@@ -1,32 +1,29 @@
-"""Prefix class-blob queue. Paste into prefix_builder.py.
+"""Prefix class-blob queue.
 
-File names do not appear on blobs. A blob is a class identifier plus its
-source text, cut by AST line ranges. Multi-class files yield one blob per
-top-level class.
+_load_source fetches text (str → VirtualFS, FileRef → registry disk).
+AST line ranges cut one class. A source with no top-level class becomes
+one whole-file blob (standard.py).
 
-Does not rectify, does not run Stage B, does not emit a prefix.
+File names are not blob identity. origin is uuid or the VFS path string.
 """
 
 from __future__ import annotations
 
 import ast
 from dataclasses import dataclass, field
-from typing import Iterable, Sequence
+from typing import Callable, Iterable, Sequence
 
 
 @dataclass(frozen=True)
 class ClassBlob:
-    """One top-level class, ready to concat later."""
-
     class_name: str
     text: str
-    origin_uuid: str = ""  # FileRef.uuid only, for debug; not a path
+    origin: str = ""
+    whole_file: bool = False
 
 
 @dataclass
 class PrefixQueue:
-    """Ordered bag of class blobs. Append-only until reset()."""
-
     blobs: list[ClassBlob] = field(default_factory=list)
 
     def reset(self) -> None:
@@ -37,6 +34,9 @@ class PrefixQueue:
 
     def class_names(self) -> list[str]:
         return [b.class_name for b in self.blobs]
+
+    def by_name(self) -> dict[str, ClassBlob]:
+        return {b.class_name: b for b in self.blobs}
 
     def __iter__(self):
         return iter(self.blobs)
@@ -52,12 +52,20 @@ class PrefixQueue:
 QUEUE = PrefixQueue()
 
 
-def _parse_class_ranges(source: str) -> list[tuple[str, int, int]]:
-    """[(class_name, start_lineno, end_lineno), ...] 1-based inclusive.
+def _origin_of(ref) -> str:
+    if isinstance(ref, str):
+        return ref
+    return str(getattr(ref, "uuid", "") or getattr(ref, "file_name", ""))
 
-    AST is used only for numbers. Decorators sit on or above ClassDef.lineno;
-    the walk-up in cut_class captures them.
-    """
+
+def _whole_file_name(ref) -> str:
+    if isinstance(ref, str):
+        return ref.rsplit("/", 1)[-1].removesuffix(".py")
+    name = getattr(ref, "file_name", "") or ""
+    return name.removesuffix(".py") or "module"
+
+
+def _parse_class_ranges(source: str) -> list[tuple[str, int, int]]:
     tree = ast.parse(source)
     ranges: list[tuple[str, int, int]] = []
     for node in tree.body:
@@ -68,8 +76,7 @@ def _parse_class_ranges(source: str) -> list[tuple[str, int, int]]:
 
 
 def _first_decorator_lineno(lines: list[str], class_lineno: int) -> int:
-    """Walk up from `class` through contiguous @decorator lines only."""
-    i = class_lineno  # 1-based
+    i = class_lineno
     while i > 1:
         raw = lines[i - 2].lstrip()
         if raw.startswith("@"):
@@ -80,7 +87,6 @@ def _first_decorator_lineno(lines: list[str], class_lineno: int) -> int:
 
 
 def cut_class(source: str, class_name: str) -> str:
-    """Return one top-level class body, including its decorator stack."""
     lines = source.splitlines(keepends=True)
     for name, start, end in _parse_class_ranges(source):
         if name != class_name:
@@ -90,37 +96,46 @@ def cut_class(source: str, class_name: str) -> str:
     raise KeyError(f"{class_name!r} is not a top-level class in source")
 
 
-def cut_all_classes(source: str, *, origin_uuid: str = "") -> list[ClassBlob]:
-    """Every top-level class in *source*, in file order."""
-    blobs: list[ClassBlob] = []
-    for name, _, _ in _parse_class_ranges(source):
-        blobs.append(
-            ClassBlob(
-                class_name=name,
-                text=cut_class(source, name),
-                origin_uuid=origin_uuid,
-            )
-        )
-    return blobs
+def cut_all_classes(source: str, *, origin: str = "") -> list[ClassBlob]:
+    return [
+        ClassBlob(class_name=name, text=cut_class(source, name), origin=origin)
+        for name, _, _ in _parse_class_ranges(source)
+    ]
+
+
+def whole_file_blob(source: str, class_name: str, *, origin: str = "") -> ClassBlob:
+    return ClassBlob(
+        class_name=class_name,
+        text=source.rstrip() + "\n",
+        origin=origin,
+        whole_file=True,
+    )
+
+
+def blobs_from_source(source: str, ref) -> list[ClassBlob]:
+    """Probe helper: every class, or the whole file if there is none."""
+    origin = _origin_of(ref)
+    blobs = cut_all_classes(source, origin=origin)
+    if blobs:
+        return blobs
+    return [whole_file_blob(source, _whole_file_name(ref), origin=origin)]
 
 
 def enqueue_classes_from_refs(
-    refs: Sequence["FileRef"],
+    refs: Sequence[object],
     *,
     queue: PrefixQueue | None = None,
     reset: bool = True,
+    loader: Callable[[object], str] | None = None,
 ) -> PrefixQueue:
-    """Load each FileRef, cut every top-level class, push onto the queue.
-
-    `refs` order is the only order that matters here. Tier/order mapping
-    is a later table; do not infer it from file names.
-    """
+    load = loader if loader is not None else globals().get("_load_source")
+    if load is None:
+        raise RuntimeError("_load_source is not defined")
     q = queue if queue is not None else QUEUE
     if reset:
         q.reset()
     for ref in refs:
-        source = _load_source(ref)
-        q.extend(cut_all_classes(source, origin_uuid=ref.uuid))
+        q.extend(blobs_from_source(load(ref), ref))
     return q
 
 
@@ -129,7 +144,8 @@ def describe_queue(queue: PrefixQueue | None = None) -> str:
     lines = []
     for i, b in enumerate(q):
         head = next((ln for ln in b.text.splitlines() if ln.strip()), "")
+        kind = "file" if b.whole_file else "class"
         lines.append(
-            f"{i:02d}  {b.class_name:<24}  {len(b.text):6d} chars  {head}"
+            f"{i:02d}  {b.class_name:<24}  {kind:<5}  {len(b.text):6d} chars  {head}"
         )
     return "\n".join(lines)

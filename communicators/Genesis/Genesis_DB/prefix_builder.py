@@ -87,17 +87,24 @@ transpile_to_tier_d, = from_path_import(
     "transpile_to_tier_d",
 )
 
-def _load_source(ref: FileRef) -> str:
-    """Load source text for a FileRef (strict registry lookup)."""
-    path = resolve_path(ref.uuid, ref.file_path, ref.file_name)
-    if not path.exists():
-        raise FileNotFoundError(f"Source not found for {ref}: {path}")
-    return path.read_text(encoding="utf-8")
+def _load_source(ref) -> str:
+    if isinstance(ref, str):
+        return read_file(ref)
+    if isinstance(ref, FileRef):
+        path = resolve_path(ref.uuid, ref.file_path, ref.file_name)
+        if not path.exists():
+            raise FileNotFoundError(f"Source not found for {ref}: {path}")
+        return path.read_text(encoding="utf-8")
+    raise TypeError(f"_load_source expected str or FileRef, got {type(ref)!r}")
 
 
 # ---------------------------------------------------------------------------
 # Module sources
 # ---------------------------------------------------------------------------
+
+_PATH_REFFS = "Database/path_reffs.py"
+
+_ATOMIC_IMPORTER = "Database/atomic_importer.py"
 
 _CODEC_REF = FileRef(
     uuid="37dd39db-1e88-462b-99d0-46c1c32f6043",
@@ -208,8 +215,8 @@ def build_prefix1() -> str:
     """Tier 1: Tier 0 + PathReffs + AtomicImporter + Manifest."""
 
     # Runtime (rectified) copies live in the VirtualFS
-    path_reffs_src = read_file("Database/path_reffs.py")
-    atomic_importer_src = read_file("Database/atomic_importer.py")
+    path_reffs_src = read_file(_PATH_REFFS)
+    atomic_importer_src = read_file(_ATOMIC_IMPORTER)
 
     # Manifest is still a normal source file
     manifest_src = _load_source(_MANIFEST_REF)
