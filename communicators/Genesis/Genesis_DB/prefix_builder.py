@@ -96,17 +96,94 @@ def _load_source(ref: FileRef) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Module sources
+# ---------------------------------------------------------------------------
+
+_CODEC_REF = FileRef(
+    uuid="37dd39db-1e88-462b-99d0-46c1c32f6043",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="codec.py",
+)
+
+_LOCATORS_REF = FileRef(
+    uuid="9f3c5396-193c-4951-a47a-929cbc60d82c",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="transponder_locators.py",
+)
+
+_WIRE_REF = FileRef(
+    uuid="af110108-d8d7-4c51-bffd-0723879bbf09",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="wire.py",
+)
+
+_TCP_SLOT_REF = FileRef(
+    uuid="e622891d-6396-4f0c-a038-2cbc5d119fad",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="tcp_socket_slot.py",
+)
+
+_UNIX_SLOT_REF = FileRef(
+    uuid="3d2e0925-4f99-4440-b55c-ca4b116c5d64",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="unix_socket_slot.py",
+)
+
+_WS_SLOT_REF = FileRef(
+    uuid="c5ab9ec7-19c6-4786-b997-90d0a050b96e",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="websocket_slot.py",
+)
+
+_SHM_SLOT_REF = FileRef(
+    uuid="8df05483-984e-4e81-bf90-6b4f994f1987",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="shm_slot.py",
+)
+
+_HTTP_SLOT_REF = FileRef(
+    uuid="503640a9-f085-406d-8837-ac5b0208a1f3",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="http_slot.py",
+)
+
+_HTTP_MAILBOX_SLOT_REF = FileRef(
+    uuid="7235367f-2b5d-4999-ba7b-859f913c5492",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="http_mailbox_slot.py",
+)
+
+_STATION_TUNER_SLOT_REF = FileRef(
+    uuid="d198072a-2724-4986-a7f9-11de64b26623",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="station_tuner_slot.py",
+)
+
+_TRANSPONDER_REF = FileRef(
+    uuid="b03e35ee-e03c-4eef-beec-a965790a1708",
+    file_path="Genesis/internal_imports/edge-methods/transponder_stack",
+    file_name="transponder_module.py",
+)
+
+_STANDARD_REF = FileRef(
+    uuid="8090dc7b-4a91-448d-8ab0-0b5acfbb5dee",
+    file_path="Genesis/internal_imports",
+    file_name="standard.py",
+)
+
+_MANIFEST_REF = FileRef(
+    uuid="64bf54d1-e607-4bfc-b6ba-73ccc2748dd4",
+    file_path="Genesis/internal_imports",
+    file_name="manifest.py",
+)
+
+# ---------------------------------------------------------------------------
 # Tier builders
 # ---------------------------------------------------------------------------
 
 def build_prefix0() -> str:
     """Tier 0: standard library collection + concrete COMMUNICATORS_ROOT."""
-    _standard_ref = FileRef(
-        uuid="8090dc7b-4a91-448d-8ab0-0b5acfbb5dee",
-        file_path="Genesis/internal_imports",
-        file_name="standard.py",
-    )
-    standard_src = _load_source(_standard_ref)
+    standard_src = _load_source(_STANDARD_REF)
 
     parts: list[str] = []
 
@@ -135,12 +212,7 @@ def build_prefix1() -> str:
     atomic_importer_src = read_file("Database/atomic_importer.py")
 
     # Manifest is still a normal source file
-    _manifest_ref = FileRef(
-        uuid="64bf54d1-e607-4bfc-b6ba-73ccc2748dd4",
-        file_path="Genesis/internal_imports",
-        file_name="manifest.py",
-    )
-    manifest_src = _load_source(_manifest_ref)
+    manifest_src = _load_source(_MANIFEST_REF)
 
     parts: list[str] = []
     parts.append(build_prefix0().rstrip())
@@ -168,12 +240,7 @@ def build_prefix1() -> str:
 
 def build_prefix2() -> str:
     """Tier 2: Tier 1 + Transponder class."""
-    _transponder_ref = FileRef(
-        uuid="0f589da7-ebcc-4ef1-a44c-59111c1d1a9a",
-        file_path="Genesis/internal_imports",
-        file_name="transponder_module.py",
-    )
-    transponder_src = _load_source(_transponder_ref)
+    transponder_src = _load_source(_TRANSPONDER_REF)
 
     parts: list[str] = []
     parts.append(build_prefix1().rstrip())

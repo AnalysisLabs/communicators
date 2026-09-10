@@ -114,26 +114,26 @@ tcp → unix → shm.
 Bodies use the **class identifier**. Short names (`Codec`, `Locators`)
 are Tier A aliases later, not current call-site spellings.
 
-| Class on disk | File | Prefix module name | Tier |
-|---|---|---|---|
-| `Transponder_Codec` | `codec.py` | `transponder_codec` | 1 |
-| `Transponder_Locators` | `transponder_locators.py` | `transponder_locators` | 1 |
-| `SlotRefused` | `wire.py` | `transponder_slot_refused` | 1 |
-| `DirWatch` | `shm_slot.py` | `transponder_dir_watch` | 1 |
-| `UdpMail` | `station_tuner_slot.py` | `transponder_udp_mail` | 1 |
-| `Mailbox` | `http_mailbox_slot.py` | `transponder_mailbox_bin` | 1 |
-| `TcpSlot` | `tcp_socket_slot.py` | `transponder_tcp` | 2 |
-| `UnixSlot` | `unix_socket_slot.py` | `transponder_unix` | 2 |
-| `WsSlot` | `websocket_slot.py` | `transponder_ws` | 2 |
-| `ShmSlot` | `shm_slot.py` | `transponder_shm` | 2 |
-| `HttpSlot` | `http_slot.py` | `transponder_http` | 2 |
-| `MailboxServer` | `http_mailbox_slot.py` | `transponder_mailbox_server` | 2 |
-| `MailboxClient` | `http_mailbox_slot.py` | `transponder_mailbox_client` | 2 |
-| `Station` | `station_tuner_slot.py` | `transponder_station` | 2 |
-| `Tuner` | `station_tuner_slot.py` | `transponder_tuner` | 2 |
-| `Wire` | `wire.py` | `transponder_wire` | 3 |
-| `NegativeCom` | `transponder_module.py` | `transponder_negative` | 4 |
-| `PositiveCom` | `transponder_module.py` | `transponder_positive` | 4 |
+| Class on disk          | File                      | Prefix module name           | Tier |
+| ---------------------- | ------------------------- | ---------------------------- | ---- |
+| `Transponder_Codec`    | `codec.py`                | `transponder_codec`          | 1    |
+| `Transponder_Locators` | `transponder_locators.py` | `transponder_locators`       | 1    |
+| `SlotRefused`          | `wire.py`                 | `transponder_slot_refused`   | 1    |
+| `DirWatch`             | `shm_slot.py`             | `transponder_dir_watch`      | 1    |
+| `UdpMail`              | `station_tuner_slot.py`   | `transponder_udp_mail`       | 1    |
+| `Mailbox`              | `http_mailbox_slot.py`    | `transponder_mailbox_bin`    | 1    |
+| `TcpSlot`              | `tcp_socket_slot.py`      | `transponder_tcp`            | 2    |
+| `UnixSlot`             | `unix_socket_slot.py`     | `transponder_unix`           | 2    |
+| `WsSlot`               | `websocket_slot.py`       | `transponder_ws`             | 2    |
+| `ShmSlot`              | `shm_slot.py`             | `transponder_shm`            | 2    |
+| `HttpSlot`             | `http_slot.py`            | `transponder_http`           | 2    |
+| `MailboxServer`        | `http_mailbox_slot.py`    | `transponder_mailbox_server` | 2    |
+| `MailboxClient`        | `http_mailbox_slot.py`    | `transponder_mailbox_client` | 2    |
+| `Station`              | `station_tuner_slot.py`   | `transponder_station`        | 2    |
+| `Tuner`                | `station_tuner_slot.py`   | `transponder_tuner`          | 2    |
+| `Wire`                 | `wire.py`                 | `transponder_wire`           | 3    |
+| `NegativeCom`          | `transponder_module.py`   | `transponder_negative`       | 4    |
+| `PositiveCom`          | `transponder_module.py`   | `transponder_positive`       | 4    |
 
 User-visible after Tier A trim: `NegativeCom`, `PositiveCom`, `Wire`.
 Optional short aliases: `Codec`, `Locators`, `TcpSlot`, ….
