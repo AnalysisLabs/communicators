@@ -30,20 +30,20 @@ Capability row (harvest later for L1):
 
 
 class DirWatch:
-    IN_MODIFY = 0x00000002
-    IN_CLOSE_WRITE = 0x00000008
-    IN_MOVED_TO = 0x00000080
-    IN_CREATE = 0x00000100
-    IN_ATTRIB = 0x00000004
-    WATCH_MASK = IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_ATTRIB
-    EVENT_HDR = struct.Struct("iIII")
-    libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
-    libc.inotify_init.restype = ctypes.c_int
-    libc.inotify_add_watch.restype = ctypes.c_int
-    libc.inotify_add_watch.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_uint32]
 
     @internalmethod
     def __init__(self, directory: str, filename: str):
+        self.IN_MODIFY = 0x00000002
+        self.IN_CLOSE_WRITE = 0x00000008
+        self.IN_MOVED_TO = 0x00000080
+        self.IN_CREATE = 0x00000100
+        self.IN_ATTRIB = 0x00000004
+        self.WATCH_MASK = IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_ATTRIB
+        self.EVENT_HDR = struct.Struct("iIII")
+        self.libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+        self.libc.inotify_init.restype = ctypes.c_int
+        self.libc.inotify_add_watch.restype = ctypes.c_int
+        self.libc.inotify_add_watch.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_uint32]
         self.directory = directory
         self.filename = filename
         self.fd = DirWatch.libc.inotify_init()
