@@ -20,10 +20,14 @@ success condition (how we know it worked).
 3. Then stop. Show `git status` and `git diff`. Explain and defend every
    modification: why it was required for the success condition, and which
    Philosophy article (if any) you checked.
-4. Do not commit unless asked. Do not `git push`.
-5. The human reviews a PR/MR by hand. Edits they do not accept are
-   discarded on purpose (`reset` of this worktree). Unreviewed work is
-   not “shipped.” Treat the diff as a proposal, not a merge.
+4. If the human has not forbidden a commit: `git add` only paths under
+   this workplace, then `git commit` on `variant/staged/staged-2-grok`
+   with a message that names the ticket and the success condition.
+   Never `git push`, `git checkout`, `git switch`, `git merge`, or
+   `git reset`. Those are the human’s.
+5. After the commit, show `git log --oneline variant/staged/staged-2..HEAD`
+   and wait. The human merges or resets this worktree. Unaccepted commits
+   will be discarded on purpose.
 
 If the prompt has no success condition, ask for one before changing code.
 
