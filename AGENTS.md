@@ -1,0 +1,65 @@
+# Communicators (staged-2-grok)
+
+Workplace (only tree you may modify):
+`/home/prometheusd/Analysis Labs/Dev Tools/com-branches/staged/staged-2-grok`
+
+Branch: `variant/staged/staged-2-grok`
+
+Also writable: `/dev/shm/communicators` and Grok home.
+Do not modify `…/com-branches/staged/staged-2` or any other worktree.
+
+## Job
+
+The human gives a task: a high-level algorithm (what should happen) and a
+success condition (how we know it worked).
+
+1. Stay inside this workplace.
+2. Iterate: edit, run, read output, edit again, until the named success
+   condition is met — or you can show why it cannot be met without a
+   design change.
+3. Then stop. Show `git status` and `git diff`. Explain and defend every
+   modification: why it was required for the success condition, and which
+   Philosophy article (if any) you checked.
+4. Do not commit unless asked. Do not `git push`.
+5. The human reviews a PR/MR by hand. Edits they do not accept are
+   discarded on purpose (`reset` of this worktree). Unreviewed work is
+   not “shipped.” Treat the diff as a proposal, not a merge.
+
+If the prompt has no success condition, ask for one before changing code.
+
+## When to open Philosophy
+
+Do not read the whole folder. Chores do not need it.
+
+Check Philosophy when the change affects **meaning, identity, boot order,
+what user programs may see, where runtime artifacts live, or how notes
+about modules are structured**. Typos, log noise, “make run.sh succeed
+with the same behavior,” and adding a test that does not change those
+rules: skip it, and say you skipped it.
+
+If it is design-shaped, read only the matching article(s) below, then
+edit. If two might apply, read both, not the rest.
+
+| Article (under `communicators/Philosophy/`) | Open when the work… |
+|---|---|
+| `File_Identity_Principle.md` | Identifies, moves, or looks up tracked files; path strings vs registry identity |
+| `Runtime_Context_Principle.md` | Changes boot/load order, when code becomes meaningful, or a cross-stage boundary |
+| `Ephemeral_Runtime_Store_Principle.md` | Adds or relocates boot-only / generated runtime artifacts (not long-lived source) |
+| `Internal_Import_Principle.md` | Exposes names to user programs, imports, or the public attribute-style API |
+| `Prefix_Tier_Principle.md` | Adds a capability, dependency, or load tier; risk of circular or same-tier use |
+| `Modular Notes Philosophy.md` | Writes or restructures module notes / MOCs (not when only code changes) |
+
+Those files are the design source of truth. Do not “simplify” them away
+in code. If a requested algorithm conflicts with an article, stop and
+say so instead of silently violating it.
+
+## How to run the OS
+
+Cwd must be:
+
+`/home/prometheusd/Analysis Labs/Dev Tools/com-branches/staged/staged-2-grok/communicators`
+
+Quote that path (spaces). Then:
+
+```bash
+./run.sh
