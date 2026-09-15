@@ -22,7 +22,6 @@ class Transponder_Codec:
     Raw = Union[None, str, bytes, bytearray, dict]
 
     @externalmethod
-    @staticmethod
     def encode_msg(payload: dict) -> str:
         """Dict -> JSON object text. No trailing newline, no UTF-8 wrap."""
         if not isinstance(payload, dict):
@@ -30,7 +29,6 @@ class Transponder_Codec:
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
     @externalmethod
-    @staticmethod
     def encode_bytes(payload: dict, newline: bool = False) -> bytes:
         """Dict -> UTF-8 JSON bytes. newline=True is NDJSON framing for
         stream slots; the extra byte is *frame*, not codec.
@@ -41,7 +39,6 @@ class Transponder_Codec:
         return data
 
     @externalmethod
-    @staticmethod
     def decode_msg(raw: Raw) -> dict:
         """JSON object text/bytes/dict -> dict. Empty input -> {}."""
         if raw is None or raw == b"" or raw == "":
@@ -62,7 +59,6 @@ class Transponder_Codec:
         return obj
 
     @externalmethod
-    @staticmethod
     def canonicalize(payload: dict) -> dict:
         """Round-trip through JSON so shm-style bins store the same shape
         the wire would have sent.

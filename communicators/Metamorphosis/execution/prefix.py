@@ -428,14 +428,12 @@ class Transponder_Codec:
     Raw = Union[None, str, bytes, bytearray, dict]
 
     @staticmethod
-    @staticmethod
     def encode_msg(payload: dict) -> str:
         """Dict -> JSON object text. No trailing newline, no UTF-8 wrap."""
         if not isinstance(payload, dict):
             raise TypeError(f"payload must be dict, got {type(payload)!r}")
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
-    @staticmethod
     @staticmethod
     def encode_bytes(payload: dict, newline: bool = False) -> bytes:
         """Dict -> UTF-8 JSON bytes. newline=True is NDJSON framing for
@@ -446,7 +444,6 @@ class Transponder_Codec:
             data += b"\n"
         return data
 
-    @staticmethod
     @staticmethod
     def decode_msg(raw: Raw) -> dict:
         """JSON object text/bytes/dict -> dict. Empty input -> {}."""
@@ -468,7 +465,6 @@ class Transponder_Codec:
         return obj
 
     @staticmethod
-    @staticmethod
     def canonicalize(payload: dict) -> dict:
         """Round-trip through JSON so shm-style bins store the same shape
         the wire would have sent.
@@ -486,7 +482,6 @@ class Transponder_Locators:
     BIN_DIR = "/dev/shm"
 
     @staticmethod
-    @staticmethod
     def parse_hostport(spec: str) -> tuple[str, int]:
         spec = spec.strip()
         if "://" in spec:
@@ -498,11 +493,9 @@ class Transponder_Locators:
         return host, int(port_s)
 
     @staticmethod
-    @staticmethod
     def fmt_addr(addr: tuple[str, int]) -> str:
         return f"{addr[0]}:{addr[1]}"
 
-    @staticmethod
     @staticmethod
     def parse_sockpath(spec: str) -> str:
         """Filesystem path, unix://path, or host:port mapped into /tmp."""
@@ -528,7 +521,6 @@ class Transponder_Locators:
         return spec
 
     @staticmethod
-    @staticmethod
     def parse_token(spec: str) -> str:
         spec = spec.strip()
         for prefix in ("shm://", "shm:", "token:"):
@@ -541,7 +533,6 @@ class Transponder_Locators:
             raise ValueError(f"token too short ({len(spec)}); pass a hex communicator token")
         return spec.lower()
 
-    @staticmethod
     @staticmethod
     def shm_bin_paths(token_a: str, token_b: str) -> tuple[str, str]:
         a, b = sorted((token_a, token_b))
