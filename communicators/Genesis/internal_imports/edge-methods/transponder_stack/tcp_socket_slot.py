@@ -35,9 +35,10 @@ Capability row (harvest later for L1):
 
 class TcpSlot:
     @internalmethod
-    def __init__(self, name: str, addr: tuple[str, int]):
-        self.name = name
-        self.host, self.port = addr
+    def __init__(self):
+        self.name = None
+        self.host = None
+        self.port = None
         self.seq = 0
         self.seq_lock = threading.Lock()
         self.send_lock = threading.Lock()
@@ -52,17 +53,48 @@ class TcpSlot:
         self.recv_thread = None
         self.on_payload = None
 
-    @dualmethod
-    def addr_s(self) -> str:
+    @internalmethod
+    def _open(self, name: str, addr: tuple[str, int]):
+        _close()
+        self.name = name
+        self.host, self.port = addr
+        self.seq = 0
+        self.inbox = []
+        self.replies = {}
+        self.reply_events = {}
+        self.role = None
+        self.recv_thread = None
+        self.on_payload = None
+
+    @externalmethod
+    def open(name: str, addr: tuple[str, int]):
+        return _open(name, addr)
+
+    @internalmethod
+    def _set_on_payload(self, cb):
+        self.on_payload = cb
+
+    @externalmethod
+    def set_on_payload(cb):
+        return _set_on_payload(cb)
+
+    @internalmethod
+    def _addr_s(self) -> str:
         return f"tcp://{self.host}:{self.port}"
 
-    @dualmethod
-    def next_seq(self) -> int:
+    @externalmethod
+    def addr_s() -> str:
+        return _addr_s()
+
+    @internalmethod
+    def _next_seq(self) -> int:
         with self.seq_lock:
             self.seq += 1
             return self.seq
 
-    # -- bind-or-connect on the shared address -------------------------------
+    @externalmethod
+    def next_seq() -> int:
+        return _next_seq()
 
     @internalmethod
     def _bind_listen(self) -> socket.socket:
@@ -81,26 +113,25 @@ class TcpSlot:
         conn.settimeout(None)
         return conn
 
-    @dualmethod
-    def attach(self, wait: float) -> None:
-        """First binder becomes listener; the other dials the same host:port."""
+    @internalmethod
+    def _attach(self, wait: float) -> None:
         deadline = time.time() + wait
         last_err = None
         while time.time() < deadline:
             try:
-                self.listener = self._bind_listen()
+                self.listener = _bind_listen()
                 self.role = "listen"
-                print(f"[{self.name} LISTEN] {self.addr_s()}  (waiting for peer)", flush=True)
+                print(f"[{self.name} LISTEN] {_addr_s()}  (waiting for peer)", flush=True)
                 while time.time() < deadline:
                     try:
                         conn, peer = self.listener.accept()
                         self.conn = conn
                         print(f"[{self.name} ACCEPT] peer={peer[0]}:{peer[1]}", flush=True)
-                        self._start_recv()
+                        _start_recv()
                         return
                     except socket.timeout:
                         continue
-                raise TimeoutError(f"{self.name} bound {self.addr_s()} but nobody connected")
+                raise TimeoutError(f"{self.name} bound {_addr_s()} but nobody connected")
             except OSError as e:
                 last_err = e
                 if self.listener is not None:
@@ -110,27 +141,34 @@ class TcpSlot:
                         pass
                     self.listener = None
                 try:
-                    self.conn = self._connect(timeout=0.4)
+                    self.conn = _connect(timeout=0.4)
                     self.role = "connect"
-                    print(f"[{self.name} CONNECT] {self.addr_s()}", flush=True)
-                    self._start_recv()
+                    print(f"[{self.name} CONNECT] {_addr_s()}", flush=True)
+                    _start_recv()
                     return
                 except OSError as e2:
                     last_err = e2
                     time.sleep(0.15)
-        raise TimeoutError(f"{self.name} never attached to {self.addr_s()}: {last_err}")
+        raise TimeoutError(f"{self.name} never attached to {_addr_s()}: {last_err}")
 
     @externalmethod
-    def wait_for_peer(self, timeout: float = 20.0) -> None:
-        # attach() already blocks until the duplex socket exists
+    def attach(wait: float) -> None:
+        return _attach(wait)
+
+    @internalmethod
+    def _wait_for_peer(self, timeout: float = 20.0) -> None:
         if self.conn is None:
-            self.attach(timeout)
-        print(f"[{self.name} PEER UP] role={self.role} addr={self.addr_s()}", flush=True)
+            _attach(timeout)
+        print(f"[{self.name} PEER UP] role={self.role} addr={_addr_s()}", flush=True)
+
+    @externalmethod
+    def wait_for_peer(timeout: float = 20.0) -> None:
+        return _wait_for_peer(timeout)
 
     @internalmethod
     def _start_recv(self) -> None:
         self.alive.set()
-        self.recv_thread = threading.Thread(target=self._recv_loop, name=f"{self.name}-recv", daemon=True)
+        self.recv_thread = threading.Thread(target=_recv_loop, name=f"{self.name}-recv", daemon=True)
         self.recv_thread.start()
 
     @internalmethod
@@ -156,7 +194,7 @@ class TcpSlot:
                     except Exception as e:
                         print(f"[{self.name} BAD JSON] {e}: {raw!r}", flush=True)
                         continue
-                    self._handle_incoming(incoming)
+                    _handle_incoming(incoming)
         finally:
             self.alive.clear()
 
@@ -187,10 +225,9 @@ class TcpSlot:
             self.inbox.append(incoming)
         print(f"[{self.name} RECV] from={origin} seq={seq} text={text!r}", flush=True)
 
-        # Application-level reply, same shape as the HTTP slot's POST response.
         if kind == "chat":
             try:
-                self._write({
+                _write({
                     "ok": True,
                     "kind": "reply",
                     "heard_by": self.name,
@@ -207,14 +244,18 @@ class TcpSlot:
         with self.send_lock:
             self.conn.sendall(data)
 
-    @dualmethod
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
+    @externalmethod
+    def write(payload: dict) -> None:
+        return _write(payload)
+
+    @internalmethod
+    def _request_response(self, payload: dict, timeout: float = 5.0) -> dict:
         seq = payload.get("seq")
         ev = threading.Event()
         with self.inbox_lock:
             self.reply_events[seq] = ev
         try:
-            self._write(payload)
+            _write(payload)
             if not ev.wait(timeout):
                 raise TimeoutError(f"no reply for seq={seq}")
             with self.inbox_lock:
@@ -223,26 +264,34 @@ class TcpSlot:
             with self.inbox_lock:
                 self.reply_events.pop(seq, None)
 
-    @dualmethod
-    def send_text(self, text: str) -> dict:
+    @externalmethod
+    def request_response(payload: dict, timeout: float = 5.0) -> dict:
+        return _request_response(payload, timeout)
+
+    @internalmethod
+    def _send_text(self, text: str) -> dict:
         payload = {
             "from": self.name,
-            "seq": self.next_seq(),
+            "seq": _next_seq(),
             "kind": "chat",
             "text": text,
             "ts": time.time(),
         }
         print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
+        reply = _request_response(payload)
         print(f"[{self.name} REPLY] {reply}", flush=True)
         return reply
 
     @externalmethod
-    def burst(self) -> None:
-        pass
+    def send_text(text: str) -> dict:
+        return _send_text(text)
 
     @externalmethod
-    def close(self) -> None:
+    def burst() -> None:
+        pass
+
+    @internalmethod
+    def _close(self) -> None:
         self.alive.clear()
         for sock in (self.conn, self.listener):
             if sock is None:
@@ -257,3 +306,7 @@ class TcpSlot:
                 pass
         self.conn = None
         self.listener = None
+
+    @externalmethod
+    def close() -> None:
+        return _close()

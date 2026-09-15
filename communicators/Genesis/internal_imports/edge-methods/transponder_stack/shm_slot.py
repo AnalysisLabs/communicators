@@ -32,39 +32,64 @@ Capability row (harvest later for L1):
 class DirWatch:
 
     @internalmethod
-    def __init__(self, directory: str, filename: str):
+    def __init__(self):
         self.IN_MODIFY = 0x00000002
         self.IN_CLOSE_WRITE = 0x00000008
         self.IN_MOVED_TO = 0x00000080
         self.IN_CREATE = 0x00000100
         self.IN_ATTRIB = 0x00000004
-        self.WATCH_MASK = IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_ATTRIB
+        self.WATCH_MASK = (
+            self.IN_MODIFY
+            | self.IN_CLOSE_WRITE
+            | self.IN_MOVED_TO
+            | self.IN_CREATE
+            | self.IN_ATTRIB
+        )
         self.EVENT_HDR = struct.Struct("iIII")
-        self.libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+        self.libc = ctypes.CDLL(ctypes_util.find_library("c"), use_errno=True)
         self.libc.inotify_init.restype = ctypes.c_int
         self.libc.inotify_add_watch.restype = ctypes.c_int
-        self.libc.inotify_add_watch.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_uint32]
+        self.libc.inotify_add_watch.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint32,
+        ]
+        self.directory = None
+        self.filename = None
+        self.fd = None
+
+    @internalmethod
+    def _open(self, directory: str, filename: str):
+        if self.fd is not None:
+            _close()
         self.directory = directory
         self.filename = filename
-        self.fd = DirWatch.libc.inotify_init()
+        self.fd = self.libc.inotify_init()
         if self.fd < 0:
             raise OSError("inotify_init failed")
-        wd = DirWatch.libc.inotify_add_watch(
-            self.fd, directory.encode("utf-8"), DirWatch.WATCH_MASK
+        wd = self.libc.inotify_add_watch(
+            self.fd, directory.encode("utf-8"), self.WATCH_MASK
         )
         if wd < 0:
             os.close(self.fd)
+            self.fd = None
             raise OSError("inotify_add_watch failed")
 
     @externalmethod
-    def wait(self, timeout: float) -> bool:
+    def open(directory: str, filename: str):
+        return _open(directory, filename)
+
+    @internalmethod
+    def _wait(self, timeout: float) -> bool:
+        if self.fd is None:
+            return False
         ready, _, _ = select.select([self.fd], [], [], timeout)
         if not ready:
             return False
         data = os.read(self.fd, 4096)
         hit = False
         off = 0
-        hdr = DirWatch.EVENT_HDR
+        hdr = self.EVENT_HDR
         while off + hdr.size <= len(data):
             _wd, _mask, _cookie, namelen = hdr.unpack_from(data, off)
             off += hdr.size
@@ -75,11 +100,22 @@ class DirWatch:
         return hit
 
     @externalmethod
-    def close(self):
+    def wait(timeout: float) -> bool:
+        return _wait(timeout)
+
+    @internalmethod
+    def _close(self):
+        if self.fd is None:
+            return
         try:
             os.close(self.fd)
         except OSError:
             pass
+        self.fd = None
+
+    @externalmethod
+    def close():
+        return _close()
 
 
 # ---------------------------------------------------------------------------
@@ -88,11 +124,12 @@ class DirWatch:
 
 class ShmSlot:
     @internalmethod
-    def __init__(self, name: str, mine: str, peer: str):
-        self.name = name
-        self.mine = mine
-        self.peer = peer
-        self.bin_path, self.lock_path = Transponder_Locators.shm_bin_paths(mine, peer)
+    def __init__(self):
+        self.name = None
+        self.mine = None
+        self.peer = None
+        self.bin_path = None
+        self.lock_path = None
         self.seq = 0
         self.seq_lock = threading.Lock()
         self.inbox = []
@@ -101,19 +138,53 @@ class ShmSlot:
         self.reply_events = {}
         self.alive = threading.Event()
         self.peer_up = threading.Event()
-        self.watch = None
         self.watch_thread = None
         self.on_payload = None
 
-    @dualmethod
-    def addr_s(self) -> str:
+    @internalmethod
+    def _open(self, name: str, mine: str, peer: str):
+        self.name = name
+        self.mine = mine
+        self.peer = peer
+        self.bin_path, self.lock_path = Transponder_Locators.shm_bin_paths(mine, peer)
+        self.seq = 0
+        self.inbox = []
+        self.replies = {}
+        self.reply_events = {}
+        self.alive.clear()
+        self.peer_up.clear()
+        self.watch_thread = None
+        self.on_payload = None
+
+    @externalmethod
+    def open(name: str, mine: str, peer: str):
+        return _open(name, mine, peer)
+
+    @internalmethod
+    def _set_on_payload(self, cb):
+        self.on_payload = cb
+
+    @externalmethod
+    def set_on_payload(cb):
+        return _set_on_payload(cb)
+
+    @internalmethod
+    def _addr_s(self) -> str:
         return f"shm://{os.path.basename(self.bin_path)}"
 
-    @dualmethod
-    def next_seq(self) -> int:
+    @externalmethod
+    def addr_s() -> str:
+        return _addr_s()
+
+    @internalmethod
+    def _next_seq(self) -> int:
         with self.seq_lock:
             self.seq += 1
             return self.seq
+
+    @externalmethod
+    def next_seq() -> int:
+        return _next_seq()
 
     @internalmethod
     def _lock(self):
@@ -153,79 +224,91 @@ class ShmSlot:
 
     @internalmethod
     def _mutate(self, fn):
-        lockf = self._lock()
+        lockf = _lock()
         try:
-            obj = self._read_bin()
+            obj = _read_bin()
             result = fn(obj)
-            self._write_bin(obj)
+            _write_bin(obj)
             return result
         finally:
             fcntl.flock(lockf.fileno(), fcntl.LOCK_UN)
             lockf.close()
 
-    @dualmethod
-    def ensure_bin(self) -> None:
+    @internalmethod
+    def _ensure_bin(self) -> None:
         def mark(obj):
             obj["present"][self.mine] = {"name": self.name, "ts": time.time()}
             return obj["present"]
 
-        present = self._mutate(mark)
+        present = _mutate(mark)
         print(f"[{self.name} BIN] {self.bin_path} present={list(present)}", flush=True)
         if self.peer in present:
             self.peer_up.set()
 
-    @dualmethod
-    def attach(self, wait: float) -> None:
-        self.ensure_bin()
-        self.watch = DirWatch(Transponder_Locators.BIN_DIR, os.path.basename(self.bin_path))
+    @externalmethod
+    def ensure_bin() -> None:
+        return _ensure_bin()
+
+    @internalmethod
+    def _attach(self, wait: float) -> None:
+        _ensure_bin()
+        DirWatch.open(Transponder_Locators.BIN_DIR, os.path.basename(self.bin_path))
         self.alive.set()
         self.watch_thread = threading.Thread(
-            target=self._watch_loop, name=f"{self.name}-inotify", daemon=True
+            target=_watch_loop, name=f"{self.name}-inotify", daemon=True
         )
         self.watch_thread.start()
         print(f"[{self.name} LISTEN] token={self.mine} peer={self.peer}", flush=True)
 
         deadline = time.time() + wait
         while time.time() < deadline and not self.peer_up.is_set():
-            self._drain()
+            _drain()
             if self.peer_up.is_set():
                 break
             remaining = max(0.05, deadline - time.time())
-            self.watch.wait(timeout=min(0.5, remaining))
+            DirWatch.wait(timeout=min(0.5, remaining))
         if not self.peer_up.is_set():
             raise TimeoutError(f"{self.name} never saw peer token {self.peer} in {self.bin_path}")
 
     @externalmethod
-    def wait_for_peer(self, timeout: float = 20.0) -> None:
+    def attach(wait: float) -> None:
+        return _attach(wait)
+
+    @internalmethod
+    def _wait_for_peer(self, timeout: float = 20.0) -> None:
         if not self.peer_up.is_set():
-            self.attach(timeout)
-        print(f"[{self.name} PEER UP] addr={self.addr_s()}", flush=True)
+            _attach(timeout)
+        print(f"[{self.name} PEER UP] addr={_addr_s()}", flush=True)
+
+    @externalmethod
+    def wait_for_peer(timeout: float = 20.0) -> None:
+        return _wait_for_peer(timeout)
 
     @internalmethod
     def _watch_loop(self) -> None:
         while self.alive.is_set():
             try:
-                hit = self.watch.wait(timeout=0.5)
+                hit = DirWatch.wait(timeout=0.5)
             except Exception:
                 if not self.alive.is_set():
                     break
                 raise
             if self.alive.is_set() and (hit or not self.peer_up.is_set()):
-                self._drain()
+                _drain()
 
     @internalmethod
     def _drain(self) -> None:
         lockf = None
         items = []
         try:
-            lockf = self._lock()
-            obj = self._read_bin()
+            lockf = _lock()
+            obj = _read_bin()
             if self.peer in obj.get("present", {}):
                 self.peer_up.set()
             items = list(obj["lanes"].get(self.mine) or [])
             if items:
                 obj["lanes"][self.mine] = []
-                self._write_bin(obj)
+                _write_bin(obj)
         except Exception as e:
             print(f"[{self.name} DRAIN FAIL] {type(e).__name__}: {e}", flush=True)
             items = []
@@ -242,7 +325,7 @@ class ShmSlot:
             except Exception as e:
                 print(f"[{self.name} BAD JSON] {e}: {raw!r}", flush=True)
                 continue
-            self._handle_incoming(incoming)
+            _handle_incoming(incoming)
 
     @internalmethod
     def _handle_incoming(self, incoming: dict) -> None:
@@ -277,7 +360,7 @@ class ShmSlot:
 
         if kind == "chat":
             try:
-                self._enqueue(self.peer, {
+                _enqueue(self.peer, {
                     "ok": True,
                     "kind": "reply",
                     "heard_by": self.name,
@@ -290,7 +373,11 @@ class ShmSlot:
 
     @internalmethod
     def _write(self, payload: dict) -> None:
-        self._enqueue(self.peer, payload)
+        _enqueue(self.peer, payload)
+
+    @externalmethod
+    def write(payload: dict) -> None:
+        return _write(payload)
 
     @internalmethod
     def _enqueue(self, dest_token: str, payload: dict) -> None:
@@ -300,16 +387,16 @@ class ShmSlot:
             obj["lanes"].setdefault(dest_token, []).append(boxed)
             obj["present"][self.mine] = {"name": self.name, "ts": time.time()}
 
-        self._mutate(append)
+        _mutate(append)
 
-    @dualmethod
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
+    @internalmethod
+    def _request_response(self, payload: dict, timeout: float = 5.0) -> dict:
         seq = payload.get("seq")
         ev = threading.Event()
         with self.inbox_lock:
             self.reply_events[seq] = ev
         try:
-            self._enqueue(self.peer, payload)
+            _enqueue(self.peer, payload)
             if not ev.wait(timeout):
                 raise TimeoutError(f"no reply for seq={seq}")
             with self.inbox_lock:
@@ -318,31 +405,37 @@ class ShmSlot:
             with self.inbox_lock:
                 self.reply_events.pop(seq, None)
 
-    @dualmethod
-    def send_text(self, text: str) -> dict:
+    @externalmethod
+    def request_response(payload: dict, timeout: float = 5.0) -> dict:
+        return _request_response(payload, timeout)
+
+    @internalmethod
+    def _send_text(self, text: str) -> dict:
         payload = {
             "from": self.name,
             "from_token": self.mine,
-            "seq": self.next_seq(),
+            "seq": _next_seq(),
             "kind": "chat",
             "text": text,
             "ts": time.time(),
         }
         print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
+        reply = _request_response(payload)
         print(f"[{self.name} REPLY] {reply}", flush=True)
         return reply
 
     @externalmethod
-    def burst(self) -> None:
-        pass
+    def send_text(text: str) -> dict:
+        return _send_text(text)
 
     @externalmethod
-    def close(self) -> None:
+    def burst() -> None:
+        pass
+
+    @internalmethod
+    def _close(self) -> None:
         self.alive.clear()
-        if self.watch is not None:
-            self.watch.close()
-            self.watch = None
+        DirWatch.close()
 
         def leave(obj):
             obj.get("present", {}).pop(self.mine, None)
@@ -350,7 +443,7 @@ class ShmSlot:
             return empty
 
         try:
-            empty = self._mutate(leave)
+            empty = _mutate(leave)
         except Exception:
             empty = False
         if empty:
@@ -359,3 +452,7 @@ class ShmSlot:
                     os.unlink(path)
                 except FileNotFoundError:
                     pass
+
+    @externalmethod
+    def close() -> None:
+        return _close()

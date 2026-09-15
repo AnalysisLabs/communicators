@@ -35,9 +35,10 @@ Capability row (harvest later for L1):
 
 class WsSlot:
     @internalmethod
-    def __init__(self, name: str, addr: tuple[str, int]):
-        self.name = name
-        self.host, self.port = addr
+    def __init__(self):
+        self.name = None
+        self.host = None
+        self.port = None
         self.seq = 0
         self.seq_lock = threading.Lock()
         self.send_lock = threading.Lock()
@@ -54,15 +55,51 @@ class WsSlot:
         self.server_thread = None
         self.on_payload = None
 
-    @dualmethod
-    def addr_s(self) -> str:
+    @internalmethod
+    def _open(self, name: str, addr: tuple[str, int]):
+        _close()
+        self.name = name
+        self.host, self.port = addr
+        self.seq = 0
+        self.inbox = []
+        self.replies = {}
+        self.reply_events = {}
+        self.role = None
+        self.alive.clear()
+        self.attached.clear()
+        self.recv_thread = None
+        self.server_thread = None
+        self.on_payload = None
+
+    @externalmethod
+    def open(name: str, addr: tuple[str, int]):
+        return _open(name, addr)
+
+    @internalmethod
+    def _set_on_payload(self, cb):
+        self.on_payload = cb
+
+    @externalmethod
+    def set_on_payload(cb):
+        return _set_on_payload(cb)
+
+    @internalmethod
+    def _addr_s(self) -> str:
         return f"ws://{self.host}:{self.port}"
 
-    @dualmethod
-    def next_seq(self) -> int:
+    @externalmethod
+    def addr_s() -> str:
+        return _addr_s()
+
+    @internalmethod
+    def _next_seq(self) -> int:
         with self.seq_lock:
             self.seq += 1
             return self.seq
+
+    @externalmethod
+    def next_seq() -> int:
+        return _next_seq()
 
     @internalmethod
     def _server_handler(self, websocket):
@@ -70,7 +107,7 @@ class WsSlot:
         self.role = self.role or "listen"
         self.alive.set()
         self.attached.set()
-        print(f"[{self.name} ACCEPT] {self.addr_s()}", flush=True)
+        print(f"[{self.name} ACCEPT] {_addr_s()}", flush=True)
         try:
             for raw in websocket:
                 try:
@@ -78,7 +115,7 @@ class WsSlot:
                 except Exception as e:
                     print(f"[{self.name} BAD JSON] {e}: {raw!r}", flush=True)
                     continue
-                self._handle_incoming(incoming)
+                _handle_incoming(incoming)
         finally:
             print(f"[{self.name} PEER CLOSED]", flush=True)
             self.alive.clear()
@@ -94,7 +131,7 @@ class WsSlot:
                 except Exception as e:
                     print(f"[{self.name} BAD JSON] {e}: {raw!r}", flush=True)
                     continue
-                self._handle_incoming(incoming)
+                _handle_incoming(incoming)
         except Exception as e:
             if self.alive.is_set():
                 print(f"[{self.name} RECV END] {type(e).__name__}: {e}", flush=True)
@@ -102,13 +139,13 @@ class WsSlot:
             print(f"[{self.name} PEER CLOSED]", flush=True)
             self.alive.clear()
 
-    @dualmethod
-    def attach(self, wait: float) -> None:
+    @internalmethod
+    def _attach(self, wait: float) -> None:
         deadline = time.time() + wait
         last_err = None
         while time.time() < deadline:
             try:
-                self.server = serve(self._server_handler, self.host, self.port)
+                self.server = serve(_server_handler, self.host, self.port)
                 self.role = "listen"
                 self.server_thread = threading.Thread(
                     target=self.server.serve_forever,
@@ -116,36 +153,44 @@ class WsSlot:
                     daemon=True,
                 )
                 self.server_thread.start()
-                print(f"[{self.name} LISTEN] {self.addr_s()}  (waiting for peer)", flush=True)
+                print(f"[{self.name} LISTEN] {_addr_s()}  (waiting for peer)", flush=True)
                 if not self.attached.wait(timeout=max(0.05, deadline - time.time())):
-                    raise TimeoutError(f"{self.name} bound {self.addr_s()} but nobody connected")
+                    raise TimeoutError(f"{self.name} bound {_addr_s()} but nobody connected")
                 return
             except OSError as e:
                 last_err = e
-                self._stop_server()
+                _stop_server()
                 try:
-                    self.ws = connect(self.addr_s(), open_timeout=0.4)
+                    self.ws = connect(_addr_s(), open_timeout=0.4)
                     self.role = "connect"
                     self.alive.set()
                     self.attached.set()
                     self.recv_thread = threading.Thread(
-                        target=self._recv_loop,
+                        target=_recv_loop,
                         name=f"{self.name}-wsrecv",
                         daemon=True,
                     )
                     self.recv_thread.start()
-                    print(f"[{self.name} CONNECT] {self.addr_s()}", flush=True)
+                    print(f"[{self.name} CONNECT] {_addr_s()}", flush=True)
                     return
                 except Exception as e2:
                     last_err = e2
                     time.sleep(0.15)
-        raise TimeoutError(f"{self.name} never attached to {self.addr_s()}: {last_err}")
+        raise TimeoutError(f"{self.name} never attached to {_addr_s()}: {last_err}")
 
     @externalmethod
-    def wait_for_peer(self, timeout: float = 20.0) -> None:
+    def attach(wait: float) -> None:
+        return _attach(wait)
+
+    @internalmethod
+    def _wait_for_peer(self, timeout: float = 20.0) -> None:
         if not self.attached.is_set():
-            self.attach(timeout)
-        print(f"[{self.name} PEER UP] role={self.role} addr={self.addr_s()}", flush=True)
+            _attach(timeout)
+        print(f"[{self.name} PEER UP] role={self.role} addr={_addr_s()}", flush=True)
+
+    @externalmethod
+    def wait_for_peer(timeout: float = 20.0) -> None:
+        return _wait_for_peer(timeout)
 
     @internalmethod
     def _handle_incoming(self, incoming: dict) -> None:
@@ -176,7 +221,7 @@ class WsSlot:
 
         if kind == "chat":
             try:
-                self._write({
+                _write({
                     "ok": True,
                     "kind": "reply",
                     "heard_by": self.name,
@@ -193,14 +238,18 @@ class WsSlot:
         with self.send_lock:
             self.ws.send(data)
 
-    @dualmethod
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
+    @externalmethod
+    def write(payload: dict) -> None:
+        return _write(payload)
+
+    @internalmethod
+    def _request_response(self, payload: dict, timeout: float = 5.0) -> dict:
         seq = payload.get("seq")
         ev = threading.Event()
         with self.inbox_lock:
             self.reply_events[seq] = ev
         try:
-            self._write(payload)
+            _write(payload)
             if not ev.wait(timeout):
                 raise TimeoutError(f"no reply for seq={seq}")
             with self.inbox_lock:
@@ -209,22 +258,30 @@ class WsSlot:
             with self.inbox_lock:
                 self.reply_events.pop(seq, None)
 
-    @dualmethod
-    def send_text(self, text: str) -> dict:
+    @externalmethod
+    def request_response(payload: dict, timeout: float = 5.0) -> dict:
+        return _request_response(payload, timeout)
+
+    @internalmethod
+    def _send_text(self, text: str) -> dict:
         payload = {
             "from": self.name,
-            "seq": self.next_seq(),
+            "seq": _next_seq(),
             "kind": "chat",
             "text": text,
             "ts": time.time(),
         }
         print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
+        reply = _request_response(payload)
         print(f"[{self.name} REPLY] {reply}", flush=True)
         return reply
 
     @externalmethod
-    def burst(self) -> None:
+    def send_text(text: str) -> dict:
+        return _send_text(text)
+
+    @externalmethod
+    def burst() -> None:
         pass
 
     @internalmethod
@@ -241,8 +298,8 @@ class WsSlot:
             pass
         self.server = None
 
-    @externalmethod
-    def close(self) -> None:
+    @internalmethod
+    def _close(self) -> None:
         self.alive.clear()
         if self.ws is not None:
             try:
@@ -250,4 +307,8 @@ class WsSlot:
             except Exception:
                 pass
             self.ws = None
-        self._stop_server()
+        _stop_server()
+
+    @externalmethod
+    def close() -> None:
+        return _close()

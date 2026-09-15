@@ -68,20 +68,25 @@ one prompt; bot `from_P`; bot `to_P` three freight replies; client `from_N`
 on a persistent Wire. Default row tcp, fallback unix, last resort shm.
 Client exit after three replies is demo-only.
 
-**In flight:** the same stack concatenated into the Genesis prefix and
-split by Stage B into `Name_internal` / public façade. Hatch types were
-written as instances; Stage B constructs them as PathReffs-shaped
-singletons. First crash: `_DirWatch_internal = DirWatch_internal()`
-missing `directory` and `filename`. Fix is hatch shape (zero-arg internal
-`__init__`, thin `@externalmethod`), not a second transpiler.
+**Prefix hatch construct (2026-09-15):** `./run.sh` execs the Stage B
+prefix without TypeError / SyntaxError / NameError at
+`_Name_internal = Name_internal()`. Live `MEMBERS` media are tcp, unix,
+websocket, shm. Hatch engines are zero-arg internal `__init__` plus
+`_open` / thin `@externalmethod`. Faces no longer mark `__new__`.
+HTTP / mailbox / station-tuner stay on disk under `transponder_stack/`
+and are off `MEMBERS`.
+
+**In flight:** two-process chat against a **prefix-built** program (not
+`chat_*.py` as ordinary scripts). Standalone instance spelling is still
+the behavior reference; prefix call sites are `Class.open(...)`.
 
 HTTP / mailbox / station-tuner exist on disk under `transponder_stack/`
 and may stay off `MEMBERS` until a fallback row needs them.
 
 Acceptance bar for prefix integration: two-process chat against a
 **prefix-built** program, not `chat_*.py` as ordinary scripts. Boot
-success is weaker: `./run.sh` execs the prefix without hatch construct
-errors.
+success is weaker and now met: `./run.sh` execs the prefix without hatch
+construct errors.
 
 ## Links
 
@@ -101,6 +106,10 @@ Do not load `Slots/`, the old `transponder_module.py` blob, or
 
 ## Changelog
 
+- 2026-09-15: Hatch-to-prefix construct now succeeds on `./run.sh`.
+  DirWatch / slots / faces use zero-arg internal `__init__` and thin
+  façades. HTTP / mailbox / station-tuner taken off `MEMBERS`. Two-process
+  prefix chat still in flight.
 - 2026-09-15: Initial MOC from a grok session reading the tree and the
   three prefix handoffs. Not a spec freeze. Hatch-to-prefix construct
   was still failing at DirWatch.

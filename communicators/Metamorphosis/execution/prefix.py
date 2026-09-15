@@ -26,7 +26,7 @@ from websockets.sync.server import serve
 
 # === COMMUNICATORS_ROOT (resolved at prefix-build time) ===
 from pathlib import Path
-COMMUNICATORS_ROOT = Path('/home/prometheusd/Analysis Labs/Dev Tools/com-branches/staged/staged-2/communicators')
+COMMUNICATORS_ROOT = Path('/home/prometheusd/Analysis Labs/Dev Tools/com-branches/staged/staged-2-grok/communicators')
 
 
 # === Tier 1 (imports) ===
@@ -570,44 +570,58 @@ class SlotRefused:
 # === DirWatch (class) ===
 class DirWatch_internal:
 
-    def __init__(self, directory: str, filename: str):
+    def __init__(self):
         self.IN_MODIFY = 0x00000002
         self.IN_CLOSE_WRITE = 0x00000008
         self.IN_MOVED_TO = 0x00000080
         self.IN_CREATE = 0x00000100
         self.IN_ATTRIB = 0x00000004
-        self.WATCH_MASK = IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_ATTRIB
+        self.WATCH_MASK = (
+            self.IN_MODIFY
+            | self.IN_CLOSE_WRITE
+            | self.IN_MOVED_TO
+            | self.IN_CREATE
+            | self.IN_ATTRIB
+        )
         self.EVENT_HDR = struct.Struct("iIII")
-        self.libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+        self.libc = ctypes.CDLL(ctypes_util.find_library("c"), use_errno=True)
         self.libc.inotify_init.restype = ctypes.c_int
         self.libc.inotify_add_watch.restype = ctypes.c_int
-        self.libc.inotify_add_watch.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_uint32]
+        self.libc.inotify_add_watch.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint32,
+        ]
+        self.directory = None
+        self.filename = None
+        self.fd = None
+
+    def _open(self, directory: str, filename: str):
+        if self.fd is not None:
+            self._close()
         self.directory = directory
         self.filename = filename
-        self.fd = DirWatch.libc.inotify_init()
+        self.fd = self.libc.inotify_init()
         if self.fd < 0:
             raise OSError("inotify_init failed")
-        wd = DirWatch.libc.inotify_add_watch(
-            self.fd, directory.encode("utf-8"), DirWatch.WATCH_MASK
+        wd = self.libc.inotify_add_watch(
+            self.fd, directory.encode("utf-8"), self.WATCH_MASK
         )
         if wd < 0:
             os.close(self.fd)
+            self.fd = None
             raise OSError("inotify_add_watch failed")
 
-
-_DirWatch_internal = DirWatch_internal()
-
-class DirWatch:
-
-    @staticmethod
-    def wait(self, timeout: float) -> bool:
+    def _wait(self, timeout: float) -> bool:
+        if self.fd is None:
+            return False
         ready, _, _ = select.select([self.fd], [], [], timeout)
         if not ready:
             return False
         data = os.read(self.fd, 4096)
         hit = False
         off = 0
-        hdr = DirWatch.EVENT_HDR
+        hdr = self.EVENT_HDR
         while off + hdr.size <= len(data):
             _wd, _mask, _cookie, namelen = hdr.unpack_from(data, off)
             off += hdr.size
@@ -617,177 +631,41 @@ class DirWatch:
                 hit = True
         return hit
 
-    @staticmethod
-    def close(self):
+    def _close(self):
+        if self.fd is None:
+            return
         try:
             os.close(self.fd)
         except OSError:
             pass
+        self.fd = None
 
 
-# === UdpMail (class) ===
-class UdpMail_internal:
-    pass
-_UdpMail_internal = UdpMail_internal()
+_DirWatch_internal = DirWatch_internal()
 
-class UdpMail:
-    """File-local helpers used by both Station and Tuner.
-
-    This is the @modulemethod role: a class both peer classes qualify
-    against. Stage C will not rewrite these calls; they stay
-    UdpMail.bind_udp(...).
-    """
+class DirWatch:
 
     @staticmethod
-    @staticmethod
-    def bind_udp(addr: tuple[str, int]) -> socket.socket:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind(addr)
-        sock.settimeout(0.3)
-        return sock
-
-
-# === Mailbox (class) ===
-class Mailbox_internal:
-    """Two things live here: a client registry, and one queue per client.
-
-    Only the server process touches this. The client never sees /dev/shm.
-    """
-
-    def __init__(self, server_name: str, default_poll: float):
-        self.server_name = server_name
-        self.mailbox_id = str(uuid.uuid4())
-        self.default_poll = float(default_poll)
-        self.lock = threading.Lock()
-        self.clients: dict[str, dict] = {}
-        self.lanes: dict[str, list] = {}
-        self.bin_path = os.path.join(Transponder_Locators.BIN_DIR, f"http_mailbox_{self.mailbox_id}.json")
-        self._persist()
-
-    def _snapshot(self) -> dict:
-        return {
-            "mailbox": self.mailbox_id,
-            "server": self.server_name,
-            "clients": dict(self.clients),
-            "lanes": {name: list(items) for name, items in self.lanes.items()},
-        }
-
-    def _persist(self) -> None:
-        try:
-            os.makedirs(Transponder_Locators.BIN_DIR, exist_ok=True)
-            tmp = self.bin_path + ".tmp"
-            with open(tmp, "w", encoding="utf-8") as fh:
-                json.dump(self._snapshot(), fh, ensure_ascii=False, indent=2)
-            os.replace(tmp, self.bin_path)
-        except OSError:
-            pass
-
-    def expire_locked(self, now: float) -> list[tuple[str, dict]]:
-        dropped = []
-        for name, items in self.lanes.items():
-            poll_s = self.clients.get(name, {}).get("poll", self.default_poll)
-            keep = []
-            for item in items:
-                age = now - float(item.get("enqueued_at", now))
-                if age > poll_s:
-                    dropped.append((name, item.get("msg", {})))
-                else:
-                    keep.append(item)
-            self.lanes[name] = keep
-        return dropped
-
-
-_Mailbox_internal = Mailbox_internal()
-
-class Mailbox:
+    def open(directory: str, filename: str):
+        return _DirWatch_internal._open(directory, filename)
 
     @staticmethod
-    def unlink(self) -> None:
-        for path in (self.bin_path, self.bin_path + ".tmp"):
-            try:
-                os.unlink(path)
-            except OSError:
-                pass
+    def wait(timeout: float) -> bool:
+        return _DirWatch_internal._wait(timeout)
 
     @staticmethod
-    def tune(self, name: str, poll: float | None) -> dict:
-        poll_s = self.default_poll if poll is None else float(poll)
-        if poll_s <= 0:
-            raise ValueError("poll cycle must be > 0")
-        now = time.time()
-        with self.lock:
-            self.clients[name] = {"name": name, "poll": poll_s, "tuned_at": now, "last_poll": 0.0}
-            self.lanes.setdefault(name, [])
-            self._persist()
-            return {"ok": True, "mailbox": self.mailbox_id, "name": name, "poll": poll_s}
-
-    @staticmethod
-    def client_names(self) -> list[str]:
-        with self.lock:
-            return list(self.clients)
-
-    @staticmethod
-    def enqueue(self, dest: str, msg: dict) -> None:
-        item = {"enqueued_at": time.time(), "msg": msg}
-        with self.lock:
-            if dest not in self.lanes:
-                self.lanes[dest] = []
-            self.lanes[dest].append(item)
-            self._persist()
-
-    @staticmethod
-    def enqueue_all(self, msg: dict) -> list[str]:
-        with self.lock:
-            names = list(self.clients)
-            now = time.time()
-            for name in names:
-                self.lanes.setdefault(name, []).append({"enqueued_at": now, "msg": msg})
-            self._persist()
-            return names
-
-    @staticmethod
-    def fetch(self, name: str) -> list[dict]:
-        now = time.time()
-        with self.lock:
-            dropped = self.expire_locked(now)
-            items = list(self.lanes.get(name, []))
-            self.lanes[name] = []
-            if name in self.clients:
-                self.clients[name]["last_poll"] = now
-            self._persist()
-        for dest, msg in dropped:
-            text = msg.get("text", "")
-            seq = msg.get("seq", "?")
-            print(
-                f"[{self.server_name} EXPIRE] dest={dest} seq={seq} text={text!r}",
-                flush=True,
-            )
-        return [item["msg"] for item in items]
-
-    @staticmethod
-    def sweep(self) -> None:
-        now = time.time()
-        with self.lock:
-            dropped = self.expire_locked(now)
-            if dropped:
-                self._persist()
-        for dest, msg in dropped:
-            text = msg.get("text", "")
-            seq = msg.get("seq", "?")
-            print(
-                f"[{self.server_name} EXPIRE] dest={dest} seq={seq} text={text!r}",
-                flush=True,
-            )
+    def close():
+        return _DirWatch_internal._close()
 
 
 # === Tier 2 (imports) ===
 
 # === TcpSlot (class) ===
 class TcpSlot_internal:
-    def __init__(self, name: str, addr: tuple[str, int]):
-        self.name = name
-        self.host, self.port = addr
+    def __init__(self):
+        self.name = None
+        self.host = None
+        self.port = None
         self.seq = 0
         self.seq_lock = threading.Lock()
         self.send_lock = threading.Lock()
@@ -802,7 +680,28 @@ class TcpSlot_internal:
         self.recv_thread = None
         self.on_payload = None
 
-    # -- bind-or-connect on the shared address -------------------------------
+    def _open(self, name: str, addr: tuple[str, int]):
+        self._close()
+        self.name = name
+        self.host, self.port = addr
+        self.seq = 0
+        self.inbox = []
+        self.replies = {}
+        self.reply_events = {}
+        self.role = None
+        self.recv_thread = None
+        self.on_payload = None
+
+    def _set_on_payload(self, cb):
+        self.on_payload = cb
+
+    def _addr_s(self) -> str:
+        return f"tcp://{self.host}:{self.port}"
+
+    def _next_seq(self) -> int:
+        with self.seq_lock:
+            self.seq += 1
+            return self.seq
 
     def _bind_listen(self) -> socket.socket:
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -819,9 +718,51 @@ class TcpSlot_internal:
         conn.settimeout(None)
         return conn
 
+    def _attach(self, wait: float) -> None:
+        deadline = time.time() + wait
+        last_err = None
+        while time.time() < deadline:
+            try:
+                self.listener = self._bind_listen()
+                self.role = "listen"
+                print(f"[{self.name} LISTEN] {self._addr_s()}  (waiting for peer)", flush=True)
+                while time.time() < deadline:
+                    try:
+                        conn, peer = self.listener.accept()
+                        self.conn = conn
+                        print(f"[{self.name} ACCEPT] peer={peer[0]}:{peer[1]}", flush=True)
+                        self._start_recv()
+                        return
+                    except socket.timeout:
+                        continue
+                raise TimeoutError(f"{self.name} bound {self._addr_s()} but nobody connected")
+            except OSError as e:
+                last_err = e
+                if self.listener is not None:
+                    try:
+                        self.listener.close()
+                    except Exception:
+                        pass
+                    self.listener = None
+                try:
+                    self.conn = self._connect(timeout=0.4)
+                    self.role = "connect"
+                    print(f"[{self.name} CONNECT] {self._addr_s()}", flush=True)
+                    self._start_recv()
+                    return
+                except OSError as e2:
+                    last_err = e2
+                    time.sleep(0.15)
+        raise TimeoutError(f"{self.name} never attached to {self._addr_s()}: {last_err}")
+
+    def _wait_for_peer(self, timeout: float = 20.0) -> None:
+        if self.conn is None:
+            self._attach(timeout)
+        print(f"[{self.name} PEER UP] role={self.role} addr={self._addr_s()}", flush=True)
+
     def _start_recv(self) -> None:
         self.alive.set()
-        self.recv_thread = threading.Thread(target=self._recv_loop, name=f"{self.name}-recv", daemon=True)
+        self.recv_thread = threading.Thread(target=_recv_loop, name=f"{self.name}-recv", daemon=True)
         self.recv_thread.start()
 
     def _recv_loop(self) -> None:
@@ -876,7 +817,6 @@ class TcpSlot_internal:
             self.inbox.append(incoming)
         print(f"[{self.name} RECV] from={origin} seq={seq} text={text!r}", flush=True)
 
-        # Application-level reply, same shape as the HTTP slot's POST response.
         if kind == "chat":
             try:
                 self._write({
@@ -895,53 +835,7 @@ class TcpSlot_internal:
         with self.send_lock:
             self.conn.sendall(data)
 
-    def addr_s(self) -> str:
-        return f"tcp://{self.host}:{self.port}"
-
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
-
-    def attach(self, wait: float) -> None:
-        """First binder becomes listener; the other dials the same host:port."""
-        deadline = time.time() + wait
-        last_err = None
-        while time.time() < deadline:
-            try:
-                self.listener = self._bind_listen()
-                self.role = "listen"
-                print(f"[{self.name} LISTEN] {self.addr_s()}  (waiting for peer)", flush=True)
-                while time.time() < deadline:
-                    try:
-                        conn, peer = self.listener.accept()
-                        self.conn = conn
-                        print(f"[{self.name} ACCEPT] peer={peer[0]}:{peer[1]}", flush=True)
-                        self._start_recv()
-                        return
-                    except socket.timeout:
-                        continue
-                raise TimeoutError(f"{self.name} bound {self.addr_s()} but nobody connected")
-            except OSError as e:
-                last_err = e
-                if self.listener is not None:
-                    try:
-                        self.listener.close()
-                    except Exception:
-                        pass
-                    self.listener = None
-                try:
-                    self.conn = self._connect(timeout=0.4)
-                    self.role = "connect"
-                    print(f"[{self.name} CONNECT] {self.addr_s()}", flush=True)
-                    self._start_recv()
-                    return
-                except OSError as e2:
-                    last_err = e2
-                    time.sleep(0.15)
-        raise TimeoutError(f"{self.name} never attached to {self.addr_s()}: {last_err}")
-
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
+    def _request_response(self, payload: dict, timeout: float = 5.0) -> dict:
         seq = payload.get("seq")
         ev = threading.Event()
         with self.inbox_lock:
@@ -956,37 +850,20 @@ class TcpSlot_internal:
             with self.inbox_lock:
                 self.reply_events.pop(seq, None)
 
-    def send_text(self, text: str) -> dict:
+    def _send_text(self, text: str) -> dict:
         payload = {
             "from": self.name,
-            "seq": self.next_seq(),
+            "seq": self._next_seq(),
             "kind": "chat",
             "text": text,
             "ts": time.time(),
         }
         print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
+        reply = self._request_response(payload)
         print(f"[{self.name} REPLY] {reply}", flush=True)
         return reply
 
-
-_TcpSlot_internal = TcpSlot_internal()
-
-class TcpSlot:
-
-    @staticmethod
-    def wait_for_peer(self, timeout: float = 20.0) -> None:
-        # _TcpSlot_internal.attach() already blocks until the duplex socket exists
-        if self.conn is None:
-            self.attach(timeout)
-        print(f"[{self.name} PEER UP] role={self.role} addr={self.addr_s()}", flush=True)
-
-    @staticmethod
-    def burst(self) -> None:
-        pass
-
-    @staticmethod
-    def close(self) -> None:
+    def _close(self) -> None:
         self.alive.clear()
         for sock in (self.conn, self.listener):
             if sock is None:
@@ -1002,89 +879,92 @@ class TcpSlot:
         self.conn = None
         self.listener = None
 
-    @staticmethod
-    def addr_s(self) -> str:
-        return f"tcp://{self.host}:{self.port}"
+
+_TcpSlot_internal = TcpSlot_internal()
+
+class TcpSlot:
 
     @staticmethod
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
+    def open(name: str, addr: tuple[str, int]):
+        return _TcpSlot_internal._open(name, addr)
 
     @staticmethod
-    def attach(self, wait: float) -> None:
-        """First binder becomes listener; the other dials the same host:port."""
-        deadline = time.time() + wait
-        last_err = None
-        while time.time() < deadline:
-            try:
-                self.listener = self._bind_listen()
-                self.role = "listen"
-                print(f"[{self.name} LISTEN] {self.addr_s()}  (waiting for peer)", flush=True)
-                while time.time() < deadline:
-                    try:
-                        conn, peer = self.listener.accept()
-                        self.conn = conn
-                        print(f"[{self.name} ACCEPT] peer={peer[0]}:{peer[1]}", flush=True)
-                        self._start_recv()
-                        return
-                    except socket.timeout:
-                        continue
-                raise TimeoutError(f"{self.name} bound {self.addr_s()} but nobody connected")
-            except OSError as e:
-                last_err = e
-                if self.listener is not None:
-                    try:
-                        self.listener.close()
-                    except Exception:
-                        pass
-                    self.listener = None
-                try:
-                    self.conn = self._connect(timeout=0.4)
-                    self.role = "connect"
-                    print(f"[{self.name} CONNECT] {self.addr_s()}", flush=True)
-                    self._start_recv()
-                    return
-                except OSError as e2:
-                    last_err = e2
-                    time.sleep(0.15)
-        raise TimeoutError(f"{self.name} never attached to {self.addr_s()}: {last_err}")
+    def set_on_payload(cb):
+        return _TcpSlot_internal._set_on_payload(cb)
 
     @staticmethod
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
-        seq = payload.get("seq")
-        ev = threading.Event()
-        with self.inbox_lock:
-            self.reply_events[seq] = ev
-        try:
-            self._write(payload)
-            if not ev.wait(timeout):
-                raise TimeoutError(f"no reply for seq={seq}")
-            with self.inbox_lock:
-                return self.replies.get(seq, {})
-        finally:
-            with self.inbox_lock:
-                self.reply_events.pop(seq, None)
+    def addr_s() -> str:
+        return _TcpSlot_internal._addr_s()
 
     @staticmethod
-    def send_text(self, text: str) -> dict:
-        payload = {
-            "from": self.name,
-            "seq": self.next_seq(),
-            "kind": "chat",
-            "text": text,
-            "ts": time.time(),
-        }
-        print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
-        print(f"[{self.name} REPLY] {reply}", flush=True)
-        return reply
+    def next_seq() -> int:
+        return _TcpSlot_internal._next_seq()
+
+    @staticmethod
+    def attach(wait: float) -> None:
+        return _TcpSlot_internal._attach(wait)
+
+    @staticmethod
+    def wait_for_peer(timeout: float = 20.0) -> None:
+        return _TcpSlot_internal._wait_for_peer(timeout)
+
+    @staticmethod
+    def write(payload: dict) -> None:
+        return _TcpSlot_internal._write(payload)
+
+    @staticmethod
+    def request_response(payload: dict, timeout: float = 5.0) -> dict:
+        return _TcpSlot_internal._request_response(payload, timeout)
+
+    @staticmethod
+    def send_text(text: str) -> dict:
+        return _TcpSlot_internal._send_text(text)
+
+    @staticmethod
+    def burst() -> None:
+        pass
+
+    @staticmethod
+    def close() -> None:
+        return _TcpSlot_internal._close()
 
 
 # === UnixSlot (class) ===
 class UnixSlot_internal:
-    @staticmethod
+    def __init__(self):
+        self.name = None
+        self.path = None
+        self.seq = 0
+        self.seq_lock = threading.Lock()
+        self.send_lock = threading.Lock()
+        self.inbox = []
+        self.inbox_lock = threading.Lock()
+        self.replies = {}
+        self.reply_events = {}
+        self.conn = None
+        self.listener = None
+        self.role = None
+        self.owns_path = False
+        self.alive = threading.Event()
+        self.recv_thread = None
+        self.on_payload = None
+
+    def _open(self, name: str, path: str):
+        self._close()
+        self.name = name
+        self.path = path
+        self.seq = 0
+        self.inbox = []
+        self.replies = {}
+        self.reply_events = {}
+        self.role = None
+        self.owns_path = False
+        self.recv_thread = None
+        self.on_payload = None
+
+    def _set_on_payload(self, cb):
+        self.on_payload = cb
+
     def _is_sock_file(self, path: str) -> bool:
         try:
             return stat.S_ISSOCK(os.stat(path).st_mode)
@@ -1093,10 +973,9 @@ class UnixSlot_internal:
         except OSError:
             return False
 
-    @staticmethod
     def _unlink_if_stale(self, path: str) -> bool:
         """Remove a leftover socket file that nothing is accepting on."""
-        if not UnixSlot._is_sock_file(path):
+        if not self._is_sock_file(path):
             return False
         probe = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         try:
@@ -1116,23 +995,13 @@ class UnixSlot_internal:
             except OSError:
                 pass
 
-    def __init__(self, name: str, path: str):
-        self.name = name
-        self.path = path
-        self.seq = 0
-        self.seq_lock = threading.Lock()
-        self.send_lock = threading.Lock()
-        self.inbox = []
-        self.inbox_lock = threading.Lock()
-        self.replies = {}
-        self.reply_events = {}
-        self.conn = None
-        self.listener = None
-        self.role = None
-        self.owns_path = False
-        self.alive = threading.Event()
-        self.recv_thread = None
-        self.on_payload = None
+    def _addr_s(self) -> str:
+        return f"unix://{self.path}"
+
+    def _next_seq(self) -> int:
+        with self.seq_lock:
+            self.seq += 1
+            return self.seq
 
     def _bind_listen(self) -> socket.socket:
         listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -1149,9 +1018,60 @@ class UnixSlot_internal:
         conn.settimeout(None)
         return conn
 
+    def _attach(self, wait: float) -> None:
+        deadline = time.time() + wait
+        last_err = None
+        parent = os.path.dirname(self.path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        while time.time() < deadline:
+            try:
+                self.listener = self._bind_listen()
+                self.role = "listen"
+                print(f"[{self.name} LISTEN] {self._addr_s()}  (waiting for peer)", flush=True)
+                while time.time() < deadline:
+                    try:
+                        conn, _peer = self.listener.accept()
+                        self.conn = conn
+                        print(f"[{self.name} ACCEPT] path={self.path}", flush=True)
+                        self._start_recv()
+                        return
+                    except socket.timeout:
+                        continue
+                raise TimeoutError(f"{self.name} bound {self._addr_s()} but nobody connected")
+            except OSError as e:
+                last_err = e
+                if self.listener is not None:
+                    try:
+                        self.listener.close()
+                    except Exception:
+                        pass
+                    self.listener = None
+                    self.owns_path = False
+                try:
+                    self.conn = self._connect(timeout=0.4)
+                    self.role = "connect"
+                    print(f"[{self.name} CONNECT] {self._addr_s()}", flush=True)
+                    self._start_recv()
+                    return
+                except ConnectionRefusedError as e2:
+                    last_err = e2
+                    if self._unlink_if_stale(self.path):
+                        print(f"[{self.name} STALE] removed leftover {self.path}", flush=True)
+                    time.sleep(0.15)
+                except OSError as e2:
+                    last_err = e2
+                    time.sleep(0.15)
+        raise TimeoutError(f"{self.name} never attached to {self._addr_s()}: {last_err}")
+
+    def _wait_for_peer(self, timeout: float = 20.0) -> None:
+        if self.conn is None:
+            self._attach(timeout)
+        print(f"[{self.name} PEER UP] role={self.role} addr={self._addr_s()}", flush=True)
+
     def _start_recv(self) -> None:
         self.alive.set()
-        self.recv_thread = threading.Thread(target=self._recv_loop, name=f"{self.name}-recv", daemon=True)
+        self.recv_thread = threading.Thread(target=_recv_loop, name=f"{self.name}-recv", daemon=True)
         self.recv_thread.start()
 
     def _recv_loop(self) -> None:
@@ -1224,62 +1144,7 @@ class UnixSlot_internal:
         with self.send_lock:
             self.conn.sendall(data)
 
-    def addr_s(self) -> str:
-        return f"unix://{self.path}"
-
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
-
-    def attach(self, wait: float) -> None:
-        """First binder becomes listener; the other dials the same path."""
-        deadline = time.time() + wait
-        last_err = None
-        parent = os.path.dirname(self.path)
-        if parent:
-            os.makedirs(parent, exist_ok=True)
-        while time.time() < deadline:
-            try:
-                self.listener = self._bind_listen()
-                self.role = "listen"
-                print(f"[{self.name} LISTEN] {self.addr_s()}  (waiting for peer)", flush=True)
-                while time.time() < deadline:
-                    try:
-                        conn, _peer = self.listener.accept()
-                        self.conn = conn
-                        print(f"[{self.name} ACCEPT] path={self.path}", flush=True)
-                        self._start_recv()
-                        return
-                    except socket.timeout:
-                        continue
-                raise TimeoutError(f"{self.name} bound {self.addr_s()} but nobody connected")
-            except OSError as e:
-                last_err = e
-                if self.listener is not None:
-                    try:
-                        self.listener.close()
-                    except Exception:
-                        pass
-                    self.listener = None
-                    self.owns_path = False
-                try:
-                    self.conn = self._connect(timeout=0.4)
-                    self.role = "connect"
-                    print(f"[{self.name} CONNECT] {self.addr_s()}", flush=True)
-                    self._start_recv()
-                    return
-                except ConnectionRefusedError as e2:
-                    last_err = e2
-                    if UnixSlot._unlink_if_stale(self.path):
-                        print(f"[{self.name} STALE] removed leftover {self.path}", flush=True)
-                    time.sleep(0.15)
-                except OSError as e2:
-                    last_err = e2
-                    time.sleep(0.15)
-        raise TimeoutError(f"{self.name} never attached to {self.addr_s()}: {last_err}")
-
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
+    def _request_response(self, payload: dict, timeout: float = 5.0) -> dict:
         seq = payload.get("seq")
         ev = threading.Event()
         with self.inbox_lock:
@@ -1294,36 +1159,20 @@ class UnixSlot_internal:
             with self.inbox_lock:
                 self.reply_events.pop(seq, None)
 
-    def send_text(self, text: str) -> dict:
+    def _send_text(self, text: str) -> dict:
         payload = {
             "from": self.name,
-            "seq": self.next_seq(),
+            "seq": self._next_seq(),
             "kind": "chat",
             "text": text,
             "ts": time.time(),
         }
         print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
+        reply = self._request_response(payload)
         print(f"[{self.name} REPLY] {reply}", flush=True)
         return reply
 
-
-_UnixSlot_internal = UnixSlot_internal()
-
-class UnixSlot:
-
-    @staticmethod
-    def wait_for_peer(self, timeout: float = 20.0) -> None:
-        if self.conn is None:
-            self.attach(timeout)
-        print(f"[{self.name} PEER UP] role={self.role} addr={self.addr_s()}", flush=True)
-
-    @staticmethod
-    def burst(self) -> None:
-        pass
-
-    @staticmethod
-    def close(self) -> None:
+    def _close(self) -> None:
         self.alive.clear()
         for sock in (self.conn, self.listener):
             if sock is None:
@@ -1345,100 +1194,62 @@ class UnixSlot:
                 pass
             self.owns_path = False
 
-    @staticmethod
-    def addr_s(self) -> str:
-        return f"unix://{self.path}"
+
+_UnixSlot_internal = UnixSlot_internal()
+
+class UnixSlot:
 
     @staticmethod
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
+    def open(name: str, path: str):
+        return _UnixSlot_internal._open(name, path)
 
     @staticmethod
-    def attach(self, wait: float) -> None:
-        """First binder becomes listener; the other dials the same path."""
-        deadline = time.time() + wait
-        last_err = None
-        parent = os.path.dirname(self.path)
-        if parent:
-            os.makedirs(parent, exist_ok=True)
-        while time.time() < deadline:
-            try:
-                self.listener = self._bind_listen()
-                self.role = "listen"
-                print(f"[{self.name} LISTEN] {self.addr_s()}  (waiting for peer)", flush=True)
-                while time.time() < deadline:
-                    try:
-                        conn, _peer = self.listener.accept()
-                        self.conn = conn
-                        print(f"[{self.name} ACCEPT] path={self.path}", flush=True)
-                        self._start_recv()
-                        return
-                    except socket.timeout:
-                        continue
-                raise TimeoutError(f"{self.name} bound {self.addr_s()} but nobody connected")
-            except OSError as e:
-                last_err = e
-                if self.listener is not None:
-                    try:
-                        self.listener.close()
-                    except Exception:
-                        pass
-                    self.listener = None
-                    self.owns_path = False
-                try:
-                    self.conn = self._connect(timeout=0.4)
-                    self.role = "connect"
-                    print(f"[{self.name} CONNECT] {self.addr_s()}", flush=True)
-                    self._start_recv()
-                    return
-                except ConnectionRefusedError as e2:
-                    last_err = e2
-                    if UnixSlot._unlink_if_stale(self.path):
-                        print(f"[{self.name} STALE] removed leftover {self.path}", flush=True)
-                    time.sleep(0.15)
-                except OSError as e2:
-                    last_err = e2
-                    time.sleep(0.15)
-        raise TimeoutError(f"{self.name} never attached to {self.addr_s()}: {last_err}")
+    def set_on_payload(cb):
+        return _UnixSlot_internal._set_on_payload(cb)
 
     @staticmethod
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
-        seq = payload.get("seq")
-        ev = threading.Event()
-        with self.inbox_lock:
-            self.reply_events[seq] = ev
-        try:
-            self._write(payload)
-            if not ev.wait(timeout):
-                raise TimeoutError(f"no reply for seq={seq}")
-            with self.inbox_lock:
-                return self.replies.get(seq, {})
-        finally:
-            with self.inbox_lock:
-                self.reply_events.pop(seq, None)
+    def addr_s() -> str:
+        return _UnixSlot_internal._addr_s()
 
     @staticmethod
-    def send_text(self, text: str) -> dict:
-        payload = {
-            "from": self.name,
-            "seq": self.next_seq(),
-            "kind": "chat",
-            "text": text,
-            "ts": time.time(),
-        }
-        print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
-        print(f"[{self.name} REPLY] {reply}", flush=True)
-        return reply
+    def next_seq() -> int:
+        return _UnixSlot_internal._next_seq()
+
+    @staticmethod
+    def attach(wait: float) -> None:
+        return _UnixSlot_internal._attach(wait)
+
+    @staticmethod
+    def wait_for_peer(timeout: float = 20.0) -> None:
+        return _UnixSlot_internal._wait_for_peer(timeout)
+
+    @staticmethod
+    def write(payload: dict) -> None:
+        return _UnixSlot_internal._write(payload)
+
+    @staticmethod
+    def request_response(payload: dict, timeout: float = 5.0) -> dict:
+        return _UnixSlot_internal._request_response(payload, timeout)
+
+    @staticmethod
+    def send_text(text: str) -> dict:
+        return _UnixSlot_internal._send_text(text)
+
+    @staticmethod
+    def burst() -> None:
+        pass
+
+    @staticmethod
+    def close() -> None:
+        return _UnixSlot_internal._close()
 
 
 # === WsSlot (class) ===
 class WsSlot_internal:
-    def __init__(self, name: str, addr: tuple[str, int]):
-        self.name = name
-        self.host, self.port = addr
+    def __init__(self):
+        self.name = None
+        self.host = None
+        self.port = None
         self.seq = 0
         self.seq_lock = threading.Lock()
         self.send_lock = threading.Lock()
@@ -1455,12 +1266,38 @@ class WsSlot_internal:
         self.server_thread = None
         self.on_payload = None
 
+    def _open(self, name: str, addr: tuple[str, int]):
+        self._close()
+        self.name = name
+        self.host, self.port = addr
+        self.seq = 0
+        self.inbox = []
+        self.replies = {}
+        self.reply_events = {}
+        self.role = None
+        self.alive.clear()
+        self.attached.clear()
+        self.recv_thread = None
+        self.server_thread = None
+        self.on_payload = None
+
+    def _set_on_payload(self, cb):
+        self.on_payload = cb
+
+    def _addr_s(self) -> str:
+        return f"ws://{self.host}:{self.port}"
+
+    def _next_seq(self) -> int:
+        with self.seq_lock:
+            self.seq += 1
+            return self.seq
+
     def _server_handler(self, websocket):
         self.ws = websocket
         self.role = self.role or "listen"
         self.alive.set()
         self.attached.set()
-        print(f"[{self.name} ACCEPT] {self.addr_s()}", flush=True)
+        print(f"[{self.name} ACCEPT] {self._addr_s()}", flush=True)
         try:
             for raw in websocket:
                 try:
@@ -1490,6 +1327,49 @@ class WsSlot_internal:
         finally:
             print(f"[{self.name} PEER CLOSED]", flush=True)
             self.alive.clear()
+
+    def _attach(self, wait: float) -> None:
+        deadline = time.time() + wait
+        last_err = None
+        while time.time() < deadline:
+            try:
+                self.server = serve(_server_handler, self.host, self.port)
+                self.role = "listen"
+                self.server_thread = threading.Thread(
+                    target=self.server.serve_forever,
+                    name=f"{self.name}-wsserve",
+                    daemon=True,
+                )
+                self.server_thread.start()
+                print(f"[{self.name} LISTEN] {self._addr_s()}  (waiting for peer)", flush=True)
+                if not self.attached.wait(timeout=max(0.05, deadline - time.time())):
+                    raise TimeoutError(f"{self.name} bound {self._addr_s()} but nobody connected")
+                return
+            except OSError as e:
+                last_err = e
+                self._stop_server()
+                try:
+                    self.ws = connect(self._addr_s(), open_timeout=0.4)
+                    self.role = "connect"
+                    self.alive.set()
+                    self.attached.set()
+                    self.recv_thread = threading.Thread(
+                        target=_recv_loop,
+                        name=f"{self.name}-wsrecv",
+                        daemon=True,
+                    )
+                    self.recv_thread.start()
+                    print(f"[{self.name} CONNECT] {self._addr_s()}", flush=True)
+                    return
+                except Exception as e2:
+                    last_err = e2
+                    time.sleep(0.15)
+        raise TimeoutError(f"{self.name} never attached to {self._addr_s()}: {last_err}")
+
+    def _wait_for_peer(self, timeout: float = 20.0) -> None:
+        if not self.attached.is_set():
+            self._attach(timeout)
+        print(f"[{self.name} PEER UP] role={self.role} addr={self._addr_s()}", flush=True)
 
     def _handle_incoming(self, incoming: dict) -> None:
         cb = getattr(self, "on_payload", None)
@@ -1535,6 +1415,34 @@ class WsSlot_internal:
         with self.send_lock:
             self.ws.send(data)
 
+    def _request_response(self, payload: dict, timeout: float = 5.0) -> dict:
+        seq = payload.get("seq")
+        ev = threading.Event()
+        with self.inbox_lock:
+            self.reply_events[seq] = ev
+        try:
+            self._write(payload)
+            if not ev.wait(timeout):
+                raise TimeoutError(f"no reply for seq={seq}")
+            with self.inbox_lock:
+                return self.replies.get(seq, {})
+        finally:
+            with self.inbox_lock:
+                self.reply_events.pop(seq, None)
+
+    def _send_text(self, text: str) -> dict:
+        payload = {
+            "from": self.name,
+            "seq": self._next_seq(),
+            "kind": "chat",
+            "text": text,
+            "ts": time.time(),
+        }
+        print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
+        reply = self._request_response(payload)
+        print(f"[{self.name} REPLY] {reply}", flush=True)
+        return reply
+
     def _stop_server(self) -> None:
         if self.server is None:
             return
@@ -1548,97 +1456,7 @@ class WsSlot_internal:
             pass
         self.server = None
 
-    def addr_s(self) -> str:
-        return f"ws://{self.host}:{self.port}"
-
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
-
-    def attach(self, wait: float) -> None:
-        deadline = time.time() + wait
-        last_err = None
-        while time.time() < deadline:
-            try:
-                self.server = serve(self._server_handler, self.host, self.port)
-                self.role = "listen"
-                self.server_thread = threading.Thread(
-                    target=self.server.serve_forever,
-                    name=f"{self.name}-wsserve",
-                    daemon=True,
-                )
-                self.server_thread.start()
-                print(f"[{self.name} LISTEN] {self.addr_s()}  (waiting for peer)", flush=True)
-                if not self.attached.wait(timeout=max(0.05, deadline - time.time())):
-                    raise TimeoutError(f"{self.name} bound {self.addr_s()} but nobody connected")
-                return
-            except OSError as e:
-                last_err = e
-                self._stop_server()
-                try:
-                    self.ws = connect(self.addr_s(), open_timeout=0.4)
-                    self.role = "connect"
-                    self.alive.set()
-                    self.attached.set()
-                    self.recv_thread = threading.Thread(
-                        target=self._recv_loop,
-                        name=f"{self.name}-wsrecv",
-                        daemon=True,
-                    )
-                    self.recv_thread.start()
-                    print(f"[{self.name} CONNECT] {self.addr_s()}", flush=True)
-                    return
-                except Exception as e2:
-                    last_err = e2
-                    time.sleep(0.15)
-        raise TimeoutError(f"{self.name} never attached to {self.addr_s()}: {last_err}")
-
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
-        seq = payload.get("seq")
-        ev = threading.Event()
-        with self.inbox_lock:
-            self.reply_events[seq] = ev
-        try:
-            self._write(payload)
-            if not ev.wait(timeout):
-                raise TimeoutError(f"no reply for seq={seq}")
-            with self.inbox_lock:
-                return self.replies.get(seq, {})
-        finally:
-            with self.inbox_lock:
-                self.reply_events.pop(seq, None)
-
-    def send_text(self, text: str) -> dict:
-        payload = {
-            "from": self.name,
-            "seq": self.next_seq(),
-            "kind": "chat",
-            "text": text,
-            "ts": time.time(),
-        }
-        print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
-        print(f"[{self.name} REPLY] {reply}", flush=True)
-        return reply
-
-
-_WsSlot_internal = WsSlot_internal()
-
-class WsSlot:
-
-    @staticmethod
-    def wait_for_peer(self, timeout: float = 20.0) -> None:
-        if not self.attached.is_set():
-            self.attach(timeout)
-        print(f"[{self.name} PEER UP] role={self.role} addr={self.addr_s()}", flush=True)
-
-    @staticmethod
-    def burst(self) -> None:
-        pass
-
-    @staticmethod
-    def close(self) -> None:
+    def _close(self) -> None:
         self.alive.clear()
         if self.ws is not None:
             try:
@@ -1648,93 +1466,64 @@ class WsSlot:
             self.ws = None
         self._stop_server()
 
-    @staticmethod
-    def addr_s(self) -> str:
-        return f"ws://{self.host}:{self.port}"
+
+_WsSlot_internal = WsSlot_internal()
+
+class WsSlot:
 
     @staticmethod
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
+    def open(name: str, addr: tuple[str, int]):
+        return _WsSlot_internal._open(name, addr)
 
     @staticmethod
-    def attach(self, wait: float) -> None:
-        deadline = time.time() + wait
-        last_err = None
-        while time.time() < deadline:
-            try:
-                self.server = serve(self._server_handler, self.host, self.port)
-                self.role = "listen"
-                self.server_thread = threading.Thread(
-                    target=self.server.serve_forever,
-                    name=f"{self.name}-wsserve",
-                    daemon=True,
-                )
-                self.server_thread.start()
-                print(f"[{self.name} LISTEN] {self.addr_s()}  (waiting for peer)", flush=True)
-                if not self.attached.wait(timeout=max(0.05, deadline - time.time())):
-                    raise TimeoutError(f"{self.name} bound {self.addr_s()} but nobody connected")
-                return
-            except OSError as e:
-                last_err = e
-                self._stop_server()
-                try:
-                    self.ws = connect(self.addr_s(), open_timeout=0.4)
-                    self.role = "connect"
-                    self.alive.set()
-                    self.attached.set()
-                    self.recv_thread = threading.Thread(
-                        target=self._recv_loop,
-                        name=f"{self.name}-wsrecv",
-                        daemon=True,
-                    )
-                    self.recv_thread.start()
-                    print(f"[{self.name} CONNECT] {self.addr_s()}", flush=True)
-                    return
-                except Exception as e2:
-                    last_err = e2
-                    time.sleep(0.15)
-        raise TimeoutError(f"{self.name} never attached to {self.addr_s()}: {last_err}")
+    def set_on_payload(cb):
+        return _WsSlot_internal._set_on_payload(cb)
 
     @staticmethod
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
-        seq = payload.get("seq")
-        ev = threading.Event()
-        with self.inbox_lock:
-            self.reply_events[seq] = ev
-        try:
-            self._write(payload)
-            if not ev.wait(timeout):
-                raise TimeoutError(f"no reply for seq={seq}")
-            with self.inbox_lock:
-                return self.replies.get(seq, {})
-        finally:
-            with self.inbox_lock:
-                self.reply_events.pop(seq, None)
+    def addr_s() -> str:
+        return _WsSlot_internal._addr_s()
 
     @staticmethod
-    def send_text(self, text: str) -> dict:
-        payload = {
-            "from": self.name,
-            "seq": self.next_seq(),
-            "kind": "chat",
-            "text": text,
-            "ts": time.time(),
-        }
-        print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
-        print(f"[{self.name} REPLY] {reply}", flush=True)
-        return reply
+    def next_seq() -> int:
+        return _WsSlot_internal._next_seq()
+
+    @staticmethod
+    def attach(wait: float) -> None:
+        return _WsSlot_internal._attach(wait)
+
+    @staticmethod
+    def wait_for_peer(timeout: float = 20.0) -> None:
+        return _WsSlot_internal._wait_for_peer(timeout)
+
+    @staticmethod
+    def write(payload: dict) -> None:
+        return _WsSlot_internal._write(payload)
+
+    @staticmethod
+    def request_response(payload: dict, timeout: float = 5.0) -> dict:
+        return _WsSlot_internal._request_response(payload, timeout)
+
+    @staticmethod
+    def send_text(text: str) -> dict:
+        return _WsSlot_internal._send_text(text)
+
+    @staticmethod
+    def burst() -> None:
+        pass
+
+    @staticmethod
+    def close() -> None:
+        return _WsSlot_internal._close()
 
 
 # === ShmSlot (class) ===
 class ShmSlot_internal:
-    def __init__(self, name: str, mine: str, peer: str):
-        self.name = name
-        self.mine = mine
-        self.peer = peer
-        self.bin_path, self.lock_path = Transponder_Locators.shm_bin_paths(mine, peer)
+    def __init__(self):
+        self.name = None
+        self.mine = None
+        self.peer = None
+        self.bin_path = None
+        self.lock_path = None
         self.seq = 0
         self.seq_lock = threading.Lock()
         self.inbox = []
@@ -1743,9 +1532,33 @@ class ShmSlot_internal:
         self.reply_events = {}
         self.alive = threading.Event()
         self.peer_up = threading.Event()
-        self.watch = None
         self.watch_thread = None
         self.on_payload = None
+
+    def _open(self, name: str, mine: str, peer: str):
+        self.name = name
+        self.mine = mine
+        self.peer = peer
+        self.bin_path, self.lock_path = Transponder_Locators.shm_bin_paths(mine, peer)
+        self.seq = 0
+        self.inbox = []
+        self.replies = {}
+        self.reply_events = {}
+        self.alive.clear()
+        self.peer_up.clear()
+        self.watch_thread = None
+        self.on_payload = None
+
+    def _set_on_payload(self, cb):
+        self.on_payload = cb
+
+    def _addr_s(self) -> str:
+        return f"shm://{os.path.basename(self.bin_path)}"
+
+    def _next_seq(self) -> int:
+        with self.seq_lock:
+            self.seq += 1
+            return self.seq
 
     def _lock(self):
         os.makedirs(Transponder_Locators.BIN_DIR, exist_ok=True)
@@ -1791,10 +1604,45 @@ class ShmSlot_internal:
             fcntl.flock(lockf.fileno(), fcntl.LOCK_UN)
             lockf.close()
 
+    def _ensure_bin(self) -> None:
+        def mark(obj):
+            obj["present"][self.mine] = {"name": self.name, "ts": time.time()}
+            return obj["present"]
+
+        present = self._mutate(mark)
+        print(f"[{self.name} BIN] {self.bin_path} present={list(present)}", flush=True)
+        if self.peer in present:
+            self.peer_up.set()
+
+    def _attach(self, wait: float) -> None:
+        self._ensure_bin()
+        DirWatch.open(Transponder_Locators.BIN_DIR, os.path.basename(self.bin_path))
+        self.alive.set()
+        self.watch_thread = threading.Thread(
+            target=_watch_loop, name=f"{self.name}-inotify", daemon=True
+        )
+        self.watch_thread.start()
+        print(f"[{self.name} LISTEN] token={self.mine} peer={self.peer}", flush=True)
+
+        deadline = time.time() + wait
+        while time.time() < deadline and not self.peer_up.is_set():
+            self._drain()
+            if self.peer_up.is_set():
+                break
+            remaining = max(0.05, deadline - time.time())
+            DirWatch.wait(timeout=min(0.5, remaining))
+        if not self.peer_up.is_set():
+            raise TimeoutError(f"{self.name} never saw peer token {self.peer} in {self.bin_path}")
+
+    def _wait_for_peer(self, timeout: float = 20.0) -> None:
+        if not self.peer_up.is_set():
+            self._attach(timeout)
+        print(f"[{self.name} PEER UP] addr={self._addr_s()}", flush=True)
+
     def _watch_loop(self) -> None:
         while self.alive.is_set():
             try:
-                hit = self.watch.wait(timeout=0.5)
+                hit = DirWatch.wait(timeout=0.5)
             except Exception:
                 if not self.alive.is_set():
                     break
@@ -1887,45 +1735,7 @@ class ShmSlot_internal:
 
         self._mutate(append)
 
-    def addr_s(self) -> str:
-        return f"shm://{os.path.basename(self.bin_path)}"
-
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
-
-    def ensure_bin(self) -> None:
-        def mark(obj):
-            obj["present"][self.mine] = {"name": self.name, "ts": time.time()}
-            return obj["present"]
-
-        present = self._mutate(mark)
-        print(f"[{self.name} BIN] {self.bin_path} present={list(present)}", flush=True)
-        if self.peer in present:
-            self.peer_up.set()
-
-    def attach(self, wait: float) -> None:
-        self.ensure_bin()
-        self.watch = DirWatch(Transponder_Locators.BIN_DIR, os.path.basename(self.bin_path))
-        self.alive.set()
-        self.watch_thread = threading.Thread(
-            target=self._watch_loop, name=f"{self.name}-inotify", daemon=True
-        )
-        self.watch_thread.start()
-        print(f"[{self.name} LISTEN] token={self.mine} peer={self.peer}", flush=True)
-
-        deadline = time.time() + wait
-        while time.time() < deadline and not self.peer_up.is_set():
-            self._drain()
-            if self.peer_up.is_set():
-                break
-            remaining = max(0.05, deadline - time.time())
-            self.watch.wait(timeout=min(0.5, remaining))
-        if not self.peer_up.is_set():
-            raise TimeoutError(f"{self.name} never saw peer token {self.peer} in {self.bin_path}")
-
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
+    def _request_response(self, payload: dict, timeout: float = 5.0) -> dict:
         seq = payload.get("seq")
         ev = threading.Event()
         with self.inbox_lock:
@@ -1940,41 +1750,23 @@ class ShmSlot_internal:
             with self.inbox_lock:
                 self.reply_events.pop(seq, None)
 
-    def send_text(self, text: str) -> dict:
+    def _send_text(self, text: str) -> dict:
         payload = {
             "from": self.name,
             "from_token": self.mine,
-            "seq": self.next_seq(),
+            "seq": self._next_seq(),
             "kind": "chat",
             "text": text,
             "ts": time.time(),
         }
         print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
+        reply = self._request_response(payload)
         print(f"[{self.name} REPLY] {reply}", flush=True)
         return reply
 
-
-_ShmSlot_internal = ShmSlot_internal()
-
-class ShmSlot:
-
-    @staticmethod
-    def wait_for_peer(self, timeout: float = 20.0) -> None:
-        if not self.peer_up.is_set():
-            self.attach(timeout)
-        print(f"[{self.name} PEER UP] addr={self.addr_s()}", flush=True)
-
-    @staticmethod
-    def burst(self) -> None:
-        pass
-
-    @staticmethod
-    def close(self) -> None:
+    def _close(self) -> None:
         self.alive.clear()
-        if self.watch is not None:
-            self.watch.close()
-            self.watch = None
+        DirWatch.close()
 
         def leave(obj):
             obj.get("present", {}).pop(self.mine, None)
@@ -1992,910 +1784,58 @@ class ShmSlot:
                 except FileNotFoundError:
                     pass
 
-    @staticmethod
-    def addr_s(self) -> str:
-        return f"shm://{os.path.basename(self.bin_path)}"
+
+_ShmSlot_internal = ShmSlot_internal()
+
+class ShmSlot:
 
     @staticmethod
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
+    def open(name: str, mine: str, peer: str):
+        return _ShmSlot_internal._open(name, mine, peer)
 
     @staticmethod
-    def ensure_bin(self) -> None:
-        def mark(obj):
-            obj["present"][self.mine] = {"name": self.name, "ts": time.time()}
-            return obj["present"]
-
-        present = self._mutate(mark)
-        print(f"[{self.name} BIN] {self.bin_path} present={list(present)}", flush=True)
-        if self.peer in present:
-            self.peer_up.set()
+    def set_on_payload(cb):
+        return _ShmSlot_internal._set_on_payload(cb)
 
     @staticmethod
-    def attach(self, wait: float) -> None:
-        self.ensure_bin()
-        self.watch = DirWatch(Transponder_Locators.BIN_DIR, os.path.basename(self.bin_path))
-        self.alive.set()
-        self.watch_thread = threading.Thread(
-            target=self._watch_loop, name=f"{self.name}-inotify", daemon=True
-        )
-        self.watch_thread.start()
-        print(f"[{self.name} LISTEN] token={self.mine} peer={self.peer}", flush=True)
-
-        deadline = time.time() + wait
-        while time.time() < deadline and not self.peer_up.is_set():
-            self._drain()
-            if self.peer_up.is_set():
-                break
-            remaining = max(0.05, deadline - time.time())
-            self.watch.wait(timeout=min(0.5, remaining))
-        if not self.peer_up.is_set():
-            raise TimeoutError(f"{self.name} never saw peer token {self.peer} in {self.bin_path}")
+    def addr_s() -> str:
+        return _ShmSlot_internal._addr_s()
 
     @staticmethod
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
-        seq = payload.get("seq")
-        ev = threading.Event()
-        with self.inbox_lock:
-            self.reply_events[seq] = ev
-        try:
-            self._enqueue(self.peer, payload)
-            if not ev.wait(timeout):
-                raise TimeoutError(f"no reply for seq={seq}")
-            with self.inbox_lock:
-                return self.replies.get(seq, {})
-        finally:
-            with self.inbox_lock:
-                self.reply_events.pop(seq, None)
+    def next_seq() -> int:
+        return _ShmSlot_internal._next_seq()
 
     @staticmethod
-    def send_text(self, text: str) -> dict:
-        payload = {
-            "from": self.name,
-            "from_token": self.mine,
-            "seq": self.next_seq(),
-            "kind": "chat",
-            "text": text,
-            "ts": time.time(),
-        }
-        print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
-        print(f"[{self.name} REPLY] {reply}", flush=True)
-        return reply
-
-
-# === HttpSlot (class) ===
-class HttpSlot_internal:
-    def __init__(self, name: str, listen: tuple[str, int], peer: tuple[str, int]):
-        self.name = name
-        self.listen_host, self.listen_port = listen
-        self.peer_host, self.peer_port = peer
-        self.seq = 0
-        self.seq_lock = threading.Lock()
-        self.httpd = None
-        self.server_thread = None
-        self.inbox = []
-        self.inbox_lock = threading.Lock()
-
-    # -- server (positive) ---------------------------------------------------
-
-    def _handler_class(self):
-        slot = self
-
-        class Handler(BaseHTTPRequestHandler):
-            def log_message(self, fmt, *args):
-                return
-
-            def _write(self, code: int, payload: dict):
-                body = Transponder_Codec.encode_bytes(payload)
-                self.send_response(code)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Content-Length", str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-
-            def do_GET(self):
-                if self.path.startswith("/health"):
-                    self._write(200, {
-                        "ok": True,
-                        "name": slot.name,
-                        "listen": slot.listen_url(),
-                        "peer": slot.peer_url(""),
-                    })
-                    return
-                self._write(404, {"ok": False, "error": "not found"})
-
-            def do_POST(self):
-                n = int(self.headers.get("Content-Length") or 0)
-                raw = self.rfile.read(n) if n else b""
-                try:
-                    incoming = Transponder_Codec.decode_msg(raw)
-                except Exception as e:
-                    self._write(400, {"ok": False, "error": type(e).__name__, "message": str(e)})
-                    return
-
-                with slot.inbox_lock:
-                    slot.inbox.append(incoming)
-
-                origin = incoming.get("from", "?")
-                text = incoming.get("text", "")
-                seq = incoming.get("seq", "?")
-                print(
-                    f"[{slot.name} RECV] from={origin} seq={seq} text={text!r}",
-                    flush=True,
-                )
-
-                self._write(200, {
-                    "ok": True,
-                    "heard_by": slot.name,
-                    "from": origin,
-                    "seq": seq,
-                    "text": text,
-                })
-
-        return Handler
-
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
-
-    def peer_url(self, path: str = "/msg") -> str:
-        return f"http://{self.peer_host}:{self.peer_port}{path}"
-
-    def listen_url(self) -> str:
-        return f"http://{self.listen_host}:{self.listen_port}"
-
-    def serve(self):
-        Handler = self._handler_class()
-        self.httpd = ThreadingHTTPServer((self.listen_host, self.listen_port), Handler)
-        self.httpd.daemon_threads = True
-        print(
-            f"[{self.name} LISTEN] {self.listen_url()}  -> peer {self.peer_host}:{self.peer_port}",
-            flush=True,
-        )
-        self.httpd.serve_forever()
-
-    # -- client (negative) ---------------------------------------------------
-
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
-        body = Transponder_Codec.encode_bytes(payload)
-        req = urllib.request.Request(
-            self.peer_url("/msg"),
-            data=body,
-            method="POST",
-            headers={"Content-Type": "application/json; charset=utf-8"},
-        )
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            raw = resp.read()
-        return Transponder_Codec.decode_msg(raw)
-
-    def send_text(self, text: str) -> dict:
-        payload = {
-            "from": self.name,
-            "seq": self.next_seq(),
-            "kind": "chat",
-            "text": text,
-            "ts": time.time(),
-        }
-        print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
-        print(f"[{self.name} REPLY] {reply}", flush=True)
-        return reply
-
-
-_HttpSlot_internal = HttpSlot_internal()
-
-class HttpSlot:
+    def ensure_bin() -> None:
+        return _ShmSlot_internal._ensure_bin()
 
     @staticmethod
-    def start_server_thread(self):
-        self.server_thread = threading.Thread(target=self.serve, name=f"{self.name}-http", daemon=True)
-        self.server_thread.start()
+    def attach(wait: float) -> None:
+        return _ShmSlot_internal._attach(wait)
 
     @staticmethod
-    def close(self):
-        if self.httpd is not None:
-            self.httpd.shutdown()
-            self.httpd.server_close()
+    def wait_for_peer(timeout: float = 20.0) -> None:
+        return _ShmSlot_internal._wait_for_peer(timeout)
 
     @staticmethod
-    def wait_for_peer(self, timeout: float = 20.0) -> None:
-        deadline = time.time() + timeout
-        url = self.peer_url("/health")
-        last_err = None
-        while time.time() < deadline:
-            try:
-                with urllib.request.urlopen(url, timeout=1.0) as resp:
-                    info = Transponder_Codec.decode_msg(resp.read())
-                print(f"[{self.name} PEER UP] {info}", flush=True)
-                return
-            except Exception as e:
-                last_err = e
-                time.sleep(0.2)
-        raise TimeoutError(f"{self.name} never saw peer at {url}: {last_err}")
+    def write(payload: dict) -> None:
+        return _ShmSlot_internal._write(payload)
 
     @staticmethod
-    def burst(self) -> None:
+    def request_response(payload: dict, timeout: float = 5.0) -> dict:
+        return _ShmSlot_internal._request_response(payload, timeout)
+
+    @staticmethod
+    def send_text(text: str) -> dict:
+        return _ShmSlot_internal._send_text(text)
+
+    @staticmethod
+    def burst() -> None:
         pass
 
     @staticmethod
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
-
-    @staticmethod
-    def peer_url(self, path: str = "/msg") -> str:
-        return f"http://{self.peer_host}:{self.peer_port}{path}"
-
-    @staticmethod
-    def listen_url(self) -> str:
-        return f"http://{self.listen_host}:{self.listen_port}"
-
-    @staticmethod
-    def serve(self):
-        Handler = self._handler_class()
-        self.httpd = ThreadingHTTPServer((self.listen_host, self.listen_port), Handler)
-        self.httpd.daemon_threads = True
-        print(
-            f"[{self.name} LISTEN] {self.listen_url()}  -> peer {self.peer_host}:{self.peer_port}",
-            flush=True,
-        )
-        self.httpd.serve_forever()
-
-    # -- client (negative) ---------------------------------------------------
-
-    @staticmethod
-    def request_response(self, payload: dict, timeout: float = 5.0) -> dict:
-        body = Transponder_Codec.encode_bytes(payload)
-        req = urllib.request.Request(
-            self.peer_url("/msg"),
-            data=body,
-            method="POST",
-            headers={"Content-Type": "application/json; charset=utf-8"},
-        )
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            raw = resp.read()
-        return Transponder_Codec.decode_msg(raw)
-
-    @staticmethod
-    def send_text(self, text: str) -> dict:
-        payload = {
-            "from": self.name,
-            "seq": self.next_seq(),
-            "kind": "chat",
-            "text": text,
-            "ts": time.time(),
-        }
-        print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self.request_response(payload)
-        print(f"[{self.name} REPLY] {reply}", flush=True)
-        return reply
-
-
-# === MailboxServer (class) ===
-class MailboxServer_internal:
-    def __init__(self, name: str, listen: tuple[str, int], poll: float):
-        self.name = name
-        self.listen = listen
-        self.poll = poll
-        self.box = Mailbox(name, poll)
-        self.seq = 0
-        self.seq_lock = threading.Lock()
-        self.httpd = None
-        self.server_thread = None
-        self.sweep_stop = threading.Event()
-        self.client_present = threading.Event()
-
-    def _handler_class(self):
-        slot = self
-
-        class Handler(BaseHTTPRequestHandler):
-            def log_message(self, fmt, *args):
-                return
-
-            def _write(self, code: int, payload: dict):
-                body = Transponder_Codec.encode_bytes(payload)
-                self.send_response(code)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Content-Length", str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-
-            def _read_json(self) -> dict:
-                n = int(self.headers.get("Content-Length") or 0)
-                raw = self.rfile.read(n) if n else b""
-                return Transponder_Codec.decode_msg(raw)
-
-            def do_GET(self):
-                parsed = urllib.parse.urlparse(self.path)
-                path = parsed.path
-                qs = urllib.parse.parse_qs(parsed.query)
-
-                if path == "/health":
-                    self._write(200, {
-                        "ok": True,
-                        "name": slot.name,
-                        "mailbox": slot.box.mailbox_id,
-                        "listen": slot.listen_url(),
-                        "poll_default": slot.poll,
-                        "clients": slot.box.client_names(),
-                    })
-                    return
-
-                if path == "/poll":
-                    names = qs.get("name") or qs.get("from")
-                    if not names:
-                        self._write(400, {"ok": False, "error": "missing name"})
-                        return
-                    name = names[0]
-                    messages = slot.box.fetch(name)
-                    for incoming in messages:
-                        origin = incoming.get("from", "?")
-                        text = incoming.get("text", "")
-                        seq = incoming.get("seq", "?")
-                        kind = incoming.get("kind", "chat")
-                        tag = "REPLY" if kind == "reply" else "GIVE"
-                        print(
-                            f"[{slot.name} {tag}] dest={name} from={origin} seq={seq} text={text!r}",
-                            flush=True,
-                        )
-                    self._write(200, {
-                        "ok": True,
-                        "mailbox": slot.box.mailbox_id,
-                        "name": name,
-                        "messages": messages,
-                    })
-                    return
-
-                self._write(404, {"ok": False, "error": "not found"})
-
-            def do_POST(self):
-                parsed = urllib.parse.urlparse(self.path)
-                path = parsed.path
-                try:
-                    incoming = self._read_json()
-                except Exception as e:
-                    self._write(400, {"ok": False, "error": type(e).__name__, "message": str(e)})
-                    return
-
-                if path == "/tune":
-                    name = incoming.get("from") or incoming.get("name")
-                    if not name:
-                        self._write(400, {"ok": False, "error": "missing name"})
-                        return
-                    poll = incoming.get("poll")
-                    try:
-                        info = slot.box.tune(str(name), None if poll is None else float(poll))
-                    except Exception as e:
-                        self._write(400, {"ok": False, "error": type(e).__name__, "message": str(e)})
-                        return
-                    print(
-                        f"[{slot.name} JOIN] client={name} poll={info['poll']} mailbox={slot.box.mailbox_id}",
-                        flush=True,
-                    )
-                    slot.client_present.set()
-                    self._write(200, info)
-                    return
-
-                if path == "/send":
-                    origin = incoming.get("from", "?")
-                    text = incoming.get("text", "")
-                    seq = incoming.get("seq", "?")
-                    print(
-                        f"[{slot.name} RECV] from={origin} seq={seq} text={text!r}",
-                        flush=True,
-                    )
-                    if incoming.get("kind", "chat") == "chat" and origin and origin != slot.name:
-                        reply = {
-                            "from": slot.name,
-                            "seq": incoming.get("seq"),
-                            "kind": "reply",
-                            "heard_by": slot.name,
-                            "text": text,
-                            "ts": time.time(),
-                        }
-                        slot.box.enqueue(str(origin), reply)
-                    self._write(200, {
-                        "ok": True,
-                        "heard_by": slot.name,
-                        "mailbox": slot.box.mailbox_id,
-                        "from": origin,
-                        "seq": seq,
-                        "text": text,
-                    })
-                    return
-
-                self._write(404, {"ok": False, "error": "not found"})
-
-        return Handler
-
-    def _sweep_loop(self):
-        while not self.sweep_stop.wait(0.25):
-            self.box.sweep()
-
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
-
-    def listen_url(self) -> str:
-        return f"http://{Transponder_Locators.fmt_addr(self.listen)}"
-
-    def serve(self):
-        Handler = self._handler_class()
-        self.httpd = ThreadingHTTPServer(self.listen, Handler)
-        self.httpd.daemon_threads = True
-        print(
-            f"[{self.name} LISTEN] {self.listen_url()} mailbox={self.box.mailbox_id} bin={self.box.bin_path}",
-            flush=True,
-        )
-        self.httpd.serve_forever()
-
-
-_MailboxServer_internal = MailboxServer_internal()
-
-class MailboxServer:
-
-    @staticmethod
-    def start(self):
-        self.server_thread = threading.Thread(target=self.serve, name=f"{self.name}-http", daemon=True)
-        self.server_thread.start()
-        threading.Thread(target=self._sweep_loop, name=f"{self.name}-ttl", daemon=True).start()
-
-    @staticmethod
-    def wait_for_client(self, timeout: float) -> None:
-        print(f"[{self.name} WAIT] for a tuner-style client to POST /tune", flush=True)
-        if not self.client_present.wait(timeout=timeout):
-            raise TimeoutError(f"{self.name} never saw a client join")
-        print(f"[{self.name} PEER UP] clients={self.box.client_names()}", flush=True)
-
-    @staticmethod
-    def send_text(self, text: str) -> None:
-        payload = {
-            "from": self.name,
-            "seq": self.next_seq(),
-            "kind": "chat",
-            "text": text,
-            "ts": time.time(),
-            "mailbox": self.box.mailbox_id,
-        }
-        dests = self.box.enqueue_all(payload)
-        print(
-            f"[{self.name} SEND] seq={payload['seq']} dests={dests} text={text!r}",
-            flush=True,
-        )
-
-    @staticmethod
-    def close(self):
-        self.sweep_stop.set()
-        if self.httpd is not None:
-            self.httpd.shutdown()
-            self.httpd.server_close()
-        self.box.unlink()
-
-    @staticmethod
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
-
-    @staticmethod
-    def listen_url(self) -> str:
-        return f"http://{Transponder_Locators.fmt_addr(self.listen)}"
-
-    @staticmethod
-    def serve(self):
-        Handler = self._handler_class()
-        self.httpd = ThreadingHTTPServer(self.listen, Handler)
-        self.httpd.daemon_threads = True
-        print(
-            f"[{self.name} LISTEN] {self.listen_url()} mailbox={self.box.mailbox_id} bin={self.box.bin_path}",
-            flush=True,
-        )
-        self.httpd.serve_forever()
-
-
-# === MailboxClient (class) ===
-class MailboxClient_internal:
-    def __init__(self, name: str, peer: tuple[str, int], poll: float):
-        self.name = name
-        self.peer = peer
-        self.poll = poll
-        self.seq = 0
-        self.seq_lock = threading.Lock()
-        self.mailbox_id = None
-        self.stop = threading.Event()
-
-    def _request(self, method: str, path: str, payload: dict | None = None, timeout: float = 5.0) -> dict:
-        data = None if payload is None else Transponder_Codec.encode_bytes(payload)
-        headers = {}
-        if data is not None:
-            headers["Content-Type"] = "application/json; charset=utf-8"
-        req = urllib.request.Request(self.peer_url(path), data=data, method=method, headers=headers)
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return Transponder_Codec.decode_msg(resp.read())
-
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
-
-    def peer_url(self, path: str) -> str:
-        return f"http://{Transponder_Locators.fmt_addr(self.peer)}{path}"
-
-    def poll_once(self) -> list[dict]:
-        path = "/poll?" + urllib.parse.urlencode({"name": self.name})
-        info = self._request("GET", path, timeout=max(2.0, self.poll + 1.0))
-        messages = info.get("messages") or []
-        for incoming in messages:
-            origin = incoming.get("from", "?")
-            text = incoming.get("text", "")
-            seq = incoming.get("seq", "?")
-            kind = incoming.get("kind", "chat")
-            tag = "REPLY" if kind == "reply" else "RECV"
-            print(
-                f"[{self.name} {tag}] from={origin} seq={seq} text={text!r}",
-                flush=True,
-            )
-        return messages
-
-
-_MailboxClient_internal = MailboxClient_internal()
-
-class MailboxClient:
-
-    @staticmethod
-    def wait_for_server(self, timeout: float) -> dict:
-        deadline = time.time() + timeout
-        last_err = None
-        url = self.peer_url("/health")
-        while time.time() < deadline:
-            try:
-                info = self._request("GET", "/health", timeout=1.0)
-                self.mailbox_id = info.get("mailbox")
-                print(f"[{self.name} PEER UP] {info}", flush=True)
-                return info
-            except Exception as e:
-                last_err = e
-                time.sleep(0.2)
-        raise TimeoutError(f"{self.name} never saw mailbox at {url}: {last_err}")
-
-    @staticmethod
-    def tune(self) -> dict:
-        info = self._request("POST", "/tune", {"from": self.name, "kind": "tune", "poll": self.poll, "ts": time.time()})
-        self.mailbox_id = info.get("mailbox", self.mailbox_id)
-        print(f"[{self.name} TUNE] {info}", flush=True)
-        return info
-
-    @staticmethod
-    def send_text(self, text: str) -> dict:
-        payload = {
-            "from": self.name,
-            "seq": self.next_seq(),
-            "kind": "chat",
-            "text": text,
-            "ts": time.time(),
-        }
-        print(f"[{self.name} SEND] seq={payload['seq']} text={text!r}", flush=True)
-        reply = self._request("POST", "/send", payload)
-        print(f"[{self.name} ACCEPTED] {reply}", flush=True)
-        return reply
-
-    @staticmethod
-    def poll_loop(self) -> None:
-        while not self.stop.wait(self.poll):
-            try:
-                self.poll_once()
-            except Exception as e:
-                if self.stop.is_set():
-                    return
-                print(f"[{self.name} POLL FAIL] {type(e).__name__}: {e}", flush=True)
-
-    @staticmethod
-    def close(self):
-        self.stop.set()
-
-    @staticmethod
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
-
-    @staticmethod
-    def peer_url(self, path: str) -> str:
-        return f"http://{Transponder_Locators.fmt_addr(self.peer)}{path}"
-
-    @staticmethod
-    def poll_once(self) -> list[dict]:
-        path = "/poll?" + urllib.parse.urlencode({"name": self.name})
-        info = self._request("GET", path, timeout=max(2.0, self.poll + 1.0))
-        messages = info.get("messages") or []
-        for incoming in messages:
-            origin = incoming.get("from", "?")
-            text = incoming.get("text", "")
-            seq = incoming.get("seq", "?")
-            kind = incoming.get("kind", "chat")
-            tag = "REPLY" if kind == "reply" else "RECV"
-            print(
-                f"[{self.name} {tag}] from={origin} seq={seq} text={text!r}",
-                flush=True,
-            )
-        return messages
-
-
-# === Station (class) ===
-class Station_internal:
-    def __init__(self, name: str, listen: tuple[str, int], interval: float, repeat: int):
-        self.name = name
-        self.listen = listen
-        self.interval = max(0.05, interval)
-        self.repeat = max(1, repeat)
-        self.sock = None
-        self.seq = 0
-        self.seq_lock = threading.Lock()
-        self.registry = {}
-        self.reg_lock = threading.Lock()
-        self.alive = threading.Event()
-        self.join_thread = None
-
-    def _join_loop(self) -> None:
-        while self.alive.is_set():
-            try:
-                raw, src = self.sock.recvfrom(65535)
-            except socket.timeout:
-                continue
-            except OSError:
-                break
-            try:
-                msg = Transponder_Codec.decode_msg(raw)
-            except Exception as e:
-                print(f"[{self.name} BAD JSON] from={src} {e}", flush=True)
-                continue
-            if msg.get("kind") != "tune":
-                print(f"[{self.name} IGNORE] kind={msg.get('kind')!r} from={src}", flush=True)
-                continue
-            recv_s = msg.get("recv") or Transponder_Locators.fmt_addr(src)
-            try:
-                dest = Transponder_Locators.parse_hostport(str(recv_s))
-            except ValueError:
-                dest = (src[0], src[1])
-            entry = {"name": msg.get("name") or "?", "recv": dest, "ts": time.time()}
-            with self.reg_lock:
-                self.registry[dest] = entry
-            print(f"[{self.name} JOIN] {entry['name']} → {Transponder_Locators.fmt_addr(dest)}  n={len(self.registry)}", flush=True)
-
-    def _destinations(self) -> list[tuple[tuple[str, int], str]]:
-        with self.reg_lock:
-            return [(dest, rec["name"]) for dest, rec in self.registry.items()]
-
-    def addr_s(self) -> str:
-        return f"udp://{Transponder_Locators.fmt_addr(self.listen)}"
-
-    def start(self) -> None:
-        self.sock = UdpMail.bind_udp(self.listen)
-        self.alive.set()
-        self.join_thread = threading.Thread(target=self._join_loop, name=f"{self.name}-join", daemon=True)
-        self.join_thread.start()
-        print(f"[{self.name} STATION] join-mailbox {self.addr_s()}", flush=True)
-
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
-
-    def emit(self) -> None:
-        seq = self.next_seq()
-        payload = {
-            "from": self.name,
-            "kind": "pulse",
-            "seq": seq,
-            "text": f"pulse {seq}",
-            "ts": time.time(),
-        }
-        data = Transponder_Codec.encode_bytes(payload)
-        dests = self._destinations()
-        print(
-            f"[{self.name} PULSE] seq={seq} text={payload['text']!r} → {len(dests)} tuner(s)",
-            flush=True,
-        )
-        for dest, _tname in dests:
-            for _k in range(self.repeat):
-                try:
-                    self.sock.sendto(data, dest)
-                except OSError as e:
-                    print(f"[{self.name} SEND FAIL] {Transponder_Locators.fmt_addr(dest)} {e}", flush=True)
-
-
-_Station_internal = Station_internal()
-
-class Station:
-
-    @staticmethod
-    def run(self, hold: float | None) -> None:
-        deadline = None if hold is None else time.time() + hold
-        try:
-            while self.alive.is_set():
-                self.emit()
-                if deadline is not None and time.time() >= deadline:
-                    return
-                time.sleep(self.interval)
-        except KeyboardInterrupt:
-            print(flush=True)
-
-    @staticmethod
-    def close(self) -> None:
-        self.alive.clear()
-        if self.sock is not None:
-            try:
-                self.sock.close()
-            except OSError:
-                pass
-            self.sock = None
-        print(f"[{self.name} CLOSE] {self.addr_s()} registry={len(self.registry)}", flush=True)
-
-    @staticmethod
-    def addr_s(self) -> str:
-        return f"udp://{Transponder_Locators.fmt_addr(self.listen)}"
-
-    @staticmethod
-    def start(self) -> None:
-        self.sock = UdpMail.bind_udp(self.listen)
-        self.alive.set()
-        self.join_thread = threading.Thread(target=self._join_loop, name=f"{self.name}-join", daemon=True)
-        self.join_thread.start()
-        print(f"[{self.name} STATION] join-mailbox {self.addr_s()}", flush=True)
-
-    @staticmethod
-    def next_seq(self) -> int:
-        with self.seq_lock:
-            self.seq += 1
-            return self.seq
-
-    @staticmethod
-    def emit(self) -> None:
-        seq = self.next_seq()
-        payload = {
-            "from": self.name,
-            "kind": "pulse",
-            "seq": seq,
-            "text": f"pulse {seq}",
-            "ts": time.time(),
-        }
-        data = Transponder_Codec.encode_bytes(payload)
-        dests = self._destinations()
-        print(
-            f"[{self.name} PULSE] seq={seq} text={payload['text']!r} → {len(dests)} tuner(s)",
-            flush=True,
-        )
-        for dest, _tname in dests:
-            for _k in range(self.repeat):
-                try:
-                    self.sock.sendto(data, dest)
-                except OSError as e:
-                    print(f"[{self.name} SEND FAIL] {Transponder_Locators.fmt_addr(dest)} {e}", flush=True)
-
-
-# === Tuner (class) ===
-class Tuner_internal:
-    def __init__(self, name: str, listen: tuple[str, int], station: tuple[str, int]):
-        self.name = name
-        self.listen = listen
-        self.station = station
-        self.sock = None
-        self.alive = threading.Event()
-        self.inbox = []
-        self.seen = set()
-        self.recv_thread = None
-
-    def _recv_loop(self) -> None:
-        while self.alive.is_set():
-            try:
-                raw, src = self.sock.recvfrom(65535)
-            except socket.timeout:
-                continue
-            except OSError:
-                break
-            try:
-                incoming = Transponder_Codec.decode_msg(raw)
-            except Exception as e:
-                print(f"[{self.name} BAD JSON] {e}: {raw!r}", flush=True)
-                continue
-            kind = incoming.get("kind", "?")
-            if kind != "pulse":
-                print(f"[{self.name} IGNORE] kind={kind!r} from={src}", flush=True)
-                continue
-            seq = incoming.get("seq")
-            key = (incoming.get("from"), seq)
-            if key in self.seen:
-                print(f"[{self.name} DUP] seq={seq} (redundant copy ignored)", flush=True)
-                continue
-            self.seen.add(key)
-            self.inbox.append(incoming)
-            text = incoming.get("text", "")
-            origin = incoming.get("from", "?")
-            print(f"[{self.name} RECV] from={origin} seq={seq} text={text!r}", flush=True)
-
-    def addr_s(self) -> str:
-        return f"udp://{Transponder_Locators.fmt_addr(self.listen)}"
-
-    def start(self) -> None:
-        self.sock = UdpMail.bind_udp(self.listen)
-        self.alive.set()
-        self.recv_thread = threading.Thread(target=self._recv_loop, name=f"{self.name}-recv", daemon=True)
-        self.recv_thread.start()
-        print(
-            f"[{self.name} TUNER] recv {self.addr_s()}  station udp://{Transponder_Locators.fmt_addr(self.station)}",
-            flush=True,
-        )
-
-
-_Tuner_internal = Tuner_internal()
-
-class Tuner:
-
-    @staticmethod
-    def tune(self) -> None:
-        payload = {
-            "kind": "tune",
-            "name": self.name,
-            "recv": Transponder_Locators.fmt_addr(self.listen),
-            "ts": time.time(),
-        }
-        self.sock.sendto(Transponder_Codec.encode_bytes(payload), self.station)
-        print(f"[{self.name} TUNE] sent to {Transponder_Locators.fmt_addr(self.station)} recv={Transponder_Locators.fmt_addr(self.listen)}", flush=True)
-
-    @staticmethod
-    def wait_for_station(self, timeout: float) -> None:
-        deadline = time.time() + timeout
-        while time.time() < deadline:
-            self.tune()
-            time.sleep(0.25)
-            if self.inbox:
-                print(f"[{self.name} STATION UP] first pulse in inbox", flush=True)
-                return
-        print(f"[{self.name} STATION WAIT] timed out; still listening", flush=True)
-
-    @staticmethod
-    def run(self, hold: float | None) -> None:
-        if hold is not None:
-            time.sleep(hold)
-            return
-        print(f"[{self.name} READY] listening for pulses, Ctrl-C to quit", flush=True)
-        try:
-            while self.alive.is_set():
-                time.sleep(0.2)
-        except KeyboardInterrupt:
-            print(flush=True)
-
-    @staticmethod
-    def close(self) -> None:
-        self.alive.clear()
-        if self.sock is not None:
-            try:
-                self.sock.close()
-            except OSError:
-                pass
-            self.sock = None
-        print(f"[{self.name} CLOSE] {self.addr_s()} heard={len(self.inbox)}", flush=True)
-
-    @staticmethod
-    def addr_s(self) -> str:
-        return f"udp://{Transponder_Locators.fmt_addr(self.listen)}"
-
-    @staticmethod
-    def start(self) -> None:
-        self.sock = UdpMail.bind_udp(self.listen)
-        self.alive.set()
-        self.recv_thread = threading.Thread(target=self._recv_loop, name=f"{self.name}-recv", daemon=True)
-        self.recv_thread.start()
-        print(
-            f"[{self.name} TUNER] recv {self.addr_s()}  station udp://{Transponder_Locators.fmt_addr(self.station)}",
-            flush=True,
-        )
+    def close() -> None:
+        return _ShmSlot_internal._close()
 
 
 # === Tier 3 (imports) ===
@@ -3048,104 +1988,121 @@ class Wire:
 # === NegativeCom (class) ===
 class NegativeCom_internal:
     # Clarification: Only NegativeCom has permission to initiate websocket connections.
-    _instance = None
 
-    def __init__(self, config=None):
-        self.config = config or {}
+    def __init__(self):
+        self.config = {}
         self.echo_payload = None
         self.negative = self
         self.lock = threading.Lock()
-        self.socket_path = generate_unique_socket_path()
+        self.socket_path = None
         self.ws = None
-        self.wire = self.config.get("wire")
+        self.wire = None
+        self.up_queue = deque()
+        self.down_queue = deque()
+        self._busy_down = False
+        self._busy_up = False
+        self.echo_seen = set()
+        self._pump_started = False
+        self._pump_alive = False
 
-    def __new__(self, cls, config):
-        if cls._instance is None:
-            cls._instance = object.__new__(cls)
-            cls._instance.ws = None
-            cls._instance.up_queue = deque()  # incoming messages from another server to middleware
-            cls._instance.down_queue = deque()  # outgoing messages from middleware to another server
-            cls._instance._busy_down = False
-            cls._instance._busy_up = False
-            cls._instance.wire = None
-            cls._instance.echo_seen = set()
-        return cls._instance
+    def _attach_wire(self, wire):
+        self.wire = wire
+        self.ws = wire
+        self._start_up_pump()
+        return wire
 
     def _start_up_pump(self):
-        if getattr(self, "_pump_started", False):
+        if self._pump_started:
             return
         self._pump_started = True
         self._pump_alive = True
 
         def pump():
-            while getattr(self, "_pump_alive", False):
+            while self._pump_alive:
                 if self.up_queue and not self._busy_up:
-                    self.process_up_queue()
+                    self._process_up_queue()
                 time.sleep(0.05)
 
         threading.Thread(target=pump, name="neg-up-pump", daemon=True).start()
 
-    def inject_echo_payload(self, func):
-        def wrapper(self, *args, **kwargs):
-            if 'payload' not in kwargs and hasattr(self, 'echo_payload'):
-                kwargs['payload'] = self.echo_payload
-            return func(self, *args, **kwargs)
-        return wrapper
-
-    def process_down_queue(self):
+    def _process_down_queue(self):
         with self.lock:
             manifest.info("This was triggered.")
-            if self._busy_down: return
+            if self._busy_down:
+                return
             for item in list(self.down_queue):
                 self._busy_down = True
                 if self.down_queue[0]:
-                    self.sender(self.ws, self.down_queue[0])
+                    self._sender(self.ws, self.down_queue[0])
                     token = self.down_queue[0]['communicator_token']
-                    self.wait_for_echo(token)
+                    self._wait_for_echo(token)
                     self.down_queue.popleft()
                     self._busy_down = False
 
-    def sender(self, ws, payload):
-        body = payload if isinstance(payload, dict) else freight.upgrades(payload)
+    def _sender(self, ws, payload):
+        body = payload if isinstance(payload, dict) else payload
         if self.wire is None:
             raise RuntimeError("NegativeCom.sender has no Wire attached")
         self.wire.send(body)
         if isinstance(body, dict) and "received" in body:
             self.echo_seen.add(body["received"])
 
-    def process_up_queue(self):
-        if self._busy_up: return
+    def _receiver(self, ws, message=None):
+        if message:
+            manifest.info(f'Message received: {message}')
+            data = message if isinstance(message, dict) else {"message": message}
+            if "received" in data:
+                self.echo_seen.add(data["received"])
+                return
+            self.up_queue.append(data)
+            manifest.info('Message appended to up_queue')
+
+    def _process_up_queue(self):
+        if self._busy_up:
+            return
         manifest.info('Processing up_queue')
         for item in list(self.up_queue):
             self._busy_up = True
             if self.up_queue[0]:
-                self.negative.from_N(self.up_queue[0])
-                token = freight.get(freight_obj=self.up_queue[0], key='communicator_token')
-                self.wait_for_echo(token)
+                self._from_N(self.up_queue[0])
+                token = self.up_queue[0].get('communicator_token') if isinstance(self.up_queue[0], dict) else None
+                self._wait_for_echo(token)
                 self.up_queue.popleft()
         manifest.info('up_queue processed')
         self._busy_up = False
 
-    def wait_for_echo(self, token):
+    def _wait_for_echo(self, token):
         while True:
             time.sleep(0.1)
-            if token in getattr(self, "echo_seen", ()):
+            if token in self.echo_seen:
                 return
             for msg in list(self.up_queue):
-                if msg.get('received') == token:
+                if isinstance(msg, dict) and msg.get('received') == token:
                     self.up_queue.remove(msg)
                     return
 
-    def from_N(self, payload):
-        manifest.info(truncate(500, payload))
-        token = freight.get(freight_obj=payload, key='communicator_token')
+    def _echo(self, payload=None):
+        if payload is None:
+            payload = self.echo_payload
+        token = payload.get('communicator_token') if isinstance(payload, dict) else None
+        if token and self.ws:
+            echo_payload = {'received': token}
+            self._sender(self.ws, echo_payload)
+
+    def _from_N(self, payload):
+        manifest.info(payload)
+        token = payload.get('communicator_token') if isinstance(payload, dict) else None
         if token and self.ws:
             echo_payload = {'received': token}
             if payload.get('echo') == 'delay':
                 time.sleep(0.1)
-                pass
             else:
-                self.sender(self.ws, echo_payload)
+                self._sender(self.ws, echo_payload)
+
+    def _to_N(self, payload):
+        manifest.info(payload)
+        self.down_queue.append(payload)
+        self._process_down_queue()
 
 
 _NegativeCom_internal = NegativeCom_internal()
@@ -3153,152 +2110,84 @@ _NegativeCom_internal = NegativeCom_internal()
 class NegativeCom:
 
     @staticmethod
-    def attach_wire(self, wire):
-        self.wire = wire
-        self.ws = wire
-        if not hasattr(self, "echo_seen"):
-            self.echo_seen = set()
-        self._start_up_pump()
-        return wire
-
-    # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
-    @staticmethod
-    def receiver(self, ws, message=None):
-        if message:
-            manifest.info(f'Message received: {truncate(500, message)}')
-            data = freight.upgrades(message=message)
-            if "received" in data:
-                self.echo_seen.add(data["received"])
-                return
-            self.up_queue.append(data)
-            manifest.info('Message appended to up_queue')
+    def attach_wire(wire):
+        return _NegativeCom_internal._attach_wire(wire)
 
     @staticmethod
-    @inject_echo_payload
-    def echo(self, payload=None):
-        token = freight.get(freight_obj=payload, key='communicator_token') if payload else None
-        if token and self.ws:
-            echo_payload = {'received': token}
-            self.sender(self.ws, freight.upgrades(echo_payload))
+    def process_down_queue():
+        return _NegativeCom_internal._process_down_queue()
 
     @staticmethod
-    def to_N(self, payload):
-        manifest.info(truncate(500, payload))
-        payload = freight.upgrades(payload)
-        self.down_queue.append(payload)
-        self.process_down_queue()
+    def sender(ws, payload):
+        return _NegativeCom_internal._sender(ws, payload)
 
     @staticmethod
-    def inject_echo_payload(func):
-        def wrapper(self, *args, **kwargs):
-            if 'payload' not in kwargs and hasattr(self, 'echo_payload'):
-                kwargs['payload'] = self.echo_payload
-            return func(self, *args, **kwargs)
-        return wrapper
+    def receiver(ws, message=None):
+        return _NegativeCom_internal._receiver(ws, message)
 
     @staticmethod
-    def process_down_queue(self):
-        with self.lock:
-            manifest.info("This was triggered.")
-            if self._busy_down: return
-            for item in list(self.down_queue):
-                self._busy_down = True
-                if self.down_queue[0]:
-                    self.sender(self.ws, self.down_queue[0])
-                    token = self.down_queue[0]['communicator_token']
-                    self.wait_for_echo(token)
-                    self.down_queue.popleft()
-                    self._busy_down = False
+    def process_up_queue():
+        return _NegativeCom_internal._process_up_queue()
 
     @staticmethod
-    def sender(self, ws, payload):
-        body = payload if isinstance(payload, dict) else freight.upgrades(payload)
-        if self.wire is None:
-            raise RuntimeError("NegativeCom.sender has no Wire attached")
-        self.wire.send(body)
-        if isinstance(body, dict) and "received" in body:
-            self.echo_seen.add(body["received"])
+    def wait_for_echo(token):
+        return _NegativeCom_internal._wait_for_echo(token)
 
     @staticmethod
-    def process_up_queue(self):
-        if self._busy_up: return
-        manifest.info('Processing up_queue')
-        for item in list(self.up_queue):
-            self._busy_up = True
-            if self.up_queue[0]:
-                self.negative.from_N(self.up_queue[0])
-                token = freight.get(freight_obj=self.up_queue[0], key='communicator_token')
-                self.wait_for_echo(token)
-                self.up_queue.popleft()
-        manifest.info('up_queue processed')
-        self._busy_up = False
+    def echo(payload=None):
+        return _NegativeCom_internal._echo(payload)
 
     @staticmethod
-    def wait_for_echo(self, token):
-        while True:
-            time.sleep(0.1)
-            if token in getattr(self, "echo_seen", ()):
-                return
-            for msg in list(self.up_queue):
-                if msg.get('received') == token:
-                    self.up_queue.remove(msg)
-                    return
+    def from_N(payload):
+        return _NegativeCom_internal._from_N(payload)
 
     @staticmethod
-    def from_N(self, payload):
-        manifest.info(truncate(500, payload))
-        token = freight.get(freight_obj=payload, key='communicator_token')
-        if token and self.ws:
-            echo_payload = {'received': token}
-            if payload.get('echo') == 'delay':
-                time.sleep(0.1)
-                pass
-            else:
-                self.sender(self.ws, echo_payload)
+    def to_N(payload):
+        return _NegativeCom_internal._to_N(payload)
 
 
 # === PositiveCom (class) ===
 class PositiveCom_internal:
-    _instance = None
     # Clarification: PositiveCom only has permission to receive and maintain websocket connections.
 
-    def __init__(self, config=None):
-        self.config = config or {}
+    def __init__(self):
+        self.config = {}
         self.echo_payload = None
         self.positive = self
-        self.socket_path = generate_unique_socket_path()
+        self.socket_path = None
         self.ws = None
-        self.wire = self.config.get("wire")
+        self.wire = None
+        self.positive_addr = {}
+        self.port = 0
+        self.connections = {}
+        self.ws_token_dict = {}
+        self.ws_id = None
+        self.up_queue = deque()
+        self.down_queue = deque()
+        self._busy_down = False
+        self._busy_up = False
+        self.echo_seen = set()
+        self._pump_started = False
+        self._pump_alive = False
 
-    def __new__(self, cls, config):
-        if cls._instance is None:
-            cls._instance = object.__new__(cls)
-            cls._instance.config = config
-            cls._instance.positive_addr = cls._instance.config.get('positive_address', {})
-            cls._instance.port = int(cls._instance.positive_addr.get('port', 0))
-            PositiveCom._preemptive_port_cleanup(cls._instance.port)
-            cls._instance.ws = None
-            cls._instance.connections = {}
-            cls._instance.ws_token_dict = {}
-            cls._instance.ws_id = id(cls._instance)
-            cls._instance.up_queue = deque()  # incoming messages from another server to middleware
-            cls._instance.down_queue = deque()  # outgoing messages from middleware to another server
-            cls._instance._busy_down = False
-            cls._instance._busy_up = False
-            cls._instance.wire = None
-            cls._instance.connections = getattr(cls._instance, "connections", {})
-            cls._instance.echo_seen = set()
-        return cls._instance
+    def _attach_wire(self, wire):
+        self.wire = wire
+        self.ws = wire
+        self.connections[id(wire)] = wire
+        if not self._pump_started:
+            self._pump_started = True
+            self._pump_alive = True
 
-    def inject_echo_payload(self, func):
-        def wrapper(self, *args, **kwargs):
-            if 'payload' not in kwargs and hasattr(self, 'echo_payload'):
-                kwargs['payload'] = self.echo_payload
-            return func(self, *args, **kwargs)
-        return wrapper
+            def pump():
+                while self._pump_alive:
+                    if self.up_queue and not self._busy_up:
+                        self._process_up_queue()
+                    time.sleep(0.05)
 
-    @staticmethod
-    def _find_pids_on_port(self, port: int) -> set[int]:
+            threading.Thread(target=pump, name="pos-up-pump", daemon=True).start()
+        return wire
+
+    def _find_pids_on_port(self, port: int) -> set:
         if shutil.which("lsof"):
             try:
                 result = subprocess.run(
@@ -3313,11 +2202,10 @@ class PositiveCom_internal:
                 return {int(pid) for pid in result.stdout.split() if pid.strip()}
         return set()
 
-    @staticmethod
     def _preemptive_port_cleanup(self, port: int) -> None:
         if port <= 0:
             return
-        pids = PositiveCom._find_pids_on_port(port)
+        pids = self._find_pids_on_port(port)
         for pid in sorted(pids):
             if pid == os.getpid():
                 continue
@@ -3327,94 +2215,48 @@ class PositiveCom_internal:
                 continue
             time.sleep(0.1)
 
-    def process_down_queue(self):
-        if self._busy_down: return
+    def _process_down_queue(self):
+        if self._busy_down:
+            return
         for item in list(self.down_queue):
             self._busy_down = True
             if self.down_queue[0]:
                 payload = self.down_queue[0]
-                token = freight.get(freight_obj=payload, key='communicator_token')
+                token = payload.get('communicator_token') if isinstance(payload, dict) else None
                 if token and token in self.ws_token_dict:
                     ws_id = self.ws_token_dict[token]
                     if ws_id in self.connections:
-                        self.sender(self.connections[ws_id], self.down_queue[0])
-                        token = freight.get(freight_obj=self.down_queue[0], key='communicator_token')
-                        self.wait_for_echo(token)
+                        self._sender(self.connections[ws_id], self.down_queue[0])
+                        self._wait_for_echo(token)
                         self.down_queue.popleft()
         self._busy_down = False
 
-    def wait_for_echo(self, token):
+    def _wait_for_echo(self, token):
         while True:
             time.sleep(0.1)
-            if token in getattr(self, "echo_seen", ()):
+            if token in self.echo_seen:
                 return
             for msg in list(self.up_queue):
-                if msg.get('received') == token:
+                if isinstance(msg, dict) and msg.get('received') == token:
                     self.up_queue.remove(msg)
                     return
 
-    def process_up_queue(self):
-        if self._busy_up: return
+    def _process_up_queue(self):
+        if self._busy_up:
+            return
         for item in list(self.up_queue):
             self._busy_up = True
             if self.up_queue[0]:
-                self.positive.from_P(self.up_queue[0])
-                token = freight.get(freight_obj=self.up_queue[0], key='communicator_token')
-                self.wait_for_echo(token)
+                self._from_P(self.up_queue[0])
+                token = self.up_queue[0].get('communicator_token') if isinstance(self.up_queue[0], dict) else None
+                self._wait_for_echo(token)
                 self.up_queue.popleft()
         self._busy_up = False
 
-    def sender(self, ws, payload):
-        body = payload if isinstance(payload, dict) else freight.upgrades(payload)
-        if self.wire is None:
-            raise RuntimeError("PositiveCom.sender has no Wire attached")
-        self.wire.send(body)
-        if isinstance(body, dict) and "received" in body:
-            self.echo_seen.add(body["received"])
-
-    def from_P(self, payload):
-        manifest.info(truncate(500, payload))
-        token = freight.get(freight_obj=payload, key='communicator_token')
-        ws_id = self.ws_token_dict.get(token)
-        ws = self.connections.get(ws_id)
-        if token and ws:
-            echo_payload = {'received': token}
-            if payload.get('echo') == 'delay':
-                pass
-            else:
-                self.sender(ws, echo_payload)
-
-
-_PositiveCom_internal = PositiveCom_internal()
-
-class PositiveCom:
-
-    @staticmethod
-    def attach_wire(self, wire):
-        self.wire = wire
-        self.ws = wire
-        self.connections[id(wire)] = wire
-        if not hasattr(self, "echo_seen"):
-            self.echo_seen = set()
-        if not getattr(self, "_pump_started", False):
-            self._pump_started = True
-            self._pump_alive = True
-
-            def pump():
-                while getattr(self, "_pump_alive", False):
-                    if self.up_queue and not self._busy_up:
-                        self.process_up_queue()
-                    time.sleep(0.05)
-
-            threading.Thread(target=pump, name="pos-up-pump", daemon=True).start()
-        return wire
-
-    # Break is necessary to prevent rapid useless error loops. This is v1 Failure should be loud, but not repatative.
-    @staticmethod
-    def receiver(self, ws, message=None):
+    def _receiver(self, ws, message=None):
         if message:
-            data = freight.upgrades(message=message)
-            token = freight.get(freight_obj=data, key='communicator_token')
+            data = message if isinstance(message, dict) else {"message": message}
+            token = data.get('communicator_token') if isinstance(data, dict) else None
             handle = ws if ws is not None else self.wire
             if token and handle is not None:
                 self.ws_token_dict[token] = id(handle)
@@ -3425,114 +2267,30 @@ class PositiveCom:
             self.up_queue.append(data)
             manifest.info('Message appended to up_queue')
 
-    @staticmethod
-    @inject_echo_payload
-    def echo(self, payload=None):
-        token = freight.get(freight_obj=payload, key='communicator_token') if payload else None
-        if token and self.ws:
-            echo_payload = {'received': token}
-            self.sender(self.ws, freight.upgrades(echo_payload))
-
-    @staticmethod
-    def to_P(self, payload):
-        manifest.info(truncate(500, payload))
-        payload = freight.upgrades(payload)
-        self.down_queue.append(payload)
-        self.process_down_queue()
-
-    @staticmethod
-    def inject_echo_payload(func):
-        def wrapper(self, *args, **kwargs):
-            if 'payload' not in kwargs and hasattr(self, 'echo_payload'):
-                kwargs['payload'] = self.echo_payload
-            return func(self, *args, **kwargs)
-        return wrapper
-
-    @staticmethod
-    @staticmethod
-    def _find_pids_on_port(port: int) -> set[int]:
-        if shutil.which("lsof"):
-            try:
-                result = subprocess.run(
-                    ["lsof", "-ti", f"tcp:{port}"],
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                )
-            except FileNotFoundError:
-                pass
-            else:
-                return {int(pid) for pid in result.stdout.split() if pid.strip()}
-        return set()
-
-    @staticmethod
-    @staticmethod
-    def _preemptive_port_cleanup(port: int) -> None:
-        if port <= 0:
-            return
-        pids = PositiveCom._find_pids_on_port(port)
-        for pid in sorted(pids):
-            if pid == os.getpid():
-                continue
-            try:
-                os.kill(pid, signal.SIGTERM)
-            except ProcessLookupError:
-                continue
-            time.sleep(0.1)
-
-    @staticmethod
-    def process_down_queue(self):
-        if self._busy_down: return
-        for item in list(self.down_queue):
-            self._busy_down = True
-            if self.down_queue[0]:
-                payload = self.down_queue[0]
-                token = freight.get(freight_obj=payload, key='communicator_token')
-                if token and token in self.ws_token_dict:
-                    ws_id = self.ws_token_dict[token]
-                    if ws_id in self.connections:
-                        self.sender(self.connections[ws_id], self.down_queue[0])
-                        token = freight.get(freight_obj=self.down_queue[0], key='communicator_token')
-                        self.wait_for_echo(token)
-                        self.down_queue.popleft()
-        self._busy_down = False
-
-    @staticmethod
-    def wait_for_echo(self, token):
-        while True:
-            time.sleep(0.1)
-            if token in getattr(self, "echo_seen", ()):
-                return
-            for msg in list(self.up_queue):
-                if msg.get('received') == token:
-                    self.up_queue.remove(msg)
-                    return
-
-    @staticmethod
-    def process_up_queue(self):
-        if self._busy_up: return
-        for item in list(self.up_queue):
-            self._busy_up = True
-            if self.up_queue[0]:
-                self.positive.from_P(self.up_queue[0])
-                token = freight.get(freight_obj=self.up_queue[0], key='communicator_token')
-                self.wait_for_echo(token)
-                self.up_queue.popleft()
-        self._busy_up = False
-
-    @staticmethod
-    def sender(self, ws, payload):
-        body = payload if isinstance(payload, dict) else freight.upgrades(payload)
+    def _sender(self, ws, payload):
+        body = payload if isinstance(payload, dict) else payload
         if self.wire is None:
             raise RuntimeError("PositiveCom.sender has no Wire attached")
         self.wire.send(body)
         if isinstance(body, dict) and "received" in body:
             self.echo_seen.add(body["received"])
 
-    @staticmethod
-    def from_P(self, payload):
-        manifest.info(truncate(500, payload))
-        token = freight.get(freight_obj=payload, key='communicator_token')
+    def _echo(self, payload=None):
+        if payload is None:
+            payload = self.echo_payload
+        token = payload.get('communicator_token') if isinstance(payload, dict) else None
+        if token and self.ws:
+            echo_payload = {'received': token}
+            self._sender(self.ws, echo_payload)
+
+    def _to_P(self, payload):
+        manifest.info(payload)
+        self.down_queue.append(payload)
+        self._process_down_queue()
+
+    def _from_P(self, payload):
+        manifest.info(payload)
+        token = payload.get('communicator_token') if isinstance(payload, dict) else None
         ws_id = self.ws_token_dict.get(token)
         ws = self.connections.get(ws_id)
         if token and ws:
@@ -3540,6 +2298,47 @@ class PositiveCom:
             if payload.get('echo') == 'delay':
                 pass
             else:
-                self.sender(ws, echo_payload)
+                self._sender(ws, echo_payload)
+
+
+_PositiveCom_internal = PositiveCom_internal()
+
+class PositiveCom:
+
+    @staticmethod
+    def attach_wire(wire):
+        return _PositiveCom_internal._attach_wire(wire)
+
+    @staticmethod
+    def process_down_queue():
+        return _PositiveCom_internal._process_down_queue()
+
+    @staticmethod
+    def wait_for_echo(token):
+        return _PositiveCom_internal._wait_for_echo(token)
+
+    @staticmethod
+    def process_up_queue():
+        return _PositiveCom_internal._process_up_queue()
+
+    @staticmethod
+    def receiver(ws, message=None):
+        return _PositiveCom_internal._receiver(ws, message)
+
+    @staticmethod
+    def sender(ws, payload):
+        return _PositiveCom_internal._sender(ws, payload)
+
+    @staticmethod
+    def echo(payload=None):
+        return _PositiveCom_internal._echo(payload)
+
+    @staticmethod
+    def to_P(payload):
+        return _PositiveCom_internal._to_P(payload)
+
+    @staticmethod
+    def from_P(payload):
+        return _PositiveCom_internal._from_P(payload)
 
 
