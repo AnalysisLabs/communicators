@@ -71,3 +71,8 @@ Quote that path (spaces). Then:
 
 ```bash
 ./run.sh
+```
+
+I expect you to run this after any set of edits where it would make sense to get feedback whether the edits work/are a step in the right direction.
+## Conclusion
+If it is impossible for you to comply with any of these rules due to sandob rules or anything else complain to me IMMEDIATELY prompted or not since if you cannot comply with this AGENTS.md for technical reasons, those most be resolved or that will derail most sessions.
