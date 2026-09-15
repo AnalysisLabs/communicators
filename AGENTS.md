@@ -31,6 +31,10 @@ success condition (how we know it worked).
 
 If the prompt has no success condition, ask for one before changing code.
 
+## Success Condition
+
+Usually there should be one or more success conditions in a task and certain verbal statements like "You are free to edit file in dir M as needed but treats file in dir N as read only and/or don't change files P.py and Q.py" Here is how you should treat these soft restrains. In principle, any file in a branch with "grok" in it or under a dir with "grok", a.k.a. a sandbox, is fair game for edits but how closely you follow my instructions strongly correlated with me accepting you edits for integration into the serious branch or not. When I tell you that editing certain files inside the sandbox are off limits, the rational is that certain files are very sensative to change and they often have far ranging influence and therefore special attention must be payed to thier indluence accross the Communicators OS before making edits to them. Therefore, while you shoudl explore other solutions first, if you still thing the proper solution is in modifying files I told you are off limits, you may pause and ask me for permission to edit those file I had previously marked off limits. Do not assume I will agree with you. You must explain and defend any request for me to change the permissions. Thus when I give you a set of success conditions and rules to follow, an accceptable response must either satisfy the success condition, be a request for different permissions, or proof that success is impossible objectively or for you given your skill level.
+
 ## When to open Philosophy
 
 Do not read the whole folder. Chores do not need it.
